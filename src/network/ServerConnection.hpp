@@ -18,7 +18,8 @@ public:
     bool EnableProxy() override;
     NetworkReplyMessage Send(
         const ServerContext& context,
-        const Message& message) override;
+        const Message& message,
+        const Push push) override;
     bool Status() const override;
 
     ~ServerConnection();
@@ -62,6 +63,7 @@ private:
     OTZMQRequestSocket sync_socket(const Lock& lock) const;
 
     void activity_timer();
+    void disable_push(const Identifier& nymID);
     zeromq::DealerSocket& get_async(const Lock& lock);
     zeromq::RequestSocket& get_sync(const Lock& lock);
     void process_incoming(const zeromq::Message& in);

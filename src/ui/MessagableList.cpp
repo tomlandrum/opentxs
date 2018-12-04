@@ -7,7 +7,7 @@
 
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/Manager.hpp"
-#include "opentxs/api/client/Sync.hpp"
+#include "opentxs/api/client/OTX.hpp"
 #include "opentxs/api/Endpoints.hpp"
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -90,7 +90,7 @@ void MessagableList::process_contact(
 {
     if (owner_contact_id_ == id) { return; }
 
-    switch (api_.Sync().CanMessage(nym_id_, id)) {
+    switch (api_.OTX().CanMessage(nym_id_, id, false)) {
         case Messagability::READY:
         case Messagability::MISSING_RECIPIENT:
         case Messagability::UNREGISTERED: {

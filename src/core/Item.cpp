@@ -632,10 +632,13 @@ bool Item::VerifyBalanceStatement(
     const bool bIWasFound = context.VerifyIssuedNumber(targetNumber, removed);
 
     if (!bIWasFound) {
-        LogNormal(OT_METHOD)(__FUNCTION__)(
-            ": Transaction has a # that "
-            "doesn't appear on Nym's issued list.")
+        LogNormal(OT_METHOD)(__FUNCTION__)(": Transaction number ")(
+            targetNumber)(" doesn't appear on Nym's issued list:")
             .Flush();
+
+        for (const auto& number : context.IssuedNumbers()) {
+            LogNormal("    ")(number).Flush();
+        }
 
         return false;
     }

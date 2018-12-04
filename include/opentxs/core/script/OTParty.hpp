@@ -294,8 +294,8 @@ private:
     // Each party (to a smart contract anyway) must provide an opening
     // transaction #.
     TransactionNumber m_lOpeningTransNo{0};
-    OTString m_strMySignedCopy;  // One party confirms it and sends it over. Then
-                               // another confirms it,
+    OTString m_strMySignedCopy;  // One party confirms it and sends it over.
+                                 // Then another confirms it,
     // which adds his own transaction numbers and signs it. This, unfortunately,
     // invalidates the original version,
     // (since the digital signature ceases to verify, once you change the

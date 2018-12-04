@@ -43,11 +43,12 @@ class Manager;
 class OT_API : Lockable
 {
 public:
-    typedef std::tuple<
+    using ProcessInbox = std::tuple<
         std::unique_ptr<Ledger>,
         std::unique_ptr<Ledger>,
-        TransactionNumber>
-        ProcessInbox;
+        TransactionNumber>;
+    using ProcessInboxOnly =
+        std::pair<std::unique_ptr<Ledger>, TransactionNumber>;
 
     EXPORT bool GetWalletFilename(String& strPath) const;
     EXPORT bool SetWalletFilename(const String& strPath) const;
@@ -169,28 +170,7 @@ public:
     EXPORT bool Wallet_ImportNym(
         const String& FILE_CONTENTS,
         Identifier& pNymID) const;
-    // First three arguments denote the existing purse.
-    // Fourth argument is the NEW purse being imported.
-    // (Which may have a different owner Nym, or be protected
-    // by a symmetric key instead of a Nym.)
-    bool Wallet_ImportPurse(
-        const Identifier& NOTARY_ID,
-        const Identifier& INSTRUMENT_DEFINITION_ID,
-        const Identifier& SIGNER_ID,  // We must know the SIGNER_ID in order to
-                                      // know which "old purse" to load and
-                                      // merge into. The New Purse may have a
-                                      // different one, but its ownership will
-                                      // be re-assigned in that case, as part
-                                      // of the merging process, to SIGNER_ID.
-                                      // Otherwise the New Purse might be
-                                      // symmetrically encrypted (instead of
-                                      // using a Nym) in which case again, its
-                                      // ownership will be re-assigned from
-                                      // that key, to SIGNER_ID, as part of the
-                                      // merging process.
-        const String& THE_PURSE,
-        const String& pstrDisplay = String::Factory()) const;
-    //
+
     // ENCODE, DECODE, SIGN, VERIFY, ENCRYPT, DECRYPT
 
     /** OT-encode a plaintext string.
@@ -496,6 +476,10 @@ public:
     EXPORT ProcessInbox CreateProcessInbox(
         const Identifier& accountID,
         ServerContext& context) const;
+    EXPORT ProcessInboxOnly CreateProcessInbox(
+        const Identifier& accountID,
+        ServerContext& context,
+        Ledger& inbox) const;
 
     EXPORT bool IncludeResponse(
         const Identifier& accountID,
@@ -509,6 +493,12 @@ public:
         ServerContext& context,
         Ledger& processInbox,
         Ledger& inbox) const;
+    EXPORT bool FinalizeProcessInbox(
+        const Identifier& accountID,
+        ServerContext& context,
+        Ledger& processInbox,
+        Ledger& inbox,
+        Ledger& outbox) const;
 
     // Note: if instrument is expired BEFORE being recorded, it will go into the
     // expired box instead of the record box.
@@ -553,31 +543,12 @@ public:
 
     // These commands below send messages to the server:
 
-    EXPORT CommandResult
-    registerNym(ServerContext& context, const bool resync = false) const;
-
     EXPORT CommandResult unregisterNym(ServerContext& context) const;
-
-    EXPORT CommandResult
-    checkNym(ServerContext& context, const Identifier& targetNymID) const;
 
     EXPORT CommandResult usageCredits(
         ServerContext& context,
         const Identifier& NYM_ID_CHECK,
         std::int64_t lAdjustment = 0) const;
-
-    EXPORT CommandResult sendNymMessage(
-        ServerContext& context,
-        const Identifier& recipientNymID,
-        const std::string& THE_MESSAGE,
-        Identifier& messageID) const;
-
-#if OT_CASH
-    EXPORT CommandResult sendNymCash(
-        ServerContext& context,
-        const Identifier& recipientNymID,
-        std::shared_ptr<blind::Purse> purse) const;
-#endif
 
     EXPORT CommandResult sendNymObject(
         ServerContext& context,
@@ -586,55 +557,13 @@ public:
         const PeerObject& object,
         const RequestNumber provided) const;
 
-    EXPORT CommandResult registerContract(
-        ServerContext& context,
-        const ContractType TYPE,
-        const Identifier& CONTRACT) const;
-
-    EXPORT CommandResult sendNymInstrument(
-        ServerContext& context,
-        std::unique_ptr<Message>& request,
-        const Identifier& recipientNymID,
-        const OTPayment& instrument,
-        bool storeOutpayment,
-        const OTPayment* senderCopy = nullptr) const;
-
-    EXPORT CommandResult registerInstrumentDefinition(
-        ServerContext& context,
-        const proto::UnitDefinition& THE_CONTRACT,
-        const std::string& label) const;
-
-    EXPORT CommandResult getInstrumentDefinition(
-        ServerContext& context,
-        const Identifier& INSTRUMENT_DEFINITION_ID) const;
-
-    EXPORT CommandResult getMint(
-        ServerContext& context,
-        const Identifier& INSTRUMENT_DEFINITION_ID) const;
-
-    EXPORT CommandResult getBoxReceipt(
-        ServerContext& context,
-        const Identifier& ACCOUNT_ID,  // If for Nymbox (vs
-                                       // inbox/outbox) then pass
-                                       // NYM_ID in this field also.
-        std::int32_t nBoxType,         // 0/nymbox, 1/inbox, 2/outbox
-        const TransactionNumber& lTransactionNum) const;
-
     EXPORT CommandResult queryInstrumentDefinitions(
         ServerContext& context,
         const Armored& ENCODED_MAP) const;
 
-    EXPORT CommandResult registerAccount(
-        ServerContext& context,
-        const Identifier& INSTRUMENT_DEFINITION_ID,
-        const std::string& label) const;
-
     EXPORT CommandResult deleteAssetAccount(
         ServerContext& context,
         const Identifier& ACCOUNT_ID) const;
-
-    EXPORT CommandResult
-    getAccountData(ServerContext& context, const Identifier& ACCT_ID) const;
 
     EXPORT bool AddBasketCreationItem(
         proto::UnitDefinition& basketTemplate,
@@ -667,35 +596,8 @@ public:
         const String& BASKET_INFO,
         bool bExchangeInOrOut) const;
 
-    EXPORT CommandResult getTransactionNumbers(ServerContext& context) const;
-
-#if OT_CASH
-    EXPORT CommandResult notarizeWithdrawal(
-        ServerContext& context,
-        const Identifier& ACCT_ID,
-        const Amount amount) const;
-
-    EXPORT CommandResult notarizeDeposit(
-        ServerContext& context,
-        const Identifier& ACCT_ID,
-        const std::shared_ptr<blind::Purse> purse) const;
-#endif  // OT_CASH
-
-    EXPORT CommandResult notarizeTransfer(
-        ServerContext& context,
-        const Identifier& ACCT_FROM,
-        const Identifier& ACCT_TO,
-        const Amount amount,
-        const String& NOTE) const;
-
-    EXPORT CommandResult getNymbox(ServerContext& context) const;
-
-    EXPORT CommandResult processNymbox(ServerContext& context) const;
-
-    EXPORT CommandResult processInbox(
-        ServerContext& context,
-        const Identifier& ACCT_ID,
-        const String& ACCT_LEDGER) const;
+    EXPORT std::unique_ptr<Message> getTransactionNumbers(
+        ServerContext& context) const;
 
     EXPORT CommandResult withdrawVoucher(
         ServerContext& context,
@@ -721,11 +623,6 @@ public:
                                                 // out
     // PER SHARE (multiplied by total
     // number of shares issued.)
-
-    EXPORT CommandResult depositCheque(
-        ServerContext& context,
-        const Identifier& ACCT_ID,
-        const Cheque& cheque) const;
 
     EXPORT CommandResult triggerClause(
         ServerContext& context,
@@ -1063,16 +960,6 @@ public:
         const Identifier& request,
         const std::shared_ptr<PeerReply>& reply) const;
 
-    EXPORT CommandResult
-    requestAdmin(ServerContext& context, const std::string& PASSWORD) const;
-
-    EXPORT CommandResult serverAddClaim(
-        ServerContext& context,
-        const std::string& section,
-        const std::string& type,
-        const std::string& value,
-        const bool primary) const;
-
     EXPORT ConnectionState CheckConnection(const std::string& server) const;
 
     EXPORT std::string AddChildKeyCredential(
@@ -1110,8 +997,6 @@ private:
     OTWallet* m_pWallet{nullptr};
     std::unique_ptr<OTClient> m_pClient;
     ContextLockCallback lock_callback_;
-    OTZMQPublishSocket request_sent_;
-    OTZMQPublishSocket reply_received_;
 
     static void AddHashesToTransaction(
         OTTransaction& transaction,
@@ -1158,12 +1043,6 @@ private:
         String& note) const;
     itemType response_type(const transactionType sourceType, const bool success)
         const;
-    NetworkReplyMessage send_message(
-        const std::set<OTManagedNumber>& pending,
-        ServerContext& context,
-        const Message& message,
-        const std::string& label = "",
-        const bool resync = false) const;
 
     std::set<std::unique_ptr<Cheque>> extract_cheques(
         const Identifier& nymID,

@@ -20,8 +20,9 @@ namespace opentxs
 {
 typedef std::multimap<std::string, crypto::key::Asymmetric*>
     mapOfAsymmetricKeys;
-typedef std::tuple<OTString, OTString, OTString, OTString, std::shared_ptr<OTEnvelope>>
-    symmetricEnvelope;
+typedef std::
+    tuple<OTString, OTString, OTString, OTString, std::shared_ptr<OTEnvelope>>
+        symmetricEnvelope;
 typedef std::list<symmetricEnvelope> listOfSessionKeys;
 typedef std::map<proto::AsymmetricKeyType, std::string> listOfEphemeralKeys;
 typedef std::multimap<std::string, const crypto::key::EllipticCurve*>

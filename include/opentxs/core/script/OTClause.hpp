@@ -20,9 +20,9 @@ class Tag;
 
 class OTClause
 {
-    OTString m_strName;   // Name of this Clause.
-    OTString m_strCode;   // script code.
-    OTBylaw* m_pBylaw;  // the Bylaw that this clause belongs to.
+    OTString m_strName;  // Name of this Clause.
+    OTString m_strCode;  // script code.
+    OTBylaw* m_pBylaw;   // the Bylaw that this clause belongs to.
 
 public:
     void SetBylaw(OTBylaw& theBylaw) { m_pBylaw = &theBylaw; }

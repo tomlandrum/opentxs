@@ -20,6 +20,7 @@
 
 namespace opentxs
 {
+class Identifier;
 class Message;
 class Nym;
 class String;
@@ -28,6 +29,8 @@ class String;
 #define PEER_MESSAGE_VERSION 2
 #define PEER_PAYMENT_VERSION 5
 #define PEER_CASH_VERSION 7
+#define PEER_OBJECT_PEER_REQUEST 7
+#define PEER_OBJECT_PEER_REPLY 7
 #define NYM_CREATE_VERSION 5          // TODO 1.14.0
 #define NYM_UPGRADE_VERSION 5         // TODO 1.14.0
 #define CONTACT_CREDENTIAL_VERSION 5  // TODO 1.14.0
@@ -121,6 +124,7 @@ typedef std::map<std::string, ConstNym> mapOfConstNyms;
 using ContextID = std::pair<std::string, std::string>;
 using ContextLockCallback =
     std::function<std::recursive_mutex&(const ContextID&)>;
+using SetID = std::function<void(const Identifier&)>;
 
 typedef std::int32_t NetworkOperationStatus;
 
@@ -518,6 +522,7 @@ enum class SendResult : std::int8_t {
     ERROR = 0,
     UNNECESSARY = 1,
     VALID_REPLY = 2,
+    SHUTDOWN = 3,
 };
 
 enum class ConnectionState : std::uint8_t {
@@ -629,6 +634,7 @@ enum class MessageType : std::uint8_t {
     requestAdminResponse = 58,
     addClaim = 59,
     addClaimResponse = 60,
+    outmail = 61,
 };
 
 enum class ThreadStatus : std::uint8_t {

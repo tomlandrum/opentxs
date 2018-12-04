@@ -33,6 +33,7 @@ struct Native : virtual public api::Native {
     virtual OTCaller& GetPasswordCaller() const = 0;
     virtual void Init() = 0;
     virtual void shutdown() = 0;
+
     virtual ~Native() = default;
 };
 

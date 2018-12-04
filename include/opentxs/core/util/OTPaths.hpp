@@ -46,22 +46,24 @@ public:
                                                     // since it's sandboxed.
                                                     // (Don't want to put
                                                     // scripts in data folder.)
-    EXPORT static void SetAppBinaryFolder(const String& strLocation);  // Note:
-                                                                // Android
-                                                                // should set
-                                                                // this as the
-                                                                // res/raw
-                                                                // folder.
+    EXPORT static void SetAppBinaryFolder(
+        const String& strLocation);  // Note:
+                                     // Android
+                                     // should set
+                                     // this as the
+                                     // res/raw
+                                     // folder.
 
     EXPORT static const String& HomeFolder();  // Adding this for Android,
                                                // since it's sandboxed. Android
                                                // will provide its own data
                                                // folder here.
-    EXPORT static void SetHomeFolder(const String& strLocation);  // The AppDataFolder
-                                                           // (below) will be
-                                                           // created from this
-                                                           // folder, plus .ot
-                                                           // or whatever.
+    EXPORT static void SetHomeFolder(
+        const String& strLocation);  // The AppDataFolder
+                                     // (below) will be
+                                     // created from this
+                                     // folder, plus .ot
+                                     // or whatever.
 
     EXPORT static const String& AppDataFolder();     // eg. /home/user/.ot/
                                                      // (auto).
@@ -79,7 +81,7 @@ public:
     EXPORT static bool LoadSetPrefixFolder     // eg. /usr/local/  (cannot be
                                                // relative);
         (api::Settings& config = *s_settings,  // optional
-         const String& strPrefixFolder = String::Factory()    // optional
+         const String& strPrefixFolder = String::Factory()  // optional
          // const bool& bIsRelative = false
         );
 
@@ -87,7 +89,7 @@ public:
                                                // Android) "lib/opentxs/" ]
         (api::Settings& config = *s_settings,  // optional
          const String& strScriptsFolder = String::Factory(),  // optional
-         const bool& bIsRelative = true        // optional
+         const bool& bIsRelative = true                       // optional
         );
 
     EXPORT static bool Get(

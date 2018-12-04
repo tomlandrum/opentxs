@@ -1,3 +1,6 @@
+#[[
+// clang-format off
+]]#
 # Copyright (c) 2018 The Open-Transactions developers
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,16 +13,26 @@ set(cxx-sources
   Factory.cpp
   Issuer.cpp
   Manager.cpp
+  Operation.cpp
+  OTX.cpp
   Pair.cpp
   ServerAction.cpp
-  Sync.cpp
   UI.cpp
   Wallet.cpp
   Workflow.cpp
 )
 
-file(GLOB cxx-install-headers
-     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/*.hpp"
+set(cxx-install-headers
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/Activity.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/Blockchain.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/Contacts.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/Issuer.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/Manager.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/OTX.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/Pair.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/ServerAction.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/UI.hpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/api/client/Workflow.hpp"
 )
 
 set(cxx-headers
@@ -31,9 +44,10 @@ set(cxx-headers
   Issuer.hpp
   InternalClient.hpp
   Manager.hpp
+  Operation.hpp
+  OTX.hpp
   Pair.hpp
   ServerAction.hpp
-  Sync.hpp
   UI.hpp
   Wallet.hpp
   Workflow.hpp
@@ -74,3 +88,7 @@ install(FILES ${cxx-install-headers}
 
 set_property(TARGET ${MODULE_NAME} PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_lib_property(${MODULE_NAME})
+target_include_directories(${MODULE_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../../deps/")
+#[[
+// clang-format on
+]]#

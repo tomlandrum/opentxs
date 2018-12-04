@@ -31,6 +31,8 @@ private:
     using ot_super = api::implementation::Wallet;
 
     const api::client::Manager& client_;
+    OTZMQPublishSocket request_sent_;
+    OTZMQPublishSocket reply_received_;
 
     void instantiate_server_context(
         const proto::Context& serialized,

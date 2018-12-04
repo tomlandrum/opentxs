@@ -205,7 +205,13 @@ bool ReplyMessage::init_nym()
 
 bool ReplyMessage::LoadContext()
 {
-    if (false == init_nym()) { return false; }
+    if (false == init_nym()) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Nym (")(original_.m_strNymID)(
+            ") does not exist")
+            .Flush();
+
+        return false;
+    }
 
     context_.reset(new Editor<ClientContext>(
         wallet_.mutable_ClientContext(signer_.ID(), sender_nym_->ID())));
@@ -222,8 +228,12 @@ void ReplyMessage::OverrideType(const String& replyCommand)
 
 void ReplyMessage::SetAccount(const String& accountID)
 {
+    OT_ASSERT(accountID.Exists());
+
     message_.m_strAcctID = accountID;
 }
+
+void ReplyMessage::SetBool(const bool value) { message_.m_bBool = value; }
 
 void ReplyMessage::SetAcknowledgments(const ClientContext& context)
 {
@@ -234,6 +244,8 @@ void ReplyMessage::SetDepth(const std::int64_t depth)
 {
     message_.m_lDepth = depth;
 }
+
+void ReplyMessage::SetEnum(const std::uint8_t value) { message_.enum_ = value; }
 
 void ReplyMessage::SetInboxHash(const Identifier& hash)
 {

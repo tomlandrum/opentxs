@@ -53,7 +53,7 @@ void Test_PairSocket::pairSocketThread(const std::string& message)
     ASSERT_NE(nullptr, &listenCallback.get());
 
     ASSERT_NE(nullptr, pairSocket_);
-    
+
     auto pairSocket =
         network::zeromq::PairSocket::Factory(listenCallback, *pairSocket_);
 
@@ -64,7 +64,7 @@ void Test_PairSocket::pairSocketThread(const std::string& message)
     while (!callbackFinished && std::time(nullptr) < end) {
         Log::Sleep(std::chrono::milliseconds(100));
     }
-    
+
     ASSERT_TRUE(callbackFinished);
 }
 

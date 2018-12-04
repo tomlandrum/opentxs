@@ -978,7 +978,7 @@ bool Ledger::generate_ledger(
         }
 
         // Okay, it doesn't already exist. Let's generate it.
-        LogNormal(OT_METHOD)(__FUNCTION__)(": Generating ")(szFolder1name)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Generating ")(szFolder1name)(
             Log::PathSeparator())(szFolder2name)(Log::PathSeparator())(
             szFilename)(".")
             .Flush();

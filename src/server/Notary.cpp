@@ -5915,7 +5915,7 @@ void Notary::NotarizeTransaction(
                 // DEF. A copy will also remain in her outbox until canceled
                 // or accepted.
                 case transactionType::transfer:
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": Transfer").Flush();
+                    LogNormal("    Notarizing transfer").Flush();
                     NotarizeTransfer(
                         context,
                         theFromAccount,
@@ -5933,8 +5933,7 @@ void Notary::NotarizeTransaction(
                 // reject some of his inbox items and/or accept some into
                 // his account DEF.
                 case transactionType::processInbox:
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": Process Inbox")
-                        .Flush();
+                    LogNormal("    Notarizing process inbox").Flush();
                     NotarizeProcessInbox(
                         context,
                         theFromAccount,
@@ -5965,13 +5964,10 @@ void Notary::NotarizeTransaction(
 
                     if (false != bool(pItemCash)) {
                         theReplyItemType = itemType::atWithdrawal;
-                        LogNormal(OT_METHOD)(__FUNCTION__)(": Withdrawal "
-                                                           "(cash)")
-                            .Flush();
+                        LogNormal("    Notarizing withdrawal (cash)").Flush();
                     } else if (false != bool(pItemVoucher)) {
                         theReplyItemType = itemType::atWithdrawVoucher;
-                        LogNormal(OT_METHOD)(__FUNCTION__)(": Withdrawal "
-                                                           "(voucher)")
+                        LogNormal("    Notarizing withdrawal (voucher)")
                             .Flush();
                     }
                     NotarizeWithdrawal(
@@ -5990,7 +5986,7 @@ void Notary::NotarizeTransaction(
                 // request a signed cheque made out to Bob's user ID (or
                 // blank), --OR-- a purse full of tokens.
                 case transactionType::deposit:
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": Deposit").Flush();
+                    LogNormal("    Notarizing deposit").Flush();
                     NotarizeDeposit(
                         context,
                         theFromAccount,
@@ -6008,8 +6004,7 @@ void Notary::NotarizeTransaction(
                 // rate of $X per share, where X and $ are both
                 // configurable.
                 case transactionType::payDividend:
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": Pay Dividend")
-                        .Flush();
+                    LogNormal("    Notarizing pay dividend").Flush();
                     NotarizePayDividend(
                         context,
                         theFromAccount,
@@ -6027,8 +6022,7 @@ void Notary::NotarizeTransaction(
                 // signed trade listing the relevant information, instrument
                 // definitions and account IDs.
                 case transactionType::marketOffer:
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": Market Offer")
-                        .Flush();
+                    LogNormal("    Notarizing market offer").Flush();
                     NotarizeMarketOffer(
                         context, theFromAccount, tranIn, tranOut, bOutSuccess);
                     theReplyItemType = itemType::atMarketOffer;
@@ -6039,8 +6033,7 @@ void Notary::NotarizeTransaction(
                 // make regular payments to Alice. (BOTH Alice AND Bob must
                 // have signed the same contract.)
                 case transactionType::paymentPlan:
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": Payment Plan")
-                        .Flush();
+                    LogNormal("    Notarizing payment plan").Flush();
                     NotarizePaymentPlan(
                         context, theFromAccount, tranIn, tranOut, bOutSuccess);
                     theReplyItemType = itemType::atPaymentPlan;
@@ -6054,8 +6047,7 @@ void Notary::NotarizeTransaction(
                 // of whom have signed it, and have provided transaction #s
                 // for it.
                 case transactionType::smartContract: {
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": Smart Contract")
-                        .Flush();
+                    LogNormal("    Notarizing smart contract").Flush();
 
                     // For all transaction numbers used on cron items, we
                     // keep track of them in the GetSetOpenCronItems. This
@@ -6073,8 +6065,7 @@ void Notary::NotarizeTransaction(
                 // REGULARLY PROCESSING CONTRACT that he had previously
                 // created.
                 case transactionType::cancelCronItem: {
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": cancelCronItem")
-                        .Flush();
+                    LogNormal("    Notarizing cancelCronItem").Flush();
                     NotarizeCancelCronItem(
                         context, theFromAccount, tranIn, tranOut, bOutSuccess);
                     theReplyItemType = itemType::atCancelCronItem;
@@ -6088,8 +6079,7 @@ void Notary::NotarizeTransaction(
                 // basket account and his various sub-accounts for each
                 // member currency in the basket.)
                 case transactionType::exchangeBasket:
-                    LogNormal(OT_METHOD)(__FUNCTION__)(": Exchange Basket")
-                        .Flush();
+                    LogNormal("    Notarizing exchange basket").Flush();
                     NotarizeExchangeBasket(
                         context,
                         theFromAccount,
@@ -6223,7 +6213,7 @@ void Notary::NotarizeTransaction(
 // can't reject inbox receipts. Why not? Haven't coded it yet. So your items
 // on your processNymbox transaction can only accept things (notices, new
 // transaction numbers,
-void Notary::NotarizeProcessNymbox(
+bool Notary::NotarizeProcessNymbox(
     ClientContext& context,
     OTTransaction& tranIn,
     OTTransaction& tranOut,
@@ -6869,6 +6859,8 @@ void Notary::NotarizeProcessNymbox(
         const char* szFoldername = OTFolders::Receipt().Get();
         tranOut.SaveContract(szFoldername, strPath->Get());
     }
+
+    return bNymboxHashRegenerated;
 }
 
 /// The client may send multiple transactions in the ledger when he calls
@@ -8251,9 +8243,9 @@ void Notary::process_cash_deposit(
     auto strBalanceItem = String::Factory();
     const auto& NOTARY_ID = context.Server();
     const auto& NYM_ID = context.RemoteNym().ID();
-    const auto ACCOUNT_ID = Identifier::Factory(depositorAccount.get()),
-               INSTRUMENT_DEFINITION_ID =
-                   Identifier::Factory(depositorAccount.get());
+    const auto ACCOUNT_ID = Identifier::Factory(depositorAccount.get());
+    const auto& INSTRUMENT_DEFINITION_ID =
+        depositorAccount.get().GetInstrumentDefinitionID();
     const auto strNymID = String::Factory(NYM_ID),
                strAccountID = String::Factory(ACCOUNT_ID);
     ExclusiveAccount pMintCashReserveAcct{};
@@ -8673,7 +8665,13 @@ void Notary::send_push_notification(
     push.set_outboxhash(outboxHash->str());
     push.set_item(serializedItem->Get());
 
-    OT_ASSERT(proto::Validate(push, VERBOSE));
+    if (false == proto::Validate(push, VERBOSE)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Unable to send push notification.")
+            .Flush();
+
+        return;
+    }
 
     message->AddFrame(proto::ProtoAsString(push));
     notification_socket_->Push(message);

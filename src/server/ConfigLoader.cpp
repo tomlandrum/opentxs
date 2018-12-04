@@ -57,7 +57,7 @@ bool ConfigLoader::load(
             bIsNewKey);
         walletFilename.Set(strValue);
         {
-            LogNormal(OT_METHOD)(__FUNCTION__)(":Using Wallet: ")(strValue)(".")
+            LogDetail(OT_METHOD)(__FUNCTION__)(":Using Wallet: ")(strValue)(".")
                 .Flush();
         }
     }

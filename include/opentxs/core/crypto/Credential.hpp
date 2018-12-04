@@ -50,7 +50,8 @@ typedef std::shared_ptr<proto::Credential> serializedCredential;
 class Credential : public Signable
 {
 public:
-    static OTString CredentialTypeToString(proto::CredentialType credentialType);
+    static OTString CredentialTypeToString(
+        proto::CredentialType credentialType);
     static serializedCredential ExtractArmoredCredential(
         const String& stringCredential);
     static serializedCredential ExtractArmoredCredential(
@@ -73,22 +74,19 @@ public:
         credential.reset(new C(api, owner, nymParameters));
 
         if (!credential) {
-            LogOutput(": Failed to construct credential.")
-                  .Flush();
+            LogOutput(": Failed to construct credential.").Flush();
 
             return nullptr;
         }
 
         if (!credential->New(nymParameters)) {
-            LogOutput(": Failed to sign credential.")
-                  .Flush();
+            LogOutput(": Failed to sign credential.").Flush();
 
             return nullptr;
         }
 
         if (!credential->Save()) {
-            LogOutput(": Failed to save credential.")
-                  .Flush();
+            LogOutput(": Failed to save credential.").Flush();
 
             return nullptr;
         }

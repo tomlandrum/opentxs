@@ -63,17 +63,17 @@ private:
     std::unique_ptr<api::internal::Log> log_;
     std::unique_ptr<api::Crypto> crypto_;
     std::unique_ptr<api::Legacy> legacy_;
-    mutable std::vector<std::unique_ptr<api::client::internal::Manager>>
-        client_;
-    mutable std::vector<std::unique_ptr<api::server::Manager>> server_;
     std::unique_ptr<api::network::ZAP> zap_;
     const ArgList args_;
     mutable ShutdownCallback* shutdown_callback_{nullptr};
     std::unique_ptr<OTCallback> null_callback_{nullptr};
     std::unique_ptr<OTCaller> default_external_password_callback_{nullptr};
     OTCaller* external_password_callback_{nullptr};
-    std::unique_ptr<rpc::internal::RPC> rpc_;
     mutable std::unique_ptr<opentxs::PIDFile> pid_;
+    mutable std::vector<std::unique_ptr<api::server::Manager>> server_;
+    mutable std::vector<std::unique_ptr<api::client::internal::Manager>>
+        client_;
+    std::unique_ptr<rpc::internal::RPC> rpc_;
 
     static int client_instance(const int count);
     static int server_instance(const int count);

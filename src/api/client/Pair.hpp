@@ -65,6 +65,7 @@ private:
     mutable UniqueQueue<bool> update_;
     OTZMQPublishSocket pair_event_;
     OTZMQPublishSocket pending_bailment_;
+    mutable std::atomic<int> next_task_id_;
 
     void check_pairing() const;
     void check_refresh() const;

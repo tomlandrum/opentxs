@@ -223,14 +223,21 @@ bool NumList::Verify(const std::set<std::int64_t>& theNumbers) const
 ///
 bool NumList::Verify(const NumList& rhs) const
 {
-    // Verify they have the same number of elements.
-    //
-    if (Count() != rhs.Count()) return false;
+    if (Count() != rhs.Count()) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect count ")(rhs.Count())(
+            " should be ")(Count())
+            .Flush();
 
-    // Verify each value on *this is also found on rhs.
-    //
+        return false;
+    }
+
     for (auto& it : m_setData) {
-        if (!rhs.Verify(it)) return false;
+        if (false == rhs.Verify(it)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Number ")(it)(" missing")
+                .Flush();
+
+            return false;
+        }
     }
 
     return true;

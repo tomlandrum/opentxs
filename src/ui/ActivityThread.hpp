@@ -48,7 +48,7 @@ template <>
 struct make_blank<ActivityThreadRowID> {
     static ActivityThreadRowID value()
     {
-        return {Identifier::Factory(), {}, Identifier::Factory()};
+        return {Identifier::Factory(), {}, Identifier::Factory(), 0};
     }
 };
 

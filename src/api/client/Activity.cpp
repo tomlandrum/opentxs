@@ -687,10 +687,11 @@ void Activity::preload(
         return;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Decrypting message ")(id)(".")
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Decrypting message ")(id)(".")
         .Flush();
     auto peerObject = api_.Factory().PeerObject(nym, message->m_ascPayload);
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Message ")(id)(" decrypted.").Flush();
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Message ")(id)(" decrypted.")
+        .Flush();
 
     if (!peerObject) {
         LogOutput(OT_METHOD)(__FUNCTION__)(

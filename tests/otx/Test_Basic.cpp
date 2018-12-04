@@ -4,6 +4,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "opentxs/opentxs.hpp"
+#include "opentxs/core/contract/peer/PeerReply.hpp"
+#include "opentxs/core/contract/peer/PeerRequest.hpp"
+#include "api/client/InternalClient.hpp"
 #include "server/Server.hpp"
 #include "server/Transactor.hpp"
 
@@ -14,13 +17,12 @@ using namespace opentxs;
 #define CHEQUE_AMOUNT 144488
 #define TRANSFER_AMOUNT 1144888
 #define SECOND_TRANSFER_AMOUNT 500000
+#define CASH_AMOUNT 100
 #define CHEQUE_MEMO "cheque memo"
 #define TRANSFER_MEMO "transfer memo"
 #define FAILURE false
 #define INBOX_TYPE 1
 #define NYMBOX_TYPE 0
-#define NYMBOX_UPDATED true
-#define NYMBOX_SAME false
 #define NO_TRANSACTION false
 #define SUCCESS true
 #define TRANSACTION true
@@ -31,6 +33,19 @@ using namespace opentxs;
 #define UNIT_DEFINITION_TLA "USA"
 #define UNIT_DEFINITION_POWER 2
 #define UNIT_DEFINITION_FRACTIONAL_UNIT_NAME "cents"
+#define UNIT_DEFINITION_CONTRACT_NAME_2 "Mt Gox BTC"
+#define UNIT_DEFINITION_TERMS_2 "YOLO"
+#define UNIT_DEFINITION_PRIMARY_UNIT_NAME_2 "bitcoins"
+#define UNIT_DEFINITION_SYMBOL_2 "B"
+#define UNIT_DEFINITION_TLA_2 "BTC"
+#define UNIT_DEFINITION_POWER_2 8
+#define UNIT_DEFINITION_FRACTIONAL_UNIT_NAME_2 "satoshis"
+#define MESSAGE_TEXT "example message text"
+#define NEW_SERVER_NAME "Awesome McCoolName"
+#define MINT_TIME_LIMIT_MINUTES 5
+#define TEST_SEED                                                              \
+    "one two three four five six seven eight nine ten eleven twelve"
+#define TEST_SEED_PASSPHRASE "seed passphrase"
 
 namespace
 {
@@ -39,43 +54,111 @@ bool init_{false};
 class Test_Basic : public ::testing::Test
 {
 public:
+    using ProtoHasReply = std::function<bool(const proto::PeerReply&)>;
+    using ProtoHasRequest = std::function<bool(const proto::PeerRequest&)>;
+
+    struct matchID {
+        matchID(const std::string& id)
+            : id_{id}
+        {
+        }
+
+        bool operator()(const std::pair<std::string, std::string>& id)
+        {
+            return id.first == id_;
+        };
+
+        const std::string id_;
+    };
+
+    static opentxs::RequestNumber alice_counter_;
+    static opentxs::RequestNumber bob_counter_;
     static const opentxs::ArgList args_;
     static const std::string SeedA_;
     static const std::string SeedB_;
     static const std::string Alice_;
     static const std::string Bob_;
-    static const OTIdentifier alice_nym_id_;
-    static const OTIdentifier bob_nym_id_;
+    static const OTNymID alice_nym_id_;
+    static const OTNymID bob_nym_id_;
     static const std::shared_ptr<const ServerContract> server_contract_;
     static const std::shared_ptr<const UnitDefinition> asset_contract_1_;
+    static const std::shared_ptr<const UnitDefinition> asset_contract_2_;
     static TransactionNumber cheque_transaction_number_;
     static std::string bob_account_1_id_;
     static std::string bob_account_2_id_;
+    static std::string outgoing_cheque_workflow_id_;
+    static std::string incoming_cheque_workflow_id_;
     static std::string outgoing_transfer_workflow_id_;
     static std::string incoming_transfer_workflow_id_;
     static std::string internal_transfer_workflow_id_;
+    static std::unique_ptr<opentxs::api::client::internal::Operation>
+        alice_state_machine_;
+    static std::unique_ptr<opentxs::api::client::internal::Operation>
+        bob_state_machine_;
+    static std::shared_ptr<blind::Purse> untrusted_purse_;
 
     const opentxs::api::client::Manager& client_1_;
     const opentxs::api::client::Manager& client_2_;
-    const opentxs::api::server::Manager& server_;
-    const Identifier& server_id_;
+    const opentxs::api::server::Manager& server_1_;
+    const opentxs::api::server::Manager& server_2_;
+    const opentxs::identifier::Server& server_1_id_;
+    const opentxs::identifier::Server& server_2_id_;
+    const opentxs::ServerContext::ExtraArgs extra_args_;
 
     Test_Basic()
         : client_1_(OT::App().StartClient(args_, 0))
         , client_2_(OT::App().StartClient(args_, 1))
-        , server_(OT::App().StartServer(args_, 0, true))
-        , server_id_(server_.ID())
+        , server_1_(OT::App().StartServer(args_, 0, true))
+        , server_2_(OT::App().StartServer(args_, 1, true))
+        , server_1_id_(
+              dynamic_cast<const opentxs::identifier::Server&>(server_1_.ID()))
+        , server_2_id_(
+              dynamic_cast<const opentxs::identifier::Server&>(server_2_.ID()))
+        , extra_args_()
     {
         if (false == init_) { init(); }
+    }
+
+    static bool find_id(const std::string& id, const ObjectList& list)
+    {
+        matchID matchid(id);
+
+        return std::find_if(list.begin(), list.end(), matchid) != list.end();
+    }
+
+    static SendResult translate_result(const proto::LastReplyStatus status)
+    {
+        switch (status) {
+            case proto::LASTREPLYSTATUS_MESSAGESUCCESS:
+            case proto::LASTREPLYSTATUS_MESSAGEFAILED: {
+
+                return SendResult::VALID_REPLY;
+            }
+            case proto::LASTREPLYSTATUS_UNKNOWN: {
+
+                return SendResult::TIMEOUT;
+            }
+            case proto::LASTREPLYSTATUS_NOTSENT: {
+
+                return SendResult::UNNECESSARY;
+            }
+            case proto::LASTREPLYSTATUS_INVALID:
+            case proto::LASTREPLYSTATUS_NONE:
+            default: {
+
+                return SendResult::ERROR;
+            }
+        }
     }
 
     void break_consensus()
     {
         TransactionNumber newNumber{0};
-        server_.Server().GetTransactor().issueNextTransactionNumber(newNumber);
+        server_1_.Server().GetTransactor().issueNextTransactionNumber(
+            newNumber);
 
-        auto context = server_.Wallet().mutable_ClientContext(
-            server_.NymID(), alice_nym_id_);
+        auto context = server_1_.Wallet().mutable_ClientContext(
+            server_1_.NymID(), alice_nym_id_);
         context.It().IssueNumber(newNumber);
     }
 
@@ -88,13 +171,13 @@ public:
 
         OT_ASSERT(clientVersion)
 
-        client.Sync().SetIntroductionServer(*clientVersion);
+        client.OTX().SetIntroductionServer(*clientVersion);
     }
 
     void init()
     {
-        client_1_.Sync().DisableAutoaccept();
-        client_2_.Sync().DisableAutoaccept();
+        client_1_.OTX().DisableAutoaccept();
+        client_2_.OTX().DisableAutoaccept();
         const_cast<std::string&>(SeedA_) = client_1_.Exec().Wallet_ImportSeed(
             "spike nominee miss inquiry fee nothing belt list other "
             "daughter leave valley twelve gossip paper",
@@ -108,25 +191,37 @@ public:
             proto::CITEMTYPE_INDIVIDUAL, "Alice", SeedA_, 0);
         const_cast<std::string&>(Bob_) = client_2_.Exec().CreateNymHD(
             proto::CITEMTYPE_INDIVIDUAL, "Bob", SeedB_, 0);
-        const_cast<OTIdentifier&>(alice_nym_id_) = Identifier::Factory(Alice_);
-        const_cast<OTIdentifier&>(bob_nym_id_) = Identifier::Factory(Bob_);
+        const_cast<OTNymID&>(alice_nym_id_) = identifier::Nym::Factory(Alice_);
+        const_cast<OTNymID&>(bob_nym_id_) = identifier::Nym::Factory(Bob_);
         const_cast<std::shared_ptr<const ServerContract>&>(server_contract_) =
-            server_.Wallet().Server(server_id_);
+            server_1_.Wallet().Server(server_1_id_);
 
         OT_ASSERT(server_contract_);
-        OT_ASSERT(false == server_id_.empty());
+        OT_ASSERT(false == server_1_id_.empty());
 
         import_server_contract(*server_contract_, client_1_);
         import_server_contract(*server_contract_, client_2_);
 
 #if OT_CASH
-        server_.SetMintKeySize(OT_MINT_KEY_SIZE_TEST);
+        server_1_.SetMintKeySize(OT_MINT_KEY_SIZE_TEST);
+        server_2_.SetMintKeySize(OT_MINT_KEY_SIZE_TEST);
 #endif
+        alice_state_machine_.reset(opentxs::Factory::Operation(
+            client_1_, alice_nym_id_, server_1_id_));
 
+        OT_ASSERT(alice_state_machine_);
+
+        alice_state_machine_->SetPush(false);
+        bob_state_machine_.reset(
+            opentxs::Factory::Operation(client_2_, bob_nym_id_, server_1_id_));
+
+        OT_ASSERT(bob_state_machine_);
+
+        bob_state_machine_->SetPush(false);
         init_ = true;
     }
 
-    void create_unit_definition()
+    void create_unit_definition_1()
     {
         const_cast<std::shared_ptr<const UnitDefinition>&>(asset_contract_1_) =
             client_1_.Wallet().UnitDefinition(
@@ -143,6 +238,23 @@ public:
         EXPECT_EQ(proto::UNITTYPE_CURRENCY, asset_contract_1_->Type());
     }
 
+    void create_unit_definition_2()
+    {
+        const_cast<std::shared_ptr<const UnitDefinition>&>(asset_contract_2_) =
+            client_2_.Wallet().UnitDefinition(
+                bob_nym_id_->str(),
+                UNIT_DEFINITION_CONTRACT_NAME_2,
+                UNIT_DEFINITION_TERMS_2,
+                UNIT_DEFINITION_PRIMARY_UNIT_NAME_2,
+                UNIT_DEFINITION_SYMBOL_2,
+                UNIT_DEFINITION_TLA_2,
+                UNIT_DEFINITION_POWER_2,
+                UNIT_DEFINITION_FRACTIONAL_UNIT_NAME_2);
+
+        ASSERT_TRUE(asset_contract_2_);
+        EXPECT_EQ(proto::UNITTYPE_CURRENCY, asset_contract_2_->Type());
+    }
+
     OTIdentifier find_issuer_account()
     {
         const auto accounts =
@@ -153,7 +265,7 @@ public:
         return *accounts.begin();
     }
 
-    OTIdentifier find_unit_definition_id()
+    OTUnitID find_unit_definition_id_1()
     {
         const auto accountID = find_issuer_account();
 
@@ -163,7 +275,17 @@ public:
 
         OT_ASSERT(false == output->empty());
 
-        return output;
+        // TODO unit id type
+        return identifier::UnitDefinition::Factory(output->str());
+    }
+
+    OTUnitID find_unit_definition_id_2()
+    {
+        OT_ASSERT(asset_contract_2_);
+
+        // TODO unit id type
+        return identifier::UnitDefinition::Factory(
+            asset_contract_2_->ID()->str());
     }
 
     OTIdentifier find_user_account()
@@ -174,6 +296,386 @@ public:
     OTIdentifier find_second_user_account()
     {
         return Identifier::Factory(bob_account_2_id_);
+    }
+
+    void receive_reply(
+        const std::shared_ptr<const PeerReply>& peerreply,
+        const std::shared_ptr<const PeerRequest>& peerrequest,
+        ProtoHasReply protohasreply,
+        ProtoHasRequest protohasrequest,
+        proto::PeerRequestType prototype)
+    {
+        const RequestNumber sequence = alice_counter_;
+        const RequestNumber messages{4};
+        alice_counter_ += messages;
+        auto serverContext = client_1_.Wallet().mutable_ServerContext(
+            alice_nym_id_, server_1_id_);
+        auto& context = serverContext.It();
+        auto clientContext =
+            server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+        ASSERT_TRUE(clientContext);
+
+        verify_state_pre(*clientContext, context, sequence);
+        auto queue = context.RefreshNymbox(client_1_);
+
+        ASSERT_TRUE(queue);
+
+        const auto finished = queue->get();
+        context.Join();
+        context.ResetThread();
+        const auto& [status, message] = finished;
+
+        EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+        ASSERT_TRUE(message);
+
+        const RequestNumber requestNumber =
+            String::StringToUlong(message->m_strRequestNum->Get());
+        const auto result = translate_result(std::get<0>(finished));
+        verify_state_post(
+            client_1_,
+            *clientContext,
+            context,
+            sequence,
+            alice_counter_,
+            requestNumber,
+            result,
+            message,
+            SUCCESS,
+            0,
+            alice_counter_);
+
+        // Verify reply was received. 6
+        const auto incomingreplies =
+            client_1_.Wallet().PeerReplyIncoming(alice_nym_id_);
+
+        ASSERT_FALSE(incomingreplies.empty());
+
+        const auto incomingID = peerreply->ID()->str();
+        const auto foundincomingreply = find_id(incomingID, incomingreplies);
+
+        ASSERT_TRUE(foundincomingreply);
+
+        const auto incomingreply = client_1_.Wallet().PeerReply(
+            alice_nym_id_, peerreply->ID(), StorageBox::INCOMINGPEERREPLY);
+
+        ASSERT_TRUE(incomingreply);
+        EXPECT_STREQ(
+            incomingreply->initiator().c_str(), alice_nym_id_->str().c_str());
+        EXPECT_STREQ(
+            incomingreply->recipient().c_str(), bob_nym_id_->str().c_str());
+        EXPECT_EQ(incomingreply->type(), prototype);
+        EXPECT_STREQ(
+            incomingreply->server().c_str(), server_1_id_.str().c_str());
+        EXPECT_TRUE(protohasreply(*incomingreply));
+
+        // Verify request is finished. 7
+        const auto finishedrequests =
+            client_1_.Wallet().PeerRequestFinished(alice_nym_id_);
+
+        ASSERT_FALSE(finishedrequests.empty());
+
+        const auto finishedrequestID = peerrequest->ID()->str();
+        const auto foundfinishedrequest =
+            find_id(finishedrequestID, finishedrequests);
+
+        ASSERT_TRUE(foundfinishedrequest);
+
+        std::time_t notused;
+        const auto finishedrequest = client_1_.Wallet().PeerRequest(
+            alice_nym_id_,
+            peerrequest->ID(),
+            StorageBox::FINISHEDPEERREQUEST,
+            notused);
+
+        ASSERT_TRUE(finishedrequest);
+        EXPECT_STREQ(
+            finishedrequest->initiator().c_str(), alice_nym_id_->str().c_str());
+        EXPECT_STREQ(
+            finishedrequest->recipient().c_str(), bob_nym_id_->str().c_str());
+        EXPECT_EQ(finishedrequest->type(), prototype);
+        EXPECT_TRUE(protohasrequest(*finishedrequest));
+
+        auto complete = client_1_.Wallet().PeerRequestComplete(
+            alice_nym_id_, peerreply->ID());
+
+        ASSERT_TRUE(complete);
+
+        // Verify reply was processed. 8
+        const auto processedreplies =
+            client_1_.Wallet().PeerReplyProcessed(alice_nym_id_);
+
+        ASSERT_FALSE(processedreplies.empty());
+
+        const auto processedreplyID = peerreply->ID()->str();
+        const auto foundprocessedreply =
+            find_id(processedreplyID, processedreplies);
+
+        ASSERT_TRUE(foundprocessedreply);
+
+        const auto processedreply = client_1_.Wallet().PeerReply(
+            alice_nym_id_, peerreply->ID(), StorageBox::PROCESSEDPEERREPLY);
+
+        ASSERT_TRUE(processedreply);
+    }
+
+    void receive_request(
+        const std::shared_ptr<PeerRequest>& peerrequest,
+        ProtoHasRequest protohasrequest,
+        proto::PeerRequestType prototype)
+    {
+        const RequestNumber sequence = bob_counter_;
+        const RequestNumber messages{4};
+        bob_counter_ += messages;
+        auto serverContext =
+            client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+        auto& context = serverContext.It();
+        auto clientContext =
+            server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+        ASSERT_TRUE(clientContext);
+
+        verify_state_pre(*clientContext, context, sequence);
+        auto queue = context.RefreshNymbox(client_2_);
+
+        ASSERT_TRUE(queue);
+
+        const auto finished = queue->get();
+        context.Join();
+        context.ResetThread();
+        const auto& [status, message] = finished;
+
+        EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+        ASSERT_TRUE(message);
+
+        const RequestNumber requestNumber =
+            String::StringToUlong(message->m_strRequestNum->Get());
+        const auto result = translate_result(std::get<0>(finished));
+        verify_state_post(
+            client_2_,
+            *clientContext,
+            context,
+            sequence,
+            bob_counter_,
+            requestNumber,
+            result,
+            message,
+            SUCCESS,
+            0,
+            bob_counter_);
+
+        // Verify request was received. 2
+        const auto incomingrequests =
+            client_2_.Wallet().PeerRequestIncoming(bob_nym_id_);
+
+        ASSERT_FALSE(incomingrequests.empty());
+
+        const auto incomingID = peerrequest->ID()->str();
+        const auto found = find_id(incomingID, incomingrequests);
+
+        ASSERT_TRUE(found);
+
+        std::time_t notused;
+        const auto incomingrequest = client_2_.Wallet().PeerRequest(
+            bob_nym_id_,
+            peerrequest->ID(),
+            StorageBox::INCOMINGPEERREQUEST,
+            notused);
+
+        ASSERT_TRUE(incomingrequest);
+        EXPECT_STREQ(
+            incomingrequest->initiator().c_str(), alice_nym_id_->str().c_str());
+        EXPECT_STREQ(
+            incomingrequest->recipient().c_str(), bob_nym_id_->str().c_str());
+        EXPECT_EQ(incomingrequest->type(), prototype);
+        EXPECT_TRUE(protohasrequest(*incomingrequest));
+    }
+
+    void send_peer_reply(
+        const std::shared_ptr<const PeerReply>& peerreply,
+        const std::shared_ptr<const PeerRequest>& peerrequest,
+        ProtoHasReply protohasreply,
+        proto::PeerRequestType prototype)
+    {
+        const RequestNumber sequence = bob_counter_;
+        const RequestNumber messages{1};
+        bob_counter_ += messages;
+
+        auto serverContext =
+            client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+        auto& context = serverContext.It();
+        auto clientContext =
+            server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+        ASSERT_TRUE(clientContext);
+
+        verify_state_pre(*clientContext, serverContext.It(), sequence);
+        auto& stateMachine = *bob_state_machine_;
+        auto started =
+            stateMachine.SendPeerReply(alice_nym_id_, peerreply, peerrequest);
+
+        ASSERT_TRUE(started);
+
+        const auto finished = stateMachine.GetFuture().get();
+        stateMachine.join();
+        context.Join();
+        context.ResetThread();
+        const auto& message = std::get<1>(finished);
+
+        ASSERT_TRUE(message);
+
+        const RequestNumber requestNumber =
+            String::StringToUlong(message->m_strRequestNum->Get());
+        const auto result = translate_result(std::get<0>(finished));
+        verify_state_post(
+            client_2_,
+            *clientContext,
+            serverContext.It(),
+            sequence,
+            bob_counter_,
+            requestNumber,
+            result,
+            message,
+            SUCCESS,
+            0,
+            bob_counter_);
+
+        // Verify reply was sent. 3
+        const auto sentreplies = client_2_.Wallet().PeerReplySent(bob_nym_id_);
+
+        ASSERT_FALSE(sentreplies.empty());
+
+        const auto sentID = peerreply->ID()->str();
+        const auto foundsentreply = find_id(sentID, sentreplies);
+
+        ASSERT_TRUE(foundsentreply);
+
+        const auto sentreply = client_2_.Wallet().PeerReply(
+            bob_nym_id_, peerreply->ID(), StorageBox::SENTPEERREPLY);
+
+        ASSERT_TRUE(sentreply);
+        EXPECT_STREQ(
+            sentreply->initiator().c_str(), alice_nym_id_->str().c_str());
+        EXPECT_STREQ(
+            sentreply->recipient().c_str(), bob_nym_id_->str().c_str());
+        EXPECT_EQ(sentreply->type(), prototype);
+        EXPECT_STREQ(sentreply->server().c_str(), server_1_id_.str().c_str());
+        EXPECT_TRUE(protohasreply(*sentreply));
+
+        // Verify request was processed. 4
+        const auto processedrequests =
+            client_2_.Wallet().PeerRequestProcessed(bob_nym_id_);
+
+        ASSERT_FALSE(processedrequests.empty());
+
+        const auto processedID = peerrequest->ID()->str();
+        const auto foundrequest = find_id(processedID, processedrequests);
+
+        ASSERT_TRUE(foundrequest);
+
+        std::time_t notused;
+        const auto processedrequest = client_2_.Wallet().PeerRequest(
+            bob_nym_id_,
+            peerrequest->ID(),
+            StorageBox::PROCESSEDPEERREQUEST,
+            notused);
+
+        ASSERT_TRUE(processedrequest);
+
+        auto complete =
+            client_2_.Wallet().PeerReplyComplete(bob_nym_id_, peerreply->ID());
+
+        ASSERT_TRUE(complete);
+
+        // Verify reply is finished. 5
+        const auto finishedreplies =
+            client_2_.Wallet().PeerReplyFinished(bob_nym_id_);
+
+        ASSERT_FALSE(finishedreplies.empty());
+
+        const auto finishedID = peerreply->ID()->str();
+        const auto foundfinishedreply = find_id(finishedID, finishedreplies);
+
+        ASSERT_TRUE(foundfinishedreply);
+
+        const auto finishedreply = client_2_.Wallet().PeerReply(
+            bob_nym_id_, peerreply->ID(), StorageBox::FINISHEDPEERREPLY);
+
+        ASSERT_TRUE(finishedreply);
+    }
+
+    void send_peer_request(
+        const std::shared_ptr<PeerRequest>& peerrequest,
+        ProtoHasRequest protohasrequest,
+        proto::PeerRequestType prototype)
+    {
+        const RequestNumber sequence = alice_counter_;
+        const RequestNumber messages{1};
+        alice_counter_ += messages;
+
+        auto serverContext = client_1_.Wallet().mutable_ServerContext(
+            alice_nym_id_, server_1_id_);
+        auto& context = serverContext.It();
+        auto clientContext =
+            server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+        ASSERT_TRUE(clientContext);
+
+        verify_state_pre(*clientContext, serverContext.It(), sequence);
+        auto& stateMachine = *alice_state_machine_;
+        auto started = stateMachine.SendPeerRequest(bob_nym_id_, peerrequest);
+
+        ASSERT_TRUE(started);
+
+        const auto finished = stateMachine.GetFuture().get();
+        stateMachine.join();
+        context.Join();
+        context.ResetThread();
+        const auto& message = std::get<1>(finished);
+
+        ASSERT_TRUE(message);
+
+        const RequestNumber requestNumber =
+            String::StringToUlong(message->m_strRequestNum->Get());
+        const auto result = translate_result(std::get<0>(finished));
+        verify_state_post(
+            client_1_,
+            *clientContext,
+            serverContext.It(),
+            sequence,
+            alice_counter_,
+            requestNumber,
+            result,
+            message,
+            SUCCESS,
+            0,
+            alice_counter_);
+
+        // Verify request was sent. 1
+        const auto sentrequests =
+            client_1_.Wallet().PeerRequestSent(alice_nym_id_);
+
+        ASSERT_FALSE(sentrequests.empty());
+
+        const auto sentID = peerrequest->ID()->str();
+        const auto found = find_id(sentID, sentrequests);
+
+        ASSERT_TRUE(found);
+
+        std::time_t notused;
+        const auto sentrequest = client_1_.Wallet().PeerRequest(
+            alice_nym_id_,
+            peerrequest->ID(),
+            StorageBox::SENTPEERREQUEST,
+            notused);
+
+        ASSERT_TRUE(sentrequest);
+        EXPECT_STREQ(
+            sentrequest->initiator().c_str(), alice_nym_id_->str().c_str());
+        EXPECT_STREQ(
+            sentrequest->recipient().c_str(), bob_nym_id_->str().c_str());
+        EXPECT_EQ(sentrequest->type(), prototype);
+        EXPECT_TRUE(protohasrequest(*sentrequest));
     }
 
     void verify_account(
@@ -222,46 +724,27 @@ public:
         const ClientContext& clientContext,
         const ServerContext& serverContext,
         const RequestNumber initialRequestNumber,
+        const RequestNumber finalRequestNumber,
         const RequestNumber messageRequestNumber,
-        const TransactionNumber messageTransactionNumber,
         const SendResult messageResult,
         const std::shared_ptr<Message>& message,
         const bool messageSuccess,
-        const bool nymboxHashUpdated,
-        const bool usesTransaction,
-        const std::size_t expectedNymboxItems)
+        const std::size_t expectedNymboxItems,
+        opentxs::RequestNumber& counter)
     {
-        const auto nextRequestNumber = initialRequestNumber + 1;
-
         EXPECT_EQ(messageRequestNumber, initialRequestNumber);
-        EXPECT_EQ(serverContext.Request(), nextRequestNumber);
-        EXPECT_EQ(clientContext.Request(), nextRequestNumber);
+        EXPECT_EQ(serverContext.Request(), finalRequestNumber);
+        EXPECT_EQ(clientContext.Request(), finalRequestNumber);
         EXPECT_EQ(
             serverContext.RemoteNymboxHash(), clientContext.LocalNymboxHash());
-
-        if (nymboxHashUpdated) {
-            EXPECT_NE(
-                serverContext.LocalNymboxHash(),
-                serverContext.RemoteNymboxHash());
-        } else {
-            EXPECT_EQ(
-                serverContext.LocalNymboxHash(),
-                serverContext.RemoteNymboxHash());
-        }
-
-        if (usesTransaction) {
-            // TODO
-        } else {
-            EXPECT_EQ(0, messageTransactionNumber);
-        }
-
+        EXPECT_EQ(
+            serverContext.LocalNymboxHash(), serverContext.RemoteNymboxHash());
         EXPECT_EQ(SendResult::VALID_REPLY, messageResult);
         ASSERT_TRUE(message);
-
         EXPECT_EQ(messageSuccess, message->m_bSuccess);
 
         std::unique_ptr<Ledger> nymbox{
-            client.OTAPI().LoadNymbox(server_id_, serverContext.Nym()->ID())};
+            client.OTAPI().LoadNymbox(server_1_id_, serverContext.Nym()->ID())};
 
         ASSERT_TRUE(nymbox);
         EXPECT_TRUE(nymbox->VerifyAccount(*serverContext.Nym()));
@@ -269,34 +752,49 @@ public:
         const auto& transactionMap = nymbox->GetTransactionMap();
 
         EXPECT_EQ(expectedNymboxItems, transactionMap.size());
+
+        counter = serverContext.Request();
+
+        EXPECT_FALSE(serverContext.StaleNym());
     }
 };
 
+opentxs::RequestNumber Test_Basic::alice_counter_{0};
+opentxs::RequestNumber Test_Basic::bob_counter_{0};
 const opentxs::ArgList Test_Basic::args_{
     {{OPENTXS_ARG_STORAGE_PLUGIN, {"mem"}}}};
 const std::string Test_Basic::SeedA_{""};
 const std::string Test_Basic::SeedB_{""};
 const std::string Test_Basic::Alice_{""};
 const std::string Test_Basic::Bob_{""};
-const OTIdentifier Test_Basic::alice_nym_id_{Identifier::Factory()};
-const OTIdentifier Test_Basic::bob_nym_id_{Identifier::Factory()};
+const OTNymID Test_Basic::alice_nym_id_{identifier::Nym::Factory()};
+const OTNymID Test_Basic::bob_nym_id_{identifier::Nym::Factory()};
 const std::shared_ptr<const ServerContract> Test_Basic::server_contract_{
     nullptr};
 const std::shared_ptr<const UnitDefinition> Test_Basic::asset_contract_1_{
     nullptr};
+const std::shared_ptr<const UnitDefinition> Test_Basic::asset_contract_2_{
+    nullptr};
 TransactionNumber Test_Basic::cheque_transaction_number_{0};
 std::string Test_Basic::bob_account_1_id_{""};
 std::string Test_Basic::bob_account_2_id_{""};
+std::string Test_Basic::outgoing_cheque_workflow_id_{};
+std::string Test_Basic::incoming_cheque_workflow_id_{};
 std::string Test_Basic::outgoing_transfer_workflow_id_{};
 std::string Test_Basic::incoming_transfer_workflow_id_{};
 std::string Test_Basic::internal_transfer_workflow_id_{};
+std::unique_ptr<opentxs::api::client::internal::Operation>
+    Test_Basic::alice_state_machine_{nullptr};
+std::unique_ptr<opentxs::api::client::internal::Operation>
+    Test_Basic::bob_state_machine_{nullptr};
+std::shared_ptr<blind::Purse> Test_Basic::untrusted_purse_{};
 
 TEST_F(Test_Basic, getRequestNumber_not_registered)
 {
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     EXPECT_EQ(serverContext.It().Request(), 0);
     EXPECT_FALSE(clientContext);
@@ -307,377 +805,221 @@ TEST_F(Test_Basic, getRequestNumber_not_registered)
     EXPECT_EQ(serverContext.It().Request(), 0);
 
     clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     EXPECT_FALSE(clientContext);
 }
 
 TEST_F(Test_Basic, registerNym_first_time)
 {
-    const RequestNumber sequence{0};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{2};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     EXPECT_EQ(serverContext.It().Request(), sequence);
     EXPECT_FALSE(clientContext);
 
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().registerNym(serverContext.It());
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::RegisterNym, extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+        0,
+        alice_counter_);
 }
 
-TEST_F(Test_Basic, getTransactionNumbers_first_time)
+TEST_F(Test_Basic, getTransactionNumbers_Alice)
 {
-    const RequestNumber sequence{1};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{5};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
+    EXPECT_EQ(context.IssuedNumbers().size(), 0);
+    EXPECT_EQ(clientContext->IssuedNumbers().size(), 0);
 
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getTransactionNumbers(serverContext.It());
-    const auto& [result, message] = reply;
+    verify_state_pre(*clientContext, context, sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::GetTransactionNumbers,
+        extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
-        serverContext.It(),
+        context,
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
+        1,
+        alice_counter_);
+    const auto numbers = context.IssuedNumbers();
+
+    EXPECT_EQ(numbers.size(), 100);
+
+    for (const auto& number : numbers) {
+        EXPECT_TRUE(clientContext->VerifyIssuedNumber(number));
+    }
 }
 
 TEST_F(Test_Basic, Reregister)
 {
-    const RequestNumber sequence{2};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{5};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().registerNym(serverContext.It());
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::RegisterNym, extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,  // TODO Maybe OTClient should have updated local nymbox
-                         // hash
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, getNymbox_after_transaction_numbers)
-{
-    const RequestNumber sequence{3};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-    std::unique_ptr<Ledger> nymbox{client_1_.OTAPI().LoadNymbox(
-        serverContext.It().Server(), serverContext.It().Nym()->ID())};
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_TRUE(transaction.IsAbbreviated());
-    EXPECT_EQ(transactionType::blank, transaction.GetType());
-    EXPECT_FALSE(nymbox->LoadBoxReceipt(number));
-}
-
-TEST_F(Test_Basic, getBoxReceipt_transaction_numbers)
-{
-    const RequestNumber sequence{4};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-    const auto& nymID = serverContext.It().Nym()->ID();
-    const auto& serverID = serverContext.It().Server();
-
-    ASSERT_TRUE(clientContext);
-
-    std::unique_ptr<Ledger> nymbox{
-        client_1_.OTAPI().LoadNymbox(serverID, nymID)};
-
-    ASSERT_TRUE(nymbox);
-
-    TransactionNumber number{0};
-
-    {
-        const auto& transactionMap = nymbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-        nymbox.reset();
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getBoxReceipt(
-            serverContext.It(), nymID, NYMBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-    nymbox.reset(client_1_.OTAPI().LoadNymbox(serverID, nymID).release());
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
-}
-
-TEST_F(Test_Basic, processNymbox)
-{
-    const RequestNumber sequence{5};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().processNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, getNymbox_after_processNymbox)
-{
-    const RequestNumber sequence{6};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-
-    std::unique_ptr<Ledger> nymbox{client_1_.OTAPI().LoadNymbox(
-        serverContext.It().Server(), serverContext.It().Nym()->ID())};
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_TRUE(transaction.IsAbbreviated());
-    EXPECT_EQ(transactionType::successNotice, transaction.GetType());
-    EXPECT_FALSE(nymbox->LoadBoxReceipt(number));
-}
-
-TEST_F(Test_Basic, getBoxReceipt_success_notice)
-{
-    const RequestNumber sequence{7};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-    const auto& nymID = serverContext.It().Nym()->ID();
-    const auto& serverID = serverContext.It().Server();
-
-    ASSERT_TRUE(clientContext);
-
-    std::unique_ptr<Ledger> nymbox{
-        client_1_.OTAPI().LoadNymbox(serverID, nymID)};
-
-    ASSERT_TRUE(nymbox);
-
-    TransactionNumber number{0};
-
-    {
-        const auto& transactionMap = nymbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-        nymbox.reset();
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getBoxReceipt(
-            serverContext.It(), nymID, NYMBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-
-    nymbox.reset(client_1_.OTAPI().LoadNymbox(serverID, nymID).release());
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
+        0,
+        alice_counter_);
 }
 
 TEST_F(Test_Basic, issueAsset)
 {
-    const RequestNumber sequence{8};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{3};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
-    create_unit_definition();
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().registerInstrumentDefinition(
-            serverContext.It(), asset_contract_1_->PublicContract(), "");
-    const auto& [result, message] = reply;
+    create_unit_definition_1();
+
+    ASSERT_TRUE(asset_contract_1_);
+
+    verify_state_pre(*clientContext, context, sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto serialized = std::make_shared<proto::UnitDefinition>();
+
+    ASSERT_TRUE(serialized);
+
+    *serialized = asset_contract_1_->PublicContract();
+    auto started = stateMachine.IssueUnitDefinition(serialized, extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
-        serverContext.It(),
+        context,
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        1);
+        0,
+        alice_counter_);
     const auto accountID = Identifier::Factory(message->m_strAcctID);
 
     ASSERT_FALSE(accountID->empty());
 
     const auto clientAccount = client_1_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
@@ -689,655 +1031,627 @@ TEST_F(Test_Basic, issueAsset)
         serverAccount);
 }
 
-TEST_F(Test_Basic, getAccountData_after_issuer_account)
+TEST_F(Test_Basic, checkNym_missing)
 {
-    const RequestNumber sequence{9};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
-    const auto accountID = find_issuer_account();
-
-    ASSERT_FALSE(accountID->empty());
-
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::CheckNym,
+        bob_nym_id_,
+        extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        1);
+        0,
+        alice_counter_);
 
-    const auto clientAccount = client_1_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
+    EXPECT_FALSE(message->m_bBool);
+    EXPECT_TRUE(message->m_ascPayload->empty());
 }
 
-TEST_F(Test_Basic, getNymbox_after_registerInstrumentDefinition)
+TEST_F(Test_Basic, publishNym)
 {
-    const RequestNumber sequence{10};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto nym = client_2_.Wallet().Nym(bob_nym_id_);
+
+    ASSERT_TRUE(nym);
+
+    client_1_.Wallet().Nym(nym->asPublicNym());
+    auto started = stateMachine.PublishContract(bob_nym_id_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-}
-
-TEST_F(Test_Basic, processNymbox_after_registerInstrumentDefinition)
-{
-    const RequestNumber sequence{11};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().processNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, registerNym_Bob)
-{
-    const RequestNumber sequence{0};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    EXPECT_EQ(serverContext.It().Request(), sequence);
-    EXPECT_FALSE(clientContext);
-
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().registerNym(serverContext.It());
-    const auto& [result, message] = reply;
-    clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, getInstrumentDefinition)
-{
-    const RequestNumber sequence{1};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getInstrumentDefinition(
-            serverContext.It(), find_unit_definition_id());
-    const auto& [result, message] = reply;
-    clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, registerAccount)
-{
-    const RequestNumber sequence{2};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().registerAccount(
-            serverContext.It(), find_unit_definition_id(), "");
-    const auto& [result, message] = reply;
-    clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-    const auto accountID = Identifier::Factory(message->m_strAcctID);
-
-    ASSERT_FALSE(accountID->empty());
-
-    bob_account_1_id_ = accountID->str();
-    const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-}
-
-TEST_F(Test_Basic, getNymbox_after_registerAccount)
-{
-    const RequestNumber sequence{3};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, getTransactionNumbers_Bob)
-{
-    const RequestNumber sequence{4};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getTransactionNumbers(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, getNymbox_after_transaction_numbers_Bob)
-{
-    const RequestNumber sequence{5};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-    std::unique_ptr<Ledger> nymbox{client_2_.OTAPI().LoadNymbox(
-        serverContext.It().Server(), serverContext.It().Nym()->ID())};
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_TRUE(transaction.IsAbbreviated());
-    EXPECT_EQ(transactionType::blank, transaction.GetType());
-    EXPECT_FALSE(nymbox->LoadBoxReceipt(number));
-}
-
-TEST_F(Test_Basic, getBoxReceipt_transaction_numbers_bob)
-{
-    const RequestNumber sequence{6};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-    const auto& nymID = serverContext.It().Nym()->ID();
-    const auto& serverID = serverContext.It().Server();
-
-    ASSERT_TRUE(clientContext);
-
-    std::unique_ptr<Ledger> nymbox{
-        client_2_.OTAPI().LoadNymbox(serverID, nymID)};
-
-    ASSERT_TRUE(nymbox);
-
-    TransactionNumber number{0};
-
-    {
-        const auto& transactionMap = nymbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-        nymbox.reset();
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getBoxReceipt(
-            serverContext.It(), nymID, NYMBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-    nymbox.reset(client_2_.OTAPI().LoadNymbox(serverID, nymID).release());
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
-}
-
-TEST_F(Test_Basic, processNymbox_bob)
-{
-    const RequestNumber sequence{7};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().processNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, getAccountData_after_user_account)
-{
-    const RequestNumber sequence{8};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_user_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-
-    const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-}
-
-TEST_F(Test_Basic, getNymbox_after_processNymbox_Bob)
-{
-    const RequestNumber sequence{9};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-
-    std::unique_ptr<Ledger> nymbox{client_2_.OTAPI().LoadNymbox(
-        serverContext.It().Server(), serverContext.It().Nym()->ID())};
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_TRUE(transaction.IsAbbreviated());
-    EXPECT_EQ(transactionType::successNotice, transaction.GetType());
-    EXPECT_FALSE(nymbox->LoadBoxReceipt(number));
-}
-
-TEST_F(Test_Basic, getBoxReceipt_success_notice_Bob)
-{
-    const RequestNumber sequence{10};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-    const auto& nymID = serverContext.It().Nym()->ID();
-    const auto& serverID = serverContext.It().Server();
-
-    ASSERT_TRUE(clientContext);
-
-    std::unique_ptr<Ledger> nymbox{
-        client_2_.OTAPI().LoadNymbox(serverID, nymID)};
-
-    ASSERT_TRUE(nymbox);
-
-    TransactionNumber number{0};
-
-    {
-        const auto& transactionMap = nymbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-        nymbox.reset();
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getBoxReceipt(
-            serverContext.It(), nymID, NYMBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-
-    nymbox.reset(client_2_.OTAPI().LoadNymbox(serverID, nymID).release());
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
-}
-
-TEST_F(Test_Basic, processNymbox_after_accept_transaction_numbers_bob)
-{
-    const RequestNumber sequence{11};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().processNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, getNymbox_after_clearing_nymbox_1_Bob)
-{
-    const RequestNumber sequence{12};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+        0,
+        alice_counter_);
 }
 
 TEST_F(Test_Basic, checkNym)
 {
-    const RequestNumber sequence{12};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().checkNym(serverContext.It(), bob_nym_id_);
-    const auto& [result, message] = reply;
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::CheckNym,
+        bob_nym_id_,
+        extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
+        0,
+        alice_counter_);
+
+    EXPECT_TRUE(message->m_bBool);
+    EXPECT_FALSE(message->m_ascPayload->empty());
+}
+
+TEST_F(Test_Basic, downloadServerContract_missing)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started =
+        stateMachine.DownloadContract(server_2_id_, ContractType::SERVER);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_FALSE(message->m_bBool);
+    EXPECT_TRUE(message->m_ascPayload->empty());
+}
+
+TEST_F(Test_Basic, publishServer)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto server = server_2_.Wallet().Server(server_2_id_);
+
+    ASSERT_TRUE(server);
+
+    client_1_.Wallet().Server(server->PublicContract());
+    auto started = stateMachine.PublishContract(server_2_id_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+}
+
+TEST_F(Test_Basic, downloadServerContract)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started =
+        stateMachine.DownloadContract(server_2_id_, ContractType::SERVER);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_TRUE(message->m_bBool);
+    EXPECT_FALSE(message->m_ascPayload->empty());
+}
+
+TEST_F(Test_Basic, registerNym_Bob)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{2};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    EXPECT_EQ(serverContext.It().Request(), sequence);
+    EXPECT_FALSE(clientContext);
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::RegisterNym, extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+}
+
+TEST_F(Test_Basic, getInstrumentDefinition_missing)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{1};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    create_unit_definition_2();
+
+    ASSERT_TRUE(asset_contract_2_);
+
+    verify_state_pre(*clientContext, context, sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.DownloadContract(
+        find_unit_definition_id_2(), ContractType::UNIT);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        context,
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+
+    EXPECT_FALSE(message->m_bBool);
+    EXPECT_TRUE(message->m_ascPayload->empty());
+}
+
+TEST_F(Test_Basic, publishUnitDefinition)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{1};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.PublishContract(find_unit_definition_id_2());
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+}
+
+TEST_F(Test_Basic, getInstrumentDefinition_Alice)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, context, sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.DownloadContract(
+        find_unit_definition_id_2(), ContractType::UNIT);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        context,
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_TRUE(message->m_bBool);
+    EXPECT_FALSE(message->m_ascPayload->empty());
+}
+
+TEST_F(Test_Basic, getInstrumentDefinition_Bob)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{1};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, context, sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.DownloadContract(
+        find_unit_definition_id_1(), ContractType::UNIT);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        context,
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+
+    EXPECT_TRUE(message->m_bBool);
+    EXPECT_FALSE(message->m_ascPayload->empty());
+}
+
+TEST_F(Test_Basic, registerAccount)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{3};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, context, sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::RegisterAccount,
+        find_unit_definition_id_1(),
+        extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        context,
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+
+    const auto accountID = Identifier::Factory(message->m_strAcctID);
+    const auto clientAccount = client_2_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
+
+    ASSERT_TRUE(clientAccount);
+    ASSERT_TRUE(serverAccount);
+
+    verify_account(
+        *serverContext.It().Nym(),
+        *clientContext->Nym(),
+        clientAccount,
+        serverAccount);
+
+    bob_account_1_id_ = accountID->str();
 }
 
 TEST_F(Test_Basic, send_cheque)
 {
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
     std::unique_ptr<Cheque> cheque{client_1_.OTAPI().WriteCheque(
-        server_id_,
+        server_1_id_,
         CHEQUE_AMOUNT,
         0,
         0,
@@ -1345,7 +1659,6 @@ TEST_F(Test_Basic, send_cheque)
         alice_nym_id_,
         String::Factory(CHEQUE_MEMO),
         bob_nym_id_)};
-    std::unique_ptr<Message> request{};
 
     ASSERT_TRUE(cheque);
 
@@ -1353,342 +1666,251 @@ TEST_F(Test_Basic, send_cheque)
 
     EXPECT_NE(0, cheque_transaction_number_);
 
-    std::unique_ptr<OTPayment> payment{
+    std::shared_ptr<OTPayment> payment{
         client_1_.Factory().Payment(String::Factory(*cheque))};
 
     ASSERT_TRUE(payment);
 
-    const RequestNumber sequence{13};
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().sendNymInstrument(
-            serverContext.It(), request, bob_nym_id_, *payment, false);
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.ConveyPayment(bob_nym_id_, payment);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
+        0,
+        alice_counter_);
+    const auto workflowList =
+        client_1_.Storage().PaymentWorkflowList(alice_nym_id_->str()).size();
 
-    ASSERT_TRUE(request);
+    EXPECT_EQ(1, workflowList);
 
-    auto workflow =
-        client_1_.Workflow().SendCheque(*cheque, *request, message.get());
+    const auto workflows = client_1_.Storage().PaymentWorkflowsByState(
+        alice_nym_id_->str(),
+        proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE,
+        proto::PAYMENTWORKFLOWSTATE_CONVEYED);
 
-    EXPECT_TRUE(workflow);
+    ASSERT_EQ(1, workflows.size());
+
+    outgoing_cheque_workflow_id_ = *workflows.begin();
 }
 
 TEST_F(Test_Basic, getNymbox_receive_cheque)
 {
-    const RequestNumber sequence{13};
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{4};
+    bob_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
+    verify_state_pre(*clientContext, context, sequence);
+    auto queue = context.RefreshNymbox(client_2_);
+
+    ASSERT_TRUE(queue);
+
+    const auto finished = queue->get();
+    context.Join();
+    context.ResetThread();
+    const auto& [status, message] = finished;
+
+    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
-        serverContext.It(),
+        context,
         sequence,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
+        0,
+        bob_counter_);
+    const auto workflowList =
+        client_2_.Storage().PaymentWorkflowList(bob_nym_id_->str());
 
-    std::unique_ptr<Ledger> nymbox{client_2_.OTAPI().LoadNymbox(
-        serverContext.It().Server(), serverContext.It().Nym()->ID())};
+    EXPECT_EQ(1, workflowList.size());
 
-    ASSERT_TRUE(nymbox);
+    const auto workflows = client_2_.Storage().PaymentWorkflowsByState(
+        bob_nym_id_->str(),
+        proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE,
+        proto::PAYMENTWORKFLOWSTATE_CONVEYED);
 
-    const auto& transactionMap = nymbox->GetTransactionMap();
+    EXPECT_EQ(1, workflows.size());
 
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_EQ(transactionType::message, transaction.GetType());
-}
-
-TEST_F(Test_Basic, getBoxReceipt_incoming_cheque)
-{
-    const RequestNumber sequence{14};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-    const auto& nymID = serverContext.It().Nym()->ID();
-    const auto& serverID = serverContext.It().Server();
-
-    ASSERT_TRUE(clientContext);
-
-    std::unique_ptr<Ledger> nymbox{
-        client_2_.OTAPI().LoadNymbox(serverID, nymID)};
-
-    ASSERT_TRUE(nymbox);
-
-    TransactionNumber number{0};
-
-    {
-        const auto& transactionMap = nymbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-        nymbox.reset();
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getBoxReceipt(
-            serverContext.It(), nymID, NYMBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        1);
-    nymbox.reset(client_2_.OTAPI().LoadNymbox(serverID, nymID).release());
-
-    ASSERT_TRUE(nymbox);
-
-    const auto& transactionMap = nymbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
-}
-
-TEST_F(Test_Basic, processNymbox_incoming_cheque)
-{
-    const RequestNumber sequence{15};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().processNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
+    incoming_cheque_workflow_id_ = *workflows.begin();
 }
 
 TEST_F(Test_Basic, getNymbox_after_clearing_nymbox_2_Bob)
 {
-    const RequestNumber sequence{16};
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{1};
+    bob_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
+    verify_state_pre(*clientContext, context, sequence);
+    auto queue = context.RefreshNymbox(client_2_);
+
+    ASSERT_TRUE(queue);
+
+    const auto finished = queue->get();
+    context.Join();
+    context.ResetThread();
+    const auto& [status, message] = finished;
+
+    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
-        serverContext.It(),
+        context,
         sequence,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+        0,
+        bob_counter_);
 }
 
 TEST_F(Test_Basic, depositCheque)
 {
     const auto accountID = find_user_account();
-    const auto workflows =
-        client_2_.Storage().PaymentWorkflowList(bob_nym_id_->str());
-
-    ASSERT_EQ(1, workflows.size());
-
-    const auto& workflowID = Identifier::Factory(workflows.begin()->first);
+    const auto workflowID = Identifier::Factory(incoming_cheque_workflow_id_);
     const auto workflow =
         client_2_.Workflow().LoadWorkflow(bob_nym_id_, workflowID);
 
     ASSERT_TRUE(workflow);
     ASSERT_TRUE(api::client::Workflow::ContainsCheque(*workflow));
 
-    const auto [state, cheque] =
+    auto [state, pCheque] =
         api::client::Workflow::InstantiateCheque(client_2_, *workflow);
 
     ASSERT_EQ(proto::PAYMENTWORKFLOWSTATE_CONVEYED, state);
-    ASSERT_TRUE(cheque);
+    ASSERT_TRUE(pCheque);
 
-    const RequestNumber sequence{17};
+    std::shared_ptr<Cheque> cheque{std::move(pCheque)};
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{12};
+    bob_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().depositCheque(serverContext.It(), accountID, *cheque);
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.DepositCheque(accountID, cheque);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
         serverContext.It(),
-        sequence,
+        sequence + 6,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(serverAccount);
-    EXPECT_EQ(CHEQUE_AMOUNT, serverAccount.get().GetBalance());
-}
-
-TEST_F(Test_Basic, getAccountData_after_deposit_cheque)
-{
-    const RequestNumber sequence{18};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_user_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-
+        0,
+        bob_counter_);
     const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-
+    EXPECT_EQ(CHEQUE_AMOUNT, serverAccount.get().GetBalance());
     EXPECT_EQ(CHEQUE_AMOUNT, clientAccount.get().GetBalance());
-}
 
-TEST_F(Test_Basic, getNymbox_after_deposit_cheque)
-{
-    const RequestNumber sequence{19};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+    const auto workflowList =
+        client_2_.Storage().PaymentWorkflowList(bob_nym_id_->str()).size();
 
-    ASSERT_TRUE(clientContext);
+    EXPECT_EQ(1, workflowList);
 
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+    const auto [wType, wState] = client_2_.Storage().PaymentWorkflowState(
+        bob_nym_id_->str(), incoming_cheque_workflow_id_);
+
+    EXPECT_EQ(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE, wType);
+    EXPECT_EQ(proto::PAYMENTWORKFLOWSTATE_COMPLETED, wState);
 }
 
 TEST_F(Test_Basic, getAccountData_after_cheque_deposited)
 {
-    const RequestNumber sequence{14};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{5};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
@@ -1697,24 +1919,37 @@ TEST_F(Test_Basic, getAccountData_after_cheque_deposited)
     ASSERT_FALSE(accountID->empty());
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.UpdateAccount(accountID);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
-        sequence,
+        sequence + 2,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
+        0,
+        alice_counter_);
     const auto clientAccount = client_1_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
@@ -1724,294 +1959,124 @@ TEST_F(Test_Basic, getAccountData_after_cheque_deposited)
         *clientContext->Nym(),
         clientAccount,
         serverAccount);
+    const auto workflowList =
+        client_1_.Storage().PaymentWorkflowList(alice_nym_id_->str()).size();
 
-    EXPECT_EQ(-1 * CHEQUE_AMOUNT, serverAccount.get().GetBalance());
+    EXPECT_EQ(1, workflowList);
 
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
+    const auto [wType, wState] = client_1_.Storage().PaymentWorkflowState(
+        alice_nym_id_->str(), outgoing_cheque_workflow_id_);
 
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_EQ(transactionType::chequeReceipt, transaction.GetType());
-}
-
-TEST_F(Test_Basic, getBoxReceipt_cheque_receipt)
-{
-    const auto accountID = find_issuer_account();
-    const RequestNumber sequence{15};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    TransactionNumber number{0};
-
-    {
-        const auto clientAccount = client_1_.Wallet().Account(accountID);
-
-        std::unique_ptr<Ledger> inbox{
-            clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-        ASSERT_TRUE(inbox);
-
-        const auto& transactionMap = inbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getBoxReceipt(
-            serverContext.It(), accountID, INBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-    const auto clientAccount = client_1_.Wallet().Account(accountID);
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
-}
-
-TEST_F(Test_Basic, getNymbox_after_cheque_deposited)
-{
-    const RequestNumber sequence{16};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, processInbox_after_chequeReceipt)
-{
-    const RequestNumber sequence{17};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_issuer_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    auto [response, inbox, number] =
-        client_1_.OTAPI().CreateProcessInbox(accountID, serverContext.It());
-
-    ASSERT_TRUE(response);
-    ASSERT_TRUE(inbox);
-    ASSERT_EQ(1, inbox->GetTransactionCount());
-    EXPECT_NE(0, number);
-
-    auto transaction = inbox->GetTransactionByIndex(0);
-
-    ASSERT_NE(nullptr, transaction);
-    ASSERT_EQ(transactionType::chequeReceipt, transaction->GetType());
-
-    const auto workflow =
-        client_1_.Workflow().ClearCheque(alice_nym_id_, *transaction);
-
-    EXPECT_TRUE(workflow);
-
-    const auto accepted = client_1_.OTAPI().IncludeResponse(
-        accountID, true, serverContext.It(), *transaction, *response);
-
-    ASSERT_TRUE(accepted);
-
-    const auto finalized = client_1_.OTAPI().FinalizeProcessInbox(
-        accountID, serverContext.It(), *response, *inbox);
-
-    ASSERT_TRUE(finalized);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().processInbox(
-            serverContext.It(), accountID, String::Factory(*response));
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
-
-    const auto clientAccount = client_1_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-
-    EXPECT_EQ(-1 * CHEQUE_AMOUNT, serverAccount.get().GetBalance());
-}
-
-TEST_F(Test_Basic, getNymbox_after_processInbox_chequeReceipt)
-{
-    const RequestNumber sequence{18};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+    EXPECT_EQ(wType, proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE);
+    // TODO should be completed?
+    EXPECT_EQ(wState, proto::PAYMENTWORKFLOWSTATE_ACCEPTED);
 }
 
 TEST_F(Test_Basic, resync)
 {
     break_consensus();
-    const RequestNumber sequence{19};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{2};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().registerNym(serverContext.It(), true);
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::RegisterNym, {"", true});
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
         sequence,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+        0,
+        alice_counter_);
 }
 
 TEST_F(Test_Basic, sendTransfer)
 {
-    const RequestNumber sequence{20};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{5};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
     const auto senderAccountID = find_issuer_account();
+
     ASSERT_FALSE(senderAccountID->empty());
+
     const auto recipientAccountID = find_user_account();
+
     ASSERT_FALSE(recipientAccountID->empty());
 
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().notarizeTransfer(
-            serverContext.It(),
-            senderAccountID,
-            recipientAccountID,
-            TRANSFER_AMOUNT,
-            String::Factory(TRANSFER_MEMO));
-    const auto& [result, message] = reply;
-    clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+    verify_state_pre(*clientContext, context, sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.SendTransfer(
+        senderAccountID,
+        recipientAccountID,
+        TRANSFER_AMOUNT,
+        String::Factory(TRANSFER_MEMO));
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
-        serverContext.It(),
-        sequence,
+        context,
+        sequence + 1,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
-
-    const auto serverAccount = server_.Wallet().Account(senderAccountID);
+        0,
+        alice_counter_);
+    const auto serverAccount = server_1_.Wallet().Account(senderAccountID);
 
     ASSERT_TRUE(serverAccount);
 
@@ -2021,12 +2086,17 @@ TEST_F(Test_Basic, sendTransfer)
         (-1 * (CHEQUE_AMOUNT + TRANSFER_AMOUNT)),
         serverAccount.get().GetBalance());
 
+    const auto workflowList =
+        client_1_.Storage().PaymentWorkflowList(alice_nym_id_->str()).size();
+
+    EXPECT_EQ(2, workflowList);
+
     const auto workflows = client_1_.Storage().PaymentWorkflowsByState(
         alice_nym_id_->str(),
         proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER,
         proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED);
 
-    ASSERT_EQ(workflows.size(), 1);
+    ASSERT_EQ(1, workflows.size());
 
     outgoing_transfer_workflow_id_ = *workflows.cbegin();
 
@@ -2039,13 +2109,17 @@ TEST_F(Test_Basic, sendTransfer)
 
     EXPECT_EQ(0, workflow->party_size());
 }
+
 TEST_F(Test_Basic, getAccountData_after_incomingTransfer)
 {
-    const RequestNumber sequence{20};
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{5};
+    bob_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
@@ -2054,24 +2128,37 @@ TEST_F(Test_Basic, getAccountData_after_incomingTransfer)
     ASSERT_FALSE(accountID->empty());
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.UpdateAccount(accountID);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
         serverContext.It(),
-        sequence,
+        sequence + 2,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+        0,
+        bob_counter_);
     const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
@@ -2082,93 +2169,20 @@ TEST_F(Test_Basic, getAccountData_after_incomingTransfer)
         clientAccount,
         serverAccount);
 
-    // CHEQUE_AMOUNT is Bob's balance because he hasn't signed yet to receive
-    // the pending incoming transfer.
-    EXPECT_EQ(CHEQUE_AMOUNT, serverAccount.get().GetBalance());
+    EXPECT_EQ(
+        (CHEQUE_AMOUNT + TRANSFER_AMOUNT), serverAccount.get().GetBalance());
 
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
+    const auto workflowList =
+        client_2_.Storage().PaymentWorkflowList(bob_nym_id_->str()).size();
 
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_EQ(transactionType::pending, transaction.GetType());
-}
-
-TEST_F(Test_Basic, getBoxReceipt_incomingTransfer)
-{
-    const auto accountID = find_user_account();
-    const RequestNumber sequence{21};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    TransactionNumber number{0};
-
-    {
-        const auto clientAccount = client_2_.Wallet().Account(accountID);
-
-        std::unique_ptr<Ledger> inbox{
-            clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-        ASSERT_TRUE(inbox);
-
-        const auto& transactionMap = inbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getBoxReceipt(
-            serverContext.It(), accountID, INBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-    const auto clientAccount = client_2_.Wallet().Account(accountID);
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
+    EXPECT_EQ(2, workflowList);
 
     const auto workflows = client_2_.Storage().PaymentWorkflowsByState(
         bob_nym_id_->str(),
         proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+        proto::PAYMENTWORKFLOWSTATE_COMPLETED);
 
-    ASSERT_EQ(workflows.size(), 1);
+    ASSERT_EQ(1, workflows.size());
 
     incoming_transfer_workflow_id_ = *workflows.cbegin();
 
@@ -2181,161 +2195,20 @@ TEST_F(Test_Basic, getBoxReceipt_incomingTransfer)
 
     EXPECT_EQ(1, workflow->party_size());
     EXPECT_STREQ(alice_nym_id_->str().c_str(), workflow->party(0).c_str());
-}
-
-TEST_F(Test_Basic, processInbox_after_incomingTransfer)
-{
-    const RequestNumber sequence{22};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_user_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    auto [response, inbox, number] =
-        client_2_.OTAPI().CreateProcessInbox(accountID, serverContext.It());
-
-    ASSERT_TRUE(response);
-    ASSERT_TRUE(inbox);
-    ASSERT_EQ(1, inbox->GetTransactionCount());
-    EXPECT_NE(0, number);
-
-    auto transaction = inbox->GetTransactionByIndex(0);
-
-    ASSERT_NE(nullptr, transaction);
-    ASSERT_EQ(transactionType::pending, transaction->GetType());
-
-    const auto accepted = client_2_.OTAPI().IncludeResponse(
-        accountID, true, serverContext.It(), *transaction, *response);
-
-    ASSERT_TRUE(accepted);
-
-    const auto finalized = client_2_.OTAPI().FinalizeProcessInbox(
-        accountID, serverContext.It(), *response, *inbox);
-
-    ASSERT_TRUE(finalized);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().processInbox(
-            serverContext.It(), accountID, String::Factory(*response));
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
-
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(serverAccount);
-    EXPECT_EQ(
-        (CHEQUE_AMOUNT + TRANSFER_AMOUNT), serverAccount.get().GetBalance());
-
-    const auto [type, state] = client_2_.Storage().PaymentWorkflowState(
-        bob_nym_id_->str(), incoming_transfer_workflow_id_);
-
-    EXPECT_EQ(type, proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER);
-    EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_COMPLETED);
-}
-
-TEST_F(Test_Basic, getAccountData_after_processInbox_incomingTransfer)
-{
-    const RequestNumber sequence{23};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_user_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-
-    const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-
-    EXPECT_EQ(
-        (CHEQUE_AMOUNT + TRANSFER_AMOUNT), clientAccount.get().GetBalance());
-}
-
-TEST_F(Test_Basic, getNymbox_after_processInbox_incomingTransfer)
-{
-    const RequestNumber sequence{24};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+    EXPECT_EQ(workflow->type(), proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER);
+    EXPECT_EQ(workflow->state(), proto::PAYMENTWORKFLOWSTATE_COMPLETED);
 }
 
 TEST_F(Test_Basic, getAccountData_after_transfer_accepted)
 {
-    const RequestNumber sequence{21};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{5};
+    alice_counter_ += messages;
     auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
@@ -2344,24 +2217,37 @@ TEST_F(Test_Basic, getAccountData_after_transfer_accepted)
     ASSERT_FALSE(accountID->empty());
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.UpdateAccount(accountID);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_1_,
         *clientContext,
         serverContext.It(),
-        sequence,
+        sequence + 2,
+        alice_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
+        0,
+        alice_counter_);
     const auto clientAccount = client_1_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
@@ -2376,190 +2262,10 @@ TEST_F(Test_Basic, getAccountData_after_transfer_accepted)
         -1 * (CHEQUE_AMOUNT + TRANSFER_AMOUNT),
         serverAccount.get().GetBalance());
 
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
+    const auto workflowList =
+        client_2_.Storage().PaymentWorkflowList(bob_nym_id_->str()).size();
 
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_EQ(transactionType::transferReceipt, transaction.GetType());
-}
-
-TEST_F(Test_Basic, getBoxReceipt_transfer_receipt)
-{
-    const auto accountID = find_issuer_account();
-    const RequestNumber sequence{22};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    TransactionNumber number{0};
-
-    {
-        const auto clientAccount = client_1_.Wallet().Account(accountID);
-
-        std::unique_ptr<Ledger> inbox{
-            clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-        ASSERT_TRUE(inbox);
-
-        const auto& transactionMap = inbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getBoxReceipt(
-            serverContext.It(), accountID, INBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-    const auto clientAccount = client_1_.Wallet().Account(accountID);
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
-
-    const auto [type, state] = client_1_.Storage().PaymentWorkflowState(
-        alice_nym_id_->str(), outgoing_transfer_workflow_id_);
-
-    EXPECT_EQ(type, proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER);
-    EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_ACCEPTED);
-}
-
-TEST_F(Test_Basic, getNymbox_after_transfer_accepted)
-{
-    const RequestNumber sequence{23};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, processInbox_after_transferReceipt)
-{
-    const RequestNumber sequence{24};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_issuer_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    auto [response, inbox, number] =
-        client_1_.OTAPI().CreateProcessInbox(accountID, serverContext.It());
-
-    ASSERT_TRUE(response);
-    ASSERT_TRUE(inbox);
-    ASSERT_EQ(1, inbox->GetTransactionCount());
-    EXPECT_NE(0, number);
-
-    auto transaction = inbox->GetTransactionByIndex(0);
-
-    ASSERT_NE(nullptr, transaction);
-    ASSERT_EQ(transactionType::transferReceipt, transaction->GetType());
-
-    const auto accepted = client_1_.OTAPI().IncludeResponse(
-        accountID, true, serverContext.It(), *transaction, *response);
-
-    ASSERT_TRUE(accepted);
-
-    const auto finalized = client_1_.OTAPI().FinalizeProcessInbox(
-        accountID, serverContext.It(), *response, *inbox);
-
-    ASSERT_TRUE(finalized);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().processInbox(
-            serverContext.It(), accountID, String::Factory(*response));
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
-
-    const auto clientAccount = client_1_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-
-    EXPECT_EQ(
-        -1 * (CHEQUE_AMOUNT + TRANSFER_AMOUNT),
-        serverAccount.get().GetBalance());
+    EXPECT_EQ(2, workflowList);
 
     const auto [type, state] = client_1_.Storage().PaymentWorkflowState(
         alice_nym_id_->str(), outgoing_transfer_workflow_id_);
@@ -2568,120 +2274,55 @@ TEST_F(Test_Basic, processInbox_after_transferReceipt)
     EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_COMPLETED);
 }
 
-TEST_F(Test_Basic, getAccountData_after_processInbox_transferReceipt)
-{
-    const RequestNumber sequence{25};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_issuer_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-
-    const auto clientAccount = client_1_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-
-    EXPECT_EQ(
-        -1 * (CHEQUE_AMOUNT + TRANSFER_AMOUNT),
-        clientAccount.get().GetBalance());
-}
-
-TEST_F(Test_Basic, getNymbox_after_processInbox_transferReceipt)
-{
-    const RequestNumber sequence{26};
-    auto serverContext =
-        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), alice_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_1_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_1_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-}
 TEST_F(Test_Basic, register_second_account)
 {
-    const RequestNumber sequence{25};
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{3};
+    bob_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().registerAccount(
-            serverContext.It(), find_unit_definition_id(), "");
-    const auto& [result, message] = reply;
-    clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+    verify_state_pre(*clientContext, context, sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::RegisterAccount,
+        find_unit_definition_id_1(),
+        extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
-        serverContext.It(),
+        context,
         sequence,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
+        0,
+        bob_counter_);
     const auto accountID = Identifier::Factory(message->m_strAcctID);
-
-    ASSERT_FALSE(accountID->empty());
-
-    bob_account_2_id_ = accountID->str();
     const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
@@ -2691,44 +2332,20 @@ TEST_F(Test_Basic, register_second_account)
         *clientContext->Nym(),
         clientAccount,
         serverAccount);
-}
 
-TEST_F(Test_Basic, getNymbox_after_second_registerAccount)
-{
-    const RequestNumber sequence{26};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+    bob_account_2_id_ = accountID->str();
 }
 
 TEST_F(Test_Basic, send_internal_transfer)
 {
-    const RequestNumber sequence{27};
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{5};
+    bob_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
@@ -2741,42 +2358,51 @@ TEST_F(Test_Basic, send_internal_transfer)
     ASSERT_FALSE(recipientAccountID->empty());
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().notarizeTransfer(
-            serverContext.It(),
-            senderAccountID,
-            recipientAccountID,
-            SECOND_TRANSFER_AMOUNT,
-            String::Factory(TRANSFER_MEMO));
-    const auto& [result, message] = reply;
-    clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.SendTransfer(
+        senderAccountID,
+        recipientAccountID,
+        SECOND_TRANSFER_AMOUNT,
+        String::Factory(TRANSFER_MEMO));
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
         serverContext.It(),
-        sequence,
+        sequence + 1,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
+        0,
+        bob_counter_);
+    const auto serverAccount = server_1_.Wallet().Account(senderAccountID);
 
-    const auto serverAccount = server_.Wallet().Account(senderAccountID);
     ASSERT_TRUE(serverAccount);
 
-    // A successful sent transfer has an immediate effect on the
-    // sender's account balance.
+    // A successful sent transfer has an immediate effect on the sender's
+    // account balance.
     EXPECT_EQ(
         (CHEQUE_AMOUNT + TRANSFER_AMOUNT - SECOND_TRANSFER_AMOUNT),
         serverAccount.get().GetBalance());
 
     std::size_t count{0}, tries{100};
     std::set<std::string> workflows{};
-
     while (0 == count) {
         // The state change from ACKNOWLEDGED to CONVEYED occurs asynchronously
         // due to server push notifications so the order in which these states
@@ -2804,44 +2430,23 @@ TEST_F(Test_Basic, send_internal_transfer)
     internal_transfer_workflow_id_ = *workflows.cbegin();
 
     EXPECT_NE(internal_transfer_workflow_id_.size(), 0);
-}
 
-TEST_F(Test_Basic, getNymbox_after_receiving_incoming_internal_transfer)
-{
-    const RequestNumber sequence{28};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+    const auto workflowList =
+        client_2_.Storage().PaymentWorkflowList(bob_nym_id_->str()).size();
 
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+    EXPECT_EQ(3, workflowList);
 }
 
 TEST_F(Test_Basic, getAccountData_after_incoming_internal_Transfer)
 {
-    const RequestNumber sequence{29};
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{5};
+    bob_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
@@ -2850,24 +2455,37 @@ TEST_F(Test_Basic, getAccountData_after_incoming_internal_Transfer)
     ASSERT_FALSE(accountID->empty());
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.UpdateAccount(accountID);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
         serverContext.It(),
-        sequence,
+        sequence + 2,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+        0,
+        bob_counter_);
     const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
@@ -2877,238 +2495,29 @@ TEST_F(Test_Basic, getAccountData_after_incoming_internal_Transfer)
         *clientContext->Nym(),
         clientAccount,
         serverAccount);
+    const auto workflowList =
+        client_2_.Storage().PaymentWorkflowList(bob_nym_id_->str()).size();
 
-    EXPECT_EQ(0, serverAccount.get().GetBalance());
-
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_EQ(transactionType::pending, transaction.GetType());
-}
-
-TEST_F(Test_Basic, getBoxReceipt_incoming_internal_Transfer)
-{
-    const auto accountID = find_second_user_account();
-    const RequestNumber sequence{30};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    TransactionNumber number{0};
-
-    {
-        const auto clientAccount = client_2_.Wallet().Account(accountID);
-
-        std::unique_ptr<Ledger> inbox{
-            clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-        ASSERT_TRUE(inbox);
-
-        const auto& transactionMap = inbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getBoxReceipt(
-            serverContext.It(), accountID, INBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-    const auto clientAccount = client_2_.Wallet().Account(accountID);
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
+    EXPECT_EQ(3, workflowList);
 
     const auto [type, state] = client_2_.Storage().PaymentWorkflowState(
         bob_nym_id_->str(), internal_transfer_workflow_id_);
 
     EXPECT_EQ(type, proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER);
     EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_CONVEYED);
-}
-
-TEST_F(Test_Basic, processInbox_after_incoming_internal_transfer)
-{
-    const RequestNumber sequence{31};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_second_user_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    auto [response, inbox, number] =
-        client_2_.OTAPI().CreateProcessInbox(accountID, serverContext.It());
-
-    ASSERT_TRUE(response);
-    ASSERT_TRUE(inbox);
-    ASSERT_EQ(1, inbox->GetTransactionCount());
-    EXPECT_NE(0, number);
-
-    auto transaction = inbox->GetTransactionByIndex(0);
-
-    ASSERT_NE(nullptr, transaction);
-    ASSERT_EQ(transactionType::pending, transaction->GetType());
-
-    const auto accepted = client_2_.OTAPI().IncludeResponse(
-        accountID, true, serverContext.It(), *transaction, *response);
-
-    ASSERT_TRUE(accepted);
-
-    const auto finalized = client_2_.OTAPI().FinalizeProcessInbox(
-        accountID, serverContext.It(), *response, *inbox);
-
-    ASSERT_TRUE(finalized);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().processInbox(
-            serverContext.It(), accountID, String::Factory(*response));
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
-
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(serverAccount);
     EXPECT_EQ(SECOND_TRANSFER_AMOUNT, serverAccount.get().GetBalance());
-}
-
-TEST_F(Test_Basic, getAccountData_after_processInbox_incoming_internal_transfer)
-{
-    const RequestNumber sequence{32};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_second_user_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
-
-    const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-
-    EXPECT_EQ(SECOND_TRANSFER_AMOUNT, clientAccount.get().GetBalance());
-}
-
-TEST_F(Test_Basic, getNymbox_after_processInbox_incoming_internal_transfer)
-{
-    const RequestNumber sequence{33};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
 }
 
 TEST_F(Test_Basic, getAccountData_after_internal_transfer_accepted)
 {
-    const RequestNumber sequence{34};
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{5};
+    bob_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
@@ -3117,24 +2526,37 @@ TEST_F(Test_Basic, getAccountData_after_internal_transfer_accepted)
     ASSERT_FALSE(accountID->empty());
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.UpdateAccount(accountID);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
         serverContext.It(),
-        sequence,
+        sequence + 2,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+        0,
+        bob_counter_);
     const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
@@ -3144,278 +2566,1126 @@ TEST_F(Test_Basic, getAccountData_after_internal_transfer_accepted)
         *clientContext->Nym(),
         clientAccount,
         serverAccount);
+    const auto workflowList =
+        client_2_.Storage().PaymentWorkflowList(bob_nym_id_->str()).size();
 
-    EXPECT_EQ(
-        CHEQUE_AMOUNT + TRANSFER_AMOUNT - SECOND_TRANSFER_AMOUNT,
-        serverAccount.get().GetBalance());
-
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const TransactionNumber number{transactionMap.begin()->first};
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_EQ(transactionType::transferReceipt, transaction.GetType());
-}
-
-TEST_F(Test_Basic, getBoxReceipt_internal_transfer_receipt)
-{
-    const auto accountID = find_user_account();
-    const RequestNumber sequence{35};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    TransactionNumber number{0};
-
-    {
-        const auto clientAccount = client_2_.Wallet().Account(accountID);
-
-        std::unique_ptr<Ledger> inbox{
-            clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-        ASSERT_TRUE(inbox);
-
-        const auto& transactionMap = inbox->GetTransactionMap();
-
-        ASSERT_EQ(1, transactionMap.size());
-
-        number = {transactionMap.begin()->first};
-    }
-
-    ASSERT_NE(0, number);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getBoxReceipt(
-            serverContext.It(), accountID, INBOX_TYPE, number);
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-    const auto clientAccount = client_2_.Wallet().Account(accountID);
-    std::unique_ptr<Ledger> inbox{
-        clientAccount.get().LoadInbox(*serverContext.It().Nym())};
-
-    ASSERT_TRUE(inbox);
-
-    const auto& transactionMap = inbox->GetTransactionMap();
-
-    ASSERT_EQ(1, transactionMap.size());
-
-    const auto& transaction = *transactionMap.begin()->second;
-
-    EXPECT_FALSE(transaction.IsAbbreviated());
-
-    const auto [type, state] = client_2_.Storage().PaymentWorkflowState(
-        bob_nym_id_->str(), internal_transfer_workflow_id_);
-
-    EXPECT_EQ(type, proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER);
-    EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_ACCEPTED);
-}
-
-TEST_F(Test_Basic, getNymbox_after_internal_transfer_accepted)
-{
-    const RequestNumber sequence{36};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
-}
-
-TEST_F(Test_Basic, processInbox_after_internal_transferReceipt)
-{
-    const RequestNumber sequence{37};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    const auto accountID = find_user_account();
-
-    ASSERT_FALSE(accountID->empty());
-
-    auto [response, inbox, number] =
-        client_2_.OTAPI().CreateProcessInbox(accountID, serverContext.It());
-
-    ASSERT_TRUE(response);
-    ASSERT_TRUE(inbox);
-    ASSERT_EQ(1, inbox->GetTransactionCount());
-    EXPECT_NE(0, number);
-
-    auto transaction = inbox->GetTransactionByIndex(0);
-
-    ASSERT_NE(nullptr, transaction);
-    ASSERT_EQ(transactionType::transferReceipt, transaction->GetType());
-
-    const auto accepted = client_2_.OTAPI().IncludeResponse(
-        accountID, true, serverContext.It(), *transaction, *response);
-
-    ASSERT_TRUE(accepted);
-
-    const auto finalized = client_2_.OTAPI().FinalizeProcessInbox(
-        accountID, serverContext.It(), *response, *inbox);
-
-    ASSERT_TRUE(finalized);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().processInbox(
-            serverContext.It(), accountID, String::Factory(*response));
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_UPDATED,
-        TRANSACTION,
-        0);
-
-    const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
-
-    ASSERT_TRUE(clientAccount);
-    ASSERT_TRUE(serverAccount);
-
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-
-    EXPECT_EQ(
-        CHEQUE_AMOUNT + TRANSFER_AMOUNT - SECOND_TRANSFER_AMOUNT,
-        serverAccount.get().GetBalance());
+    EXPECT_EQ(3, workflowList);
 
     const auto [type, state] = client_2_.Storage().PaymentWorkflowState(
         bob_nym_id_->str(), internal_transfer_workflow_id_);
 
     EXPECT_EQ(type, proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER);
     EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_COMPLETED);
+    EXPECT_EQ(
+        CHEQUE_AMOUNT + TRANSFER_AMOUNT - SECOND_TRANSFER_AMOUNT,
+        serverAccount.get().GetBalance());
 }
 
-TEST_F(Test_Basic, getAccountData_after_processInbox_internal_transferReceipt)
+TEST_F(Test_Basic, send_message)
 {
-    const RequestNumber sequence{38};
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
     auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
     auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
 
     ASSERT_TRUE(clientContext);
 
-    const auto accountID = find_user_account();
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    auto& stateMachine = *alice_state_machine_;
+    auto messageID = Identifier::Factory();
+    auto setID = [&](const Identifier& in) -> void { messageID = in; };
+    auto started = stateMachine.SendMessage(
+        bob_nym_id_, String::Factory(MESSAGE_TEXT), setID);
 
-    ASSERT_FALSE(accountID->empty());
+    ASSERT_TRUE(started);
+
+    const auto finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_FALSE(messageID->empty());
+}
+
+TEST_F(Test_Basic, receive_message)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{4};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, context, sequence);
+    auto queue = context.RefreshNymbox(client_2_);
+
+    ASSERT_TRUE(queue);
+
+    const auto finished = queue->get();
+    context.Join();
+    context.ResetThread();
+    const auto& [status, message] = finished;
+
+    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        context,
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+    const auto mailList =
+        client_2_.Activity().Mail(bob_nym_id_, StorageBox::MAILINBOX);
+
+    ASSERT_EQ(1, mailList.size());
+
+    const auto mailID = Identifier::Factory(std::get<0>(*mailList.begin()));
+    const auto text = client_2_.Activity().MailText(
+        bob_nym_id_, mailID, StorageBox::MAILINBOX);
+
+    ASSERT_TRUE(text);
+    EXPECT_STREQ(MESSAGE_TEXT, text->c_str());
+}
+
+TEST_F(Test_Basic, request_admin_wrong_password)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
 
     verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getAccountData(serverContext.It(), accountID);
-    const auto& [result, message] = reply;
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.RequestAdmin(String::Factory("WRONG PASSWORD"));
+
+    ASSERT_TRUE(started);
+
+    const auto finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_FALSE(message->m_bBool);
+    EXPECT_TRUE(context.AdminAttempted());
+    EXPECT_FALSE(context.isAdmin());
+}
+
+TEST_F(Test_Basic, request_admin)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.RequestAdmin(
+        String::Factory(server_1_.GetAdminPassword()));
+
+    ASSERT_TRUE(started);
+
+    const auto finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_TRUE(message->m_bBool);
+    EXPECT_TRUE(context.AdminAttempted());
+    EXPECT_TRUE(context.isAdmin());
+}
+
+TEST_F(Test_Basic, request_admin_already_admin)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.RequestAdmin(
+        String::Factory(server_1_.GetAdminPassword()));
+
+    ASSERT_TRUE(started);
+
+    const auto finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_TRUE(message->m_bBool);
+    EXPECT_TRUE(context.AdminAttempted());
+    EXPECT_TRUE(context.isAdmin());
+}
+
+TEST_F(Test_Basic, request_admin_second_nym)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{1};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.RequestAdmin(
+        String::Factory(server_1_.GetAdminPassword()));
+
+    ASSERT_TRUE(started);
+
+    const auto finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
     verify_state_post(
         client_2_,
         *clientContext,
         serverContext.It(),
         sequence,
+        bob_counter_,
         requestNumber,
-        transactionNumber,
         result,
         message,
         SUCCESS,
-        NYMBOX_UPDATED,
-        NO_TRANSACTION,
-        0);
+        0,
+        bob_counter_);
+
+    EXPECT_FALSE(message->m_bBool);
+    EXPECT_TRUE(context.AdminAttempted());
+    EXPECT_FALSE(context.isAdmin());
+}
+
+TEST_F(Test_Basic, addClaim)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.AddClaim(
+        proto::CONTACTSECTION_SCOPE,
+        proto::CITEMTYPE_SERVER,
+        String::Factory(NEW_SERVER_NAME),
+        true);
+
+    ASSERT_TRUE(started);
+
+    const auto finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_TRUE(message->m_bBool);
+}
+
+TEST_F(Test_Basic, renameServer)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{1};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    // TODO nym id type
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::CheckNym,
+        identifier::Nym::Factory(context.RemoteNym().ID().str()),
+        extra_args_);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+
+    EXPECT_TRUE(message->m_bBool);
+    EXPECT_FALSE(message->m_ascPayload->empty());
+
+    const auto server = client_1_.Wallet().Server(server_1_id_);
+
+    ASSERT_TRUE(server);
+    EXPECT_STREQ(NEW_SERVER_NAME, server->EffectiveName().c_str());
+}
+
+TEST_F(Test_Basic, addClaim_not_admin)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{1};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.AddClaim(
+        proto::CONTACTSECTION_SCOPE,
+        proto::CITEMTYPE_SERVER,
+        String::Factory(NEW_SERVER_NAME),
+        true);
+
+    ASSERT_TRUE(started);
+
+    const auto finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+
+    EXPECT_TRUE(message->m_bSuccess);
+    EXPECT_FALSE(message->m_bBool);
+}
+
+TEST_F(Test_Basic, initiate_and_acknowledge_bailment)
+{
+    const auto aliceNym = client_1_.Wallet().Nym(alice_nym_id_);
+
+    ASSERT_TRUE(aliceNym);
+
+    std::shared_ptr<PeerRequest> peerrequest{PeerRequest::Create(
+        client_1_.Wallet(),
+        aliceNym,
+        proto::PEERREQUEST_BAILMENT,
+        find_unit_definition_id_2(),
+        server_1_id_)};
+
+    ASSERT_TRUE(peerrequest);
+
+    ProtoHasRequest protohasrequest = &proto::PeerRequest::has_bailment;
+    send_peer_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_BAILMENT);
+    receive_request(peerrequest, protohasrequest, proto::PEERREQUEST_BAILMENT);
+
+    const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
+
+    ASSERT_TRUE(bobNym);
+
+    std::shared_ptr<const PeerReply> peerreply{PeerReply::Create(
+        client_2_.Wallet(),
+        bobNym,
+        proto::PEERREQUEST_BAILMENT,
+        peerrequest->ID(),
+        server_1_id_,
+        "instructions")};
+
+    ASSERT_TRUE(peerreply);
+
+    ProtoHasReply protohasreply = &proto::PeerReply::has_bailment;
+    send_peer_reply(
+        peerreply, peerrequest, protohasreply, proto::PEERREQUEST_BAILMENT);
+    receive_reply(
+        peerreply,
+        peerrequest,
+        protohasreply,
+        protohasrequest,
+        proto::PEERREQUEST_BAILMENT);
+}
+
+TEST_F(Test_Basic, initiate_and_acknowledge_outbailment)
+{
+    const auto aliceNym = client_1_.Wallet().Nym(alice_nym_id_);
+
+    ASSERT_TRUE(aliceNym);
+
+    std::shared_ptr<PeerRequest> peerrequest{PeerRequest::Create(
+        client_1_.Wallet(),
+        aliceNym,
+        proto::PEERREQUEST_OUTBAILMENT,
+        find_unit_definition_id_2(),
+        server_1_id_,
+        1000,
+        "message")};
+
+    ASSERT_TRUE(peerrequest);
+
+    ProtoHasRequest protohasrequest = &proto::PeerRequest::has_outbailment;
+    send_peer_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_OUTBAILMENT);
+    receive_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_OUTBAILMENT);
+
+    const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
+
+    ASSERT_TRUE(bobNym);
+
+    std::shared_ptr<const PeerReply> peerreply{PeerReply::Create(
+        client_2_.Wallet(),
+        bobNym,
+        proto::PEERREQUEST_OUTBAILMENT,
+        peerrequest->ID(),
+        server_1_id_,
+        "details")};
+
+    ASSERT_TRUE(peerreply);
+
+    ProtoHasReply protohasreply = &proto::PeerReply::has_outbailment;
+    send_peer_reply(
+        peerreply, peerrequest, protohasreply, proto::PEERREQUEST_OUTBAILMENT);
+    receive_reply(
+        peerreply,
+        peerrequest,
+        protohasreply,
+        protohasrequest,
+        proto::PEERREQUEST_OUTBAILMENT);
+}
+
+TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
+{
+    const auto aliceNym = client_1_.Wallet().Nym(alice_nym_id_);
+
+    ASSERT_TRUE(aliceNym);
+
+    std::shared_ptr<PeerRequest> peerrequest{PeerRequest::Create(
+        client_1_.Wallet(),
+        aliceNym,
+        proto::PEERREQUEST_PENDINGBAILMENT,
+        find_unit_definition_id_2(),
+        server_1_id_,
+        bob_nym_id_,
+        Identifier::Random(),
+        Identifier::Random()->str(),
+        1000)};
+
+    ASSERT_TRUE(peerrequest);
+
+    ProtoHasRequest protohasrequest = &proto::PeerRequest::has_pendingbailment;
+    send_peer_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_PENDINGBAILMENT);
+    receive_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_PENDINGBAILMENT);
+
+    const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
+
+    ASSERT_TRUE(bobNym);
+
+    std::shared_ptr<const PeerReply> peerreply{PeerReply::Create(
+        client_2_.Wallet(), bobNym, peerrequest->ID(), server_1_id_, true)};
+
+    ASSERT_TRUE(peerreply);
+
+    ProtoHasReply protohasreply = &proto::PeerReply::has_notice;
+    send_peer_reply(
+        peerreply,
+        peerrequest,
+        protohasreply,
+        proto::PEERREQUEST_PENDINGBAILMENT);
+    receive_reply(
+        peerreply,
+        peerrequest,
+        protohasreply,
+        protohasrequest,
+        proto::PEERREQUEST_PENDINGBAILMENT);
+}
+
+TEST_F(Test_Basic, initiate_request_connection_and_acknowledge_connection)
+{
+    const auto aliceNym = client_1_.Wallet().Nym(alice_nym_id_);
+
+    ASSERT_TRUE(aliceNym);
+
+    std::shared_ptr<PeerRequest> peerrequest{PeerRequest::Create(
+        client_1_.Wallet(),
+        aliceNym,
+        proto::PEERREQUEST_CONNECTIONINFO,
+        proto::CONNECTIONINFO_BITCOIN,
+        bob_nym_id_,
+        server_1_id_)};
+
+    ASSERT_TRUE(peerrequest);
+
+    ProtoHasRequest protohasrequest = &proto::PeerRequest::has_connectioninfo;
+    send_peer_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_CONNECTIONINFO);
+    receive_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_CONNECTIONINFO);
+
+    const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
+
+    ASSERT_TRUE(bobNym);
+
+    std::shared_ptr<const PeerReply> peerreply{PeerReply::Create(
+        client_2_.Wallet(),
+        bobNym,
+        peerrequest->ID(),
+        server_1_id_,
+        true,
+        "localhost",
+        "user",
+        "password",
+        "key")};
+
+    ASSERT_TRUE(peerreply);
+
+    ProtoHasReply protohasreply = &proto::PeerReply::has_connectioninfo;
+    send_peer_reply(
+        peerreply,
+        peerrequest,
+        protohasreply,
+        proto::PEERREQUEST_CONNECTIONINFO);
+    receive_reply(
+        peerreply,
+        peerrequest,
+        protohasreply,
+        protohasrequest,
+        proto::PEERREQUEST_CONNECTIONINFO);
+}
+
+TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
+{
+    const auto aliceNym = client_1_.Wallet().Nym(alice_nym_id_);
+
+    ASSERT_TRUE(aliceNym);
+
+    std::shared_ptr<PeerRequest> peerrequest{PeerRequest::Create(
+        client_1_.Wallet(),
+        aliceNym,
+        proto::PEERREQUEST_STORESECRET,
+        proto::SECRETTYPE_BIP39,
+        bob_nym_id_,
+        TEST_SEED,
+        TEST_SEED_PASSPHRASE,
+        server_1_id_)};
+
+    ASSERT_TRUE(peerrequest);
+
+    ProtoHasRequest protohasrequest = &proto::PeerRequest::has_storesecret;
+    send_peer_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_STORESECRET);
+    receive_request(
+        peerrequest, protohasrequest, proto::PEERREQUEST_STORESECRET);
+
+    const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
+
+    ASSERT_TRUE(bobNym);
+
+    std::shared_ptr<const PeerReply> peerreply{PeerReply::Create(
+        client_2_.Wallet(), bobNym, peerrequest->ID(), server_1_id_, true)};
+
+    ASSERT_TRUE(peerreply);
+
+    ProtoHasReply protohasreply = &proto::PeerReply::has_notice;
+    send_peer_reply(
+        peerreply, peerrequest, protohasreply, proto::PEERREQUEST_STORESECRET);
+    receive_reply(
+        peerreply,
+        peerrequest,
+        protohasreply,
+        protohasrequest,
+        proto::PEERREQUEST_STORESECRET);
+}
+
+#if OT_CASH
+TEST_F(Test_Basic, waitForCash_Alice)
+{
+    auto mint = server_1_.GetPublicMint(find_unit_definition_id_1());
+    const auto start = std::chrono::system_clock::now();
+    std::cout << "Pausing for up to " << MINT_TIME_LIMIT_MINUTES
+              << " minutes until mint generation is finished." << std::endl;
+
+    while (false == bool(mint)) {
+        std::cout << "* Waiting for mint..." << std::endl;
+        Log::Sleep(std::chrono::seconds(10));
+        mint = server_1_.GetPublicMint(find_unit_definition_id_1());
+        const auto wait = std::chrono::system_clock::now() - start;
+        const auto limit = std::chrono::minutes(MINT_TIME_LIMIT_MINUTES);
+
+        if (wait > limit) { break; }
+    }
+
+    ASSERT_TRUE(mint);
+}
+
+TEST_F(Test_Basic, downloadMint)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{1};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.Start(
+        api::client::internal::Operation::Type::DownloadMint,
+        find_unit_definition_id_1(),
+        {});
+
+    ASSERT_TRUE(started);
+
+    const auto finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+
+    EXPECT_TRUE(message->m_bSuccess);
+    EXPECT_TRUE(message->m_bBool);
+}
+
+TEST_F(Test_Basic, withdrawCash)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{4};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    const auto accountID = find_user_account();
+    auto started = stateMachine.WithdrawCash(accountID, CASH_AMOUNT);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        serverContext.It(),
+        sequence + 1,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
 
     const auto clientAccount = client_2_.Wallet().Account(accountID);
-    const auto serverAccount = server_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
+
+    ASSERT_TRUE(clientAccount);
+    ASSERT_TRUE(serverAccount);
+    EXPECT_EQ(
+        CHEQUE_AMOUNT + TRANSFER_AMOUNT - SECOND_TRANSFER_AMOUNT - CASH_AMOUNT,
+        serverAccount.get().GetBalance());
+    EXPECT_EQ(
+        serverAccount.get().GetBalance(), clientAccount.get().GetBalance());
+    ASSERT_TRUE(asset_contract_1_);
+
+    // TODO unit id type
+    auto purseEditor = context.mutable_Purse(
+        identifier::UnitDefinition::Factory(asset_contract_1_->ID()->str()));
+    auto& purse = purseEditor.It();
+
+    EXPECT_EQ(purse.Value(), CASH_AMOUNT);
+}
+
+TEST_F(Test_Basic, send_cash)
+{
+    const RequestNumber sequence = bob_counter_;
+    const RequestNumber messages{1};
+    bob_counter_ += messages;
+    auto serverContext =
+        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), bob_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    const auto& bob = *context.Nym();
+
+    // TODO unit id type
+    const auto unitID =
+        identifier::UnitDefinition::Factory(asset_contract_1_->ID()->str());
+    auto localPurseEditor = context.mutable_Purse(unitID);
+    auto& localPurse = localPurseEditor.It();
+
+    ASSERT_TRUE(localPurse.Unlock(bob));
+
+    for (const auto& token : localPurse) { EXPECT_FALSE(token.ID().empty()); }
+
+    std::shared_ptr<blind::Purse> pSendPurse{
+        client_2_.Factory().Purse(bob, server_1_id_, unitID)};
+
+    ASSERT_TRUE(pSendPurse);
+
+    auto& sendPurse = *pSendPurse;
+
+    ASSERT_TRUE(localPurse.IsUnlocked());
+
+    auto token = localPurse.Pop();
+
+    while (token) {
+        const auto added = sendPurse.Push(token);
+
+        EXPECT_TRUE(added);
+
+        token = localPurse.Pop();
+    }
+
+    EXPECT_EQ(sendPurse.Value(), CASH_AMOUNT);
+
+    const auto workflowID =
+        client_2_.Workflow().AllocateCash(bob_nym_id_, sendPurse);
+
+    EXPECT_FALSE(workflowID->empty());
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *bob_state_machine_;
+    auto started = stateMachine.SendCash(alice_nym_id_, workflowID);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_2_,
+        *clientContext,
+        serverContext.It(),
+        sequence,
+        bob_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        bob_counter_);
+
+    EXPECT_EQ(localPurse.Value(), 0);
+
+    auto workflow = client_2_.Workflow().LoadWorkflow(bob_nym_id_, workflowID);
+
+    ASSERT_TRUE(workflow);
+    EXPECT_EQ(proto::PAYMENTWORKFLOWSTATE_CONVEYED, workflow->state());
+}
+
+TEST_F(Test_Basic, receive_cash)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{4};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+
+    verify_state_pre(*clientContext, context, sequence);
+    auto queue = context.RefreshNymbox(client_1_);
+
+    ASSERT_TRUE(queue);
+
+    const auto finished = queue->get();
+    context.Join();
+    context.ResetThread();
+    const auto& [status, message] = finished;
+
+    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        context,
+        sequence,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+    // TODO unit id type
+    const auto unitID =
+        identifier::UnitDefinition::Factory(asset_contract_1_->ID()->str());
+
+    const auto workflows = client_1_.Storage().PaymentWorkflowsByState(
+        alice_nym_id_->str(),
+        proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH,
+        proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+
+    ASSERT_EQ(1, workflows.size());
+
+    const auto& workflowID = Identifier::Factory(*workflows.begin());
+    const auto pWorkflow =
+        client_1_.Workflow().LoadWorkflow(alice_nym_id_, workflowID);
+
+    ASSERT_TRUE(pWorkflow);
+
+    const auto& workflow = *pWorkflow;
+    auto [state, pPurse] =
+        client_1_.Workflow().InstantiatePurse(client_1_, workflow);
+
+    ASSERT_TRUE(pPurse);
+
+    auto& incomingPurse = *pPurse;
+    auto purseEditor = context.mutable_Purse(unitID);
+    auto& walletPurse = purseEditor.It();
+    const auto& alice = *context.Nym();
+
+    ASSERT_TRUE(incomingPurse.Unlock(alice));
+    ASSERT_TRUE(walletPurse.Unlock(alice));
+
+    auto token = incomingPurse.Pop();
+
+    while (token) {
+        EXPECT_TRUE(walletPurse.Push(token));
+
+        token = incomingPurse.Pop();
+    }
+
+    EXPECT_EQ(walletPurse.Value(), CASH_AMOUNT);
+}
+
+TEST_F(Test_Basic, depositCash)
+{
+    const RequestNumber sequence = alice_counter_;
+    const RequestNumber messages{4};
+    alice_counter_ += messages;
+    auto serverContext =
+        client_1_.Wallet().mutable_ServerContext(alice_nym_id_, server_1_id_);
+    auto& context = serverContext.It();
+    auto clientContext =
+        server_1_.Wallet().ClientContext(server_1_.NymID(), alice_nym_id_);
+
+    ASSERT_TRUE(clientContext);
+    ASSERT_TRUE(asset_contract_1_);
+
+    const auto& alice = *context.Nym();
+    const auto accountID = find_issuer_account();
+    // TODO unit ID type
+    const auto unitID =
+        identifier::UnitDefinition::Factory(asset_contract_1_->ID()->str());
+    auto pPurse = context.Purse(unitID);
+
+    ASSERT_TRUE(pPurse);
+
+    auto& walletPurse = *pPurse;
+
+    OTPurse copy{walletPurse};
+    std::shared_ptr<blind::Purse> pSendPurse{
+        client_2_.Factory().Purse(alice, server_1_id_, unitID)};
+
+    ASSERT_TRUE(pSendPurse);
+
+    auto& sendPurse = *pSendPurse;
+
+    ASSERT_TRUE(walletPurse.Unlock(alice));
+    ASSERT_TRUE(copy->Unlock(alice));
+    ASSERT_TRUE(sendPurse.Unlock(alice));
+
+    auto token = copy->Pop();
+
+    while (token) {
+        ASSERT_TRUE(sendPurse.Push(token));
+
+        token = copy->Pop();
+    }
+
+    EXPECT_EQ(copy->Value(), 0);
+    EXPECT_EQ(sendPurse.Value(), CASH_AMOUNT);
+    EXPECT_EQ(walletPurse.Value(), CASH_AMOUNT);
+
+    verify_state_pre(*clientContext, serverContext.It(), sequence);
+    ServerContext::DeliveryResult finished{};
+    auto& stateMachine = *alice_state_machine_;
+    auto started = stateMachine.DepositCash(accountID, pSendPurse);
+
+    ASSERT_TRUE(started);
+
+    finished = stateMachine.GetFuture().get();
+    stateMachine.join();
+    context.Join();
+    context.ResetThread();
+    const auto& message = std::get<1>(finished);
+
+    ASSERT_TRUE(message);
+
+    const RequestNumber requestNumber =
+        String::StringToUlong(message->m_strRequestNum->Get());
+    const auto result = translate_result(std::get<0>(finished));
+    verify_state_post(
+        client_1_,
+        *clientContext,
+        serverContext.It(),
+        sequence + 1,
+        alice_counter_,
+        requestNumber,
+        result,
+        message,
+        SUCCESS,
+        0,
+        alice_counter_);
+    const auto clientAccount = client_1_.Wallet().Account(accountID);
+    const auto serverAccount = server_1_.Wallet().Account(accountID);
 
     ASSERT_TRUE(clientAccount);
     ASSERT_TRUE(serverAccount);
 
-    verify_account(
-        *serverContext.It().Nym(),
-        *clientContext->Nym(),
-        clientAccount,
-        serverAccount);
-
     EXPECT_EQ(
-        CHEQUE_AMOUNT + TRANSFER_AMOUNT - SECOND_TRANSFER_AMOUNT,
-        clientAccount.get().GetBalance());
+        -1 * (CHEQUE_AMOUNT + TRANSFER_AMOUNT - CASH_AMOUNT),
+        serverAccount.get().GetBalance());
+    EXPECT_EQ(
+        serverAccount.get().GetBalance(), clientAccount.get().GetBalance());
+
+    auto pWalletPurse = context.Purse(unitID);
+
+    ASSERT_TRUE(pWalletPurse);
+    EXPECT_EQ(pWalletPurse->Value(), 0);
 }
+#endif
 
-TEST_F(Test_Basic, getNymbox_after_processInbox_internal_transferReceipt)
+TEST_F(Test_Basic, cleanup)
 {
-    const RequestNumber sequence{39};
-    auto serverContext =
-        client_2_.Wallet().mutable_ServerContext(bob_nym_id_, server_id_);
-    auto clientContext =
-        server_.Wallet().ClientContext(server_.NymID(), bob_nym_id_);
-
-    ASSERT_TRUE(clientContext);
-
-    verify_state_pre(*clientContext, serverContext.It(), sequence);
-    const auto [requestNumber, transactionNumber, reply] =
-        client_2_.OTAPI().getNymbox(serverContext.It());
-    const auto& [result, message] = reply;
-    verify_state_post(
-        client_2_,
-        *clientContext,
-        serverContext.It(),
-        sequence,
-        requestNumber,
-        transactionNumber,
-        result,
-        message,
-        SUCCESS,
-        NYMBOX_SAME,
-        NO_TRANSACTION,
-        0);
+    alice_state_machine_.reset();
+    bob_state_machine_.reset();
 }
 }  // namespace

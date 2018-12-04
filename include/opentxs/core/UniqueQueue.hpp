@@ -18,6 +18,8 @@ template <class T>
 class UniqueQueue
 {
 public:
+    using Key = int;
+
     void CancelByValue(const T& in) const
     {
         Lock lock(lock_);
@@ -42,7 +44,7 @@ public:
         OT_ASSERT(set_.size() == queue_.size())
     }
 
-    void CancelByKey(const Identifier& in) const
+    void CancelByKey(const Key& in) const
     {
         Lock lock(lock_);
 
@@ -63,9 +65,9 @@ public:
         OT_ASSERT(set_.size() == queue_.size())
     }
 
-    std::map<T, OTIdentifier> Copy() const
+    std::map<T, Key> Copy() const
     {
-        std::map<T, OTIdentifier> output{};
+        std::map<T, Key> output{};
         Lock lock(lock_);
 
         /* TODO: this line will cause a segfault in the clang-5 ast parser.
@@ -74,15 +76,17 @@ public:
         for (const auto& it : queue_) {
             const auto& key = it.first;
             const auto& value = it.second;
-            output.emplace(value, Identifier::Factory(key->str()));
+            output.emplace(value, key);
         }
 
         return output;
     }
 
-    bool Push(const Identifier& key, const T& in) const
+    bool empty() const { return queue_.empty(); }
+
+    bool Push(const Key key, const T& in) const
     {
-        OT_ASSERT(false == key.empty())
+        OT_ASSERT(0 < key)
 
         Lock lock(lock_);
 
@@ -98,7 +102,7 @@ public:
         return false;
     }
 
-    bool Pop(OTIdentifier& key, T& out) const
+    bool Pop(Key& key, T& out) const
     {
         Lock lock(lock_);
 
@@ -111,7 +115,7 @@ public:
         const auto& outValue = queue_.back().second;
         set_.erase(outValue);
         out = outValue;
-        key->SetString(String::Factory(outKey));
+        key = outKey;
         queue_.pop_back();
 
         OT_ASSERT(set_.size() == queue_.size())
@@ -121,7 +125,7 @@ public:
 
 private:
     mutable std::mutex lock_;
-    mutable std::deque<std::pair<OTIdentifier, T>> queue_;
+    mutable std::deque<std::pair<Key, T>> queue_;
     mutable std::set<T> set_;
 };
 }  // namespace opentxs

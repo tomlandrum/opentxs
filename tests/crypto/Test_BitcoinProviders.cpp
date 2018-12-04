@@ -90,7 +90,6 @@ TEST_F(Test_Bitcoin_Providers, Trezor)
 }
 #endif  // OT_CRYPTO_USING_TREZOR
 
-
 #if OT_CRYPTO_USING_LIBBITCOIN
 TEST_F(Test_Bitcoin_Providers, Libbitcoin)
 {

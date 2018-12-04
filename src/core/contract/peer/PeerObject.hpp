@@ -26,11 +26,14 @@ public:
 #if OT_CASH
     std::shared_ptr<blind::Purse> Purse() const override { return purse_; }
 #endif
-    const std::shared_ptr<PeerRequest> Request() const override
+    const std::shared_ptr<const PeerRequest> Request() const override
     {
         return request_;
     }
-    const std::shared_ptr<PeerReply> Reply() const override { return reply_; }
+    const std::shared_ptr<const PeerReply> Reply() const override
+    {
+        return reply_;
+    }
     proto::PeerObject Serialize() const override;
     proto::PeerObjectType Type() const override { return type_; }
     bool Validate() const override;
@@ -50,8 +53,8 @@ private:
     ConstNym nym_{nullptr};
     std::unique_ptr<std::string> message_{nullptr};
     std::unique_ptr<std::string> payment_{nullptr};
-    std::shared_ptr<PeerReply> reply_{nullptr};
-    std::shared_ptr<PeerRequest> request_{nullptr};
+    std::shared_ptr<const PeerReply> reply_{nullptr};
+    std::shared_ptr<const PeerRequest> request_{nullptr};
 #if OT_CASH
     std::shared_ptr<blind::Purse> purse_{nullptr};
 #endif
@@ -79,20 +82,20 @@ private:
         const ConstNym& senderNym);
     Object(
         const api::Core& api,
-        const std::shared_ptr<PeerRequest> request,
-        const std::shared_ptr<PeerReply> reply,
+        const std::shared_ptr<const PeerRequest> request,
+        const std::shared_ptr<const PeerReply> reply,
         const std::uint32_t& version);
     Object(
         const api::Core& api,
-        const std::shared_ptr<PeerRequest> request,
+        const std::shared_ptr<const PeerRequest> request,
         const std::uint32_t& version);
     Object(
         const api::Core& api,
         const ConstNym& nym,
         const std::string& message,
         const std::string& payment,
-        const std::shared_ptr<PeerReply> reply,
-        const std::shared_ptr<PeerRequest> request,
+        const std::shared_ptr<const PeerReply> reply,
+        const std::shared_ptr<const PeerRequest> request,
 #if OT_CASH
         const std::shared_ptr<blind::Purse> purse,
 #endif

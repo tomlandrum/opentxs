@@ -110,9 +110,12 @@ Server::Server(const opentxs::api::server::Manager& manager)
 
 void Server::ActivateCron()
 {
-    LogNormal(OT_METHOD)(__FUNCTION__)(": Activate Cron.")(
-        m_Cron->ActivateCron() ? "(STARTED)" : "FAILED")(".")
-        .Flush();
+    if (m_Cron->ActivateCron()) {
+        LogVerbose(OT_METHOD)(__FUNCTION__)(": Activate Cron. (STARTED)")
+            .Flush();
+    } else {
+        LogNormal(OT_METHOD)(__FUNCTION__)(": Activate Cron. (FAILED)").Flush();
+    }
 }
 
 const api::Core& Server::API() const { return manager_; }
@@ -341,9 +344,8 @@ void Server::CreateMainFile(bool& mainFileExists)
     const bool useInproc = !inproc.empty();
 
     if (useInproc) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Creating inproc contract for instance ")(manager_.GetInproc())(
-            ".")
+        LogNormal("Creating inproc contract for instance ")(
+            manager_.GetInproc())
             .Flush();
         ServerContract::Endpoint inproc{proto::ADDRESSTYPE_INPROC,
                                         proto::PROTOCOLVERSION_LEGACY,
@@ -352,8 +354,7 @@ void Server::CreateMainFile(bool& mainFileExists)
                                         2};
         endpoints.push_back(inproc);
     } else {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Creating standard contract.")
-            .Flush();
+        LogNormal("Creating standard contract.").Flush();
         ServerContract::Endpoint ipv4{proto::ADDRESSTYPE_IPV4,
                                       proto::PROTOCOLVERSION_LEGACY,
                                       hostname,
@@ -471,9 +472,8 @@ void Server::CreateMainFile(bool& mainFileExists)
         "",
         "");
 
-    LogNormal(OT_METHOD)(__FUNCTION__)(
-        " Your server contract has been saved as ")(SERVER_CONTRACT_FILE)(
-        " in the server data directory.")
+    LogNormal("Your new server contract has been saved as ")(
+        SERVER_CONTRACT_FILE)(" in the server data directory.")
         .Flush();
 
 #if OT_CRYPTO_SUPPORTED_KEY_HD

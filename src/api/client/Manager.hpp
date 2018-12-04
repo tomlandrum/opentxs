@@ -23,9 +23,9 @@ public:
         const Identifier& nymID,
         const Identifier& serverID) const override;
     const OT_API& OTAPI(const std::string& wallet = "") const override;
+    const client::OTX& OTX() const override;
     const api::client::Pair& Pair() const override;
     const client::ServerAction& ServerAction() const override;
-    const client::Sync& Sync() const override;
     const api::client::UI& UI() const override;
     const client::Workflow& Workflow() const override;
     const api::network::ZMQ& ZMQ() const override;
@@ -50,7 +50,7 @@ private:
     std::unique_ptr<OT_API> ot_api_;
     std::unique_ptr<OTAPI_Exec> otapi_exec_;
     std::unique_ptr<api::client::ServerAction> server_action_;
-    std::unique_ptr<api::client::Sync> sync_;
+    std::unique_ptr<api::client::OTX> otx_;
     std::unique_ptr<api::client::Pair> pair_;
     std::unique_ptr<api::client::UI> ui_;
     mutable std::recursive_mutex lock_;

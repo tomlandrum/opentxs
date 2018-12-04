@@ -7,9 +7,12 @@
 
 #include "opentxs/core/crypto/Signature.hpp"
 #include "opentxs/core/Data.hpp"
+#include "opentxs/core/Log.hpp"
 #include "opentxs/core/String.hpp"
 
 #include "AsymmetricProvider.hpp"
+
+#define OT_METHOD "opentxs::crypto::AsymmetricProvider::"
 
 namespace opentxs::crypto
 {
@@ -77,6 +80,11 @@ bool AsymmetricProvider::SignContract(
     theSignature.SetData(signature, true);  // true means, "yes, with newlines
                                             // in the b64-encoded output,
                                             // please."
+
+    if (false == success) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to sign contract").Flush();
+    }
+
     return success;
 }
 

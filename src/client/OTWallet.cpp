@@ -10,6 +10,7 @@
 #include "opentxs/api/crypto/Crypto.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #include "opentxs/api/Core.hpp"
+#include "opentxs/api/Factory.hpp"
 #if OT_CRYPTO_WITH_BIP39
 #include "opentxs/api/HDSeed.hpp"
 #endif
@@ -272,18 +273,7 @@ bool OTWallet::SaveWallet(const char* szFilename)
 
     return save_wallet(lock, szFilename);
 }
-/*
 
-<wallet name="" version="2.0">
-
-<cachedKey>
-CkwAAQCAAAD//wAAAAhVRpwTzc+1NAAAABCKe14aROG8v/ite3un3bBCAAAAINyw
-HXTM/x449Al2z8zBHBTRF77jhHkYLj8MIgqrJ2Ep
-</cachedKey>
-
-</wallet>
-
- */
 bool OTWallet::LoadWallet(const char* szFilename)
 {
     OT_ASSERT_MSG(
@@ -311,7 +301,7 @@ bool OTWallet::LoadWallet(const char* szFilename)
                                             // there, in this case.)
 
     if (!OTDB::Exists(api_.DataFolder(), ".", szFilename, "", "")) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Wallet file does not exist: ")(
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Wallet file does not exist: ")(
             szFilename)(". Creating...")
             .Flush();
 

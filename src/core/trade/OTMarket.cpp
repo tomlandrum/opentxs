@@ -514,7 +514,7 @@ bool OTMarket::GetOfferList(
         OT_ASSERT(nullptr != pOffer);
 
         // OfferDataMarket"
-        std::unique_ptr<OTDB::AskData>pOfferData(dynamic_cast<OTDB::AskData*>(
+        std::unique_ptr<OTDB::AskData> pOfferData(dynamic_cast<OTDB::AskData*>(
             OTDB::CreateObject(OTDB::STORED_OBJ_ASK_DATA)));
 
         const std::int64_t& lTransactionNum = pOffer->GetTransactionNum();

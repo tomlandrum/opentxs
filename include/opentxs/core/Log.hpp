@@ -56,7 +56,6 @@ class Settings;
 #endif
 #endif
 
-
 extern LogSource LogOutput;  // otErr
 extern LogSource LogNormal;  // otOut
 extern LogSource LogDetail;

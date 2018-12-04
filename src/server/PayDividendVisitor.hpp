@@ -31,9 +31,9 @@ class PayDividendVisitor : public AccountVisitor
     const OTIdentifier payoutUnitTypeId_;
     const OTIdentifier voucherAcctId_;
     OTString m_pstrMemo;  // contains the original payDividend item from
-                                  // the payDividend transaction request.
-                                  // (Stored in the memo field for each
-                                  // voucher.)
+                          // the payDividend transaction request.
+                          // (Stored in the memo field for each
+                          // voucher.)
     std::int64_t m_lPayoutPerShare{0};
     std::int64_t m_lAmountPaidOut{0};   // as we pay each voucher out, we keep a
                                         // running count.

@@ -2814,7 +2814,7 @@ bool StorageFS::onQueryPackedBuffer(
             .Flush();
         return false;
     } else if (0 == lRet) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failure reading from ")(
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Failure reading from ")(
             strOutput)(": file does not exist.")
             .Flush();
         return false;
@@ -2907,7 +2907,7 @@ bool StorageFS::onQueryPlainString(
             .Flush();
         return false;
     } else if (0 == lRet) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failure reading from ")(
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Failure reading from ")(
             strOutput)(": file does not exist.")
             .Flush();
         return false;

@@ -1,3 +1,6 @@
+#[[
+// clang-format off
+]]#
 # Copyright (c) 2018 The Open-Transactions developers
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,3 +17,6 @@ set(cxx-install-headers
 install(FILES ${cxx-install-headers}
         DESTINATION include/opentxs/core/identifier
         COMPONENT dev)
+#[[
+// clang-format on
+]]#

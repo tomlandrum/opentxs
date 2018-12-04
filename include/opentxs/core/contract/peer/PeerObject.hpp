@@ -25,8 +25,8 @@ public:
 #if OT_CASH
     EXPORT virtual std::shared_ptr<blind::Purse> Purse() const = 0;
 #endif
-    EXPORT virtual const std::shared_ptr<PeerRequest> Request() const = 0;
-    EXPORT virtual const std::shared_ptr<PeerReply> Reply() const = 0;
+    EXPORT virtual const std::shared_ptr<const PeerRequest> Request() const = 0;
+    EXPORT virtual const std::shared_ptr<const PeerReply> Reply() const = 0;
     EXPORT virtual proto::PeerObject Serialize() const = 0;
     EXPORT virtual proto::PeerObjectType Type() const = 0;
     EXPORT virtual bool Validate() const = 0;

@@ -445,7 +445,7 @@ bool OTCachedKey::GetMasterPassword(
             bool bUsingDefaultPassword = false;
             {
                 if (4 > passUserInput.getPasswordSize()) {
-                    LogNormal(OT_METHOD)(__FUNCTION__)(
+                    LogVerbose(OT_METHOD)(__FUNCTION__)(
                         ": Password entered was less than 4 characters "
                         "std::int64_t! This is NOT secure!!"
                         "... Assuming password is for testing only... "

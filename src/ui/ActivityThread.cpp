@@ -8,7 +8,7 @@
 #include "opentxs/api/client/Activity.hpp"
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/Manager.hpp"
-#include "opentxs/api/client/Sync.hpp"
+#include "opentxs/api/client/OTX.hpp"
 #include "opentxs/contact/Contact.hpp"
 #include "opentxs/contact/ContactData.hpp"
 #include "opentxs/core/Flag.hpp"
@@ -89,9 +89,9 @@ ActivityThread::ActivityThread(
 
 bool ActivityThread::check_draft(const ActivityThreadRowID& id) const
 {
-    const auto& taskID = std::get<0>(id);
-    const auto [status, contactID] = api_.Sync().MessageStatus(taskID);
-    [[maybe_unused]] const auto& notUsed = contactID;
+    const auto& taskID = std::get<3>(id);
+    [[maybe_unused]] const auto [status, messageID] =
+        api_.OTX().MessageStatus(taskID);
 
     switch (status) {
         case ThreadStatus::RUNNING:
@@ -299,7 +299,8 @@ ActivityThreadRowID ActivityThread::process_item(
 {
     const ActivityThreadRowID id{Identifier::Factory(item.id()),
                                  static_cast<StorageBox>(item.box()),
-                                 Identifier::Factory(item.account())};
+                                 Identifier::Factory(item.account()),
+                                 0};
     const ActivityThreadSortKey key{std::chrono::seconds(item.time()),
                                     item.index()};
     const CustomData custom{new std::string};
@@ -340,13 +341,14 @@ bool ActivityThread::same(
     const ActivityThreadRowID& lhs,
     const ActivityThreadRowID& rhs) const
 {
-    const auto& [lID, lBox, lAccount] = lhs;
-    const auto& [rID, rBox, rAccount] = rhs;
+    const auto& [lID, lBox, lAccount, lTask] = lhs;
+    const auto& [rID, rBox, rAccount, rTask] = rhs;
     const bool sameID = (lID->str() == rID->str());
     const bool sameBox = (lBox == rBox);
     const bool sameAccount = (lAccount->str() == rAccount->str());
+    const bool sametask = (lTask == rTask);
 
-    return sameID && sameBox && sameAccount;
+    return sameID && sameBox && sameAccount && sametask;
 }
 
 bool ActivityThread::SendDraft() const
@@ -374,11 +376,11 @@ bool ActivityThread::SendDraft() const
         return false;
     }
 
-    const auto taskID =
-        api_.Sync().MessageContact(nym_id_, *participants_.begin(), draft_);
+    const auto task =
+        api_.OTX().MessageContact(nym_id_, *participants_.begin(), draft_);
+    const auto taskID = std::get<0>(task);
 
-    // if (taskID.empty())
-    if (taskID->empty()) {
+    if (0 == taskID) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Failed to queue message for sending.")
             .Flush();
@@ -386,8 +388,10 @@ bool ActivityThread::SendDraft() const
         return false;
     }
 
-    const ActivityThreadRowID id{
-        taskID, StorageBox::DRAFT, Identifier::Factory()};
+    const ActivityThreadRowID id{Identifier::Factory(std::to_string(taskID)),
+                                 StorageBox::DRAFT,
+                                 Identifier::Factory(),
+                                 taskID};
     const ActivityThreadSortKey key{std::chrono::system_clock::now(), 0};
     draft_tasks_.insert(id);
     const CustomData custom{new std::string(draft_)};

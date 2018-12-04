@@ -41,7 +41,7 @@ public:
     };
 
 private:
-    OTString m_strName;               // Name of this variable.
+    OTString m_strName;             // Name of this variable.
     std::string m_str_Value;        // If a string, the value is stored here.
     std::int32_t m_nValue{};        // If an integer, the value is stored here.
     bool m_bValue{false};           // If a bool, the value is stored here.

@@ -43,7 +43,9 @@ public:
     void OverrideType(const String& accountID);
     void SetAccount(const String& accountID);
     void SetAcknowledgments(const ClientContext& context);
+    void SetBool(const bool value);
     void SetDepth(const std::int64_t depth);
+    void SetEnum(const std::uint8_t value);
     void SetInboxHash(const Identifier& hash);
     void SetInstrumentDefinitionID(const String& id);
     void SetNymboxHash(const Identifier& hash);

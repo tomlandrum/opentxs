@@ -334,9 +334,9 @@ protected:
     std::int32_t ProcessXMLNode(irr::io::IrrXMLReader*& xml) override;
 
     OTString m_strLabel;  // OTSmartContract can put its trans# here. (Allowing
-                        // us to use it in the OTScriptable methods where any
-                        // smart contract would normally want to log its
-                        // transaction #, not just the clause name.)
+                          // us to use it in the OTScriptable methods where any
+                          // smart contract would normally want to log its
+                          // transaction #, not just the clause name.)
 
     OTScriptable(const api::Core& core);
 

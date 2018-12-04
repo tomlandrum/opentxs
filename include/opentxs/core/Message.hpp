@@ -140,34 +140,34 @@ public:
         OTMessageStrategy* strategy);
 
     OTString m_strCommand;   // perhaps @register is the string for "reply to
-                           // register" a-ha
+                             // register" a-ha
     OTString m_strNotaryID;  // This is sent with every message for security
-                           // reasons.
-    OTString m_strNymID;     // The hash of the user's public key... or x509 cert.
+                             // reasons.
+    OTString m_strNymID;  // The hash of the user's public key... or x509 cert.
     OTString m_strNymboxHash;  // Sometimes in a server reply as FYI, sometimes
-                             // in user message for validation purposes.
-    OTString m_strInboxHash;   // Sometimes in a server reply as FYI, sometimes in
-                             // user message for validation purposes.
+                               // in user message for validation purposes.
+    OTString m_strInboxHash;   // Sometimes in a server reply as FYI, sometimes
+                               // in user message for validation purposes.
     OTString m_strOutboxHash;  // Sometimes in a server reply as FYI, sometimes
-                             // in user message for validation purposes.
-    OTString m_strNymID2;      // If the user requests public key of another user.
-                             // ALSO used for MARKET ID sometimes.
+                               // in user message for validation purposes.
+    OTString m_strNymID2;  // If the user requests public key of another user.
+                           // ALSO used for MARKET ID sometimes.
     OTString m_strNymPublicKey;  // The user's public key... or x509 cert.
     OTString m_strInstrumentDefinitionID;  // The hash of the contract for
-                                         // whatever
-                                         // digital
-                                         // asset is referenced.
+                                           // whatever
+                                           // digital
+                                           // asset is referenced.
     OTString m_strAcctID;                  // The unique ID of an asset account.
     OTString m_strType;                    // .
     OTString m_strRequestNum;  // Every user has a request number. This prevents
-                             // messages from
-                             // being intercepted and repeated by attackers.
+                               // messages from
+                               // being intercepted and repeated by attackers.
 
     OTArmored m_ascInReferenceTo;  // If the server responds to a user
-                                 // command, he sends
+                                   // command, he sends
     // it back to the user here in ascii armored format.
     OTArmored m_ascPayload;  // If the reply needs to include a payload (such
-                           // as a new account
+                             // as a new account
     // or a message envelope or request from another user etc) then
     // it can be put here in ascii-armored format.
     OTArmored m_ascPayload2;  // Sometimes one payload just isn't enough.

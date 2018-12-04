@@ -33,9 +33,9 @@ public:
         const Identifier& serverID) const = 0;
     EXPORT virtual const OT_API& OTAPI(
         const std::string& wallet = "") const = 0;
+    EXPORT virtual const client::OTX& OTX() const = 0;
     EXPORT virtual const client::Pair& Pair() const = 0;
     EXPORT virtual const client::ServerAction& ServerAction() const = 0;
-    EXPORT virtual const client::Sync& Sync() const = 0;
     EXPORT virtual const api::client::UI& UI() const = 0;
     EXPORT virtual const client::Workflow& Workflow() const = 0;
     EXPORT virtual const network::ZMQ& ZMQ() const = 0;

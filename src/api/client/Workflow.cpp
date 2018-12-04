@@ -1013,15 +1013,19 @@ bool Workflow::can_convey_transfer(const proto::PaymentWorkflow& workflow)
     switch (workflow.state()) {
         case proto::PAYMENTWORKFLOWSTATE_INITIATED:
         case proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED: {
+
             return true;
-        } break;
+        }
+        case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+            break;
+        }
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow state.")
                 .Flush();
-
-            return false;
         }
     }
+
+    return false;
 }
 
 bool Workflow::can_deposit_cheque(const proto::PaymentWorkflow& workflow)
@@ -1413,7 +1417,7 @@ OTIdentifier Workflow::convey_incoming_transfer(
     const auto existing = get_workflow(
         global,
         {proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER},
-        senderNymID,
+        nymID.str(),
         transfer);
 
     if (existing) {
@@ -1971,11 +1975,16 @@ std::unique_ptr<Item> Workflow::extract_transfer_from_receipt(
     Identifier& depositorNymID) const
 {
     if (transactionType::transferReceipt != receipt.GetType()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect receipt type: ")(
-            receipt.GetTypeString())
-            .Flush();
+        if (transactionType::pending == receipt.GetType()) {
 
-        return nullptr;
+            return extract_transfer_from_pending(receipt);
+        } else {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect receipt type: ")(
+                receipt.GetTypeString())
+                .Flush();
+
+            return nullptr;
+        }
     }
 
     auto serializedAcceptPending = String::Factory();
@@ -2139,7 +2148,7 @@ std::shared_ptr<proto::PaymentWorkflow> Workflow::get_workflow_by_id(
     const auto loaded = api_.Storage().Load(nymID, workflowID, output);
 
     if (false == loaded) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Workflow ")(workflowID)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Workflow ")(workflowID)(
             " for nym ")(nymID)(" can not be loaded")
             .Flush();
 
@@ -2157,8 +2166,8 @@ std::shared_ptr<proto::PaymentWorkflow> Workflow::get_workflow_by_id(
     auto output = get_workflow_by_id(nymID, workflowID);
 
     if (0 == types.count(output->type())) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect type on workflow ")(
-            workflowID)(" for nym ")(nymID)
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect type (")(
+            output->type())(") on workflow ")(workflowID)(" for nym ")(nymID)
             .Flush();
 
         return {nullptr};
@@ -2662,7 +2671,7 @@ bool Workflow::SendCheque(
         reply);
 }
 
-void Workflow::update_activity(
+bool Workflow::update_activity(
     const Identifier& localNymID,
     const Identifier& remoteNymID,
     const Identifier& sourceID,
@@ -2672,19 +2681,29 @@ void Workflow::update_activity(
 {
     const auto contactID = contact_.ContactID(remoteNymID);
 
-    OT_ASSERT(false == contactID->empty())
+    if (contactID->empty()) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Contact for nym ")(remoteNymID)(
+            " does not exist")
+            .Flush();
+
+        return false;
+    }
 
     const bool added = activity_.AddPaymentEvent(
         localNymID, contactID, type, sourceID, workflowID, time);
 
     if (added) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Success adding payment event to thread ")(contactID->str())
             .Flush();
+
+        return true;
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Failed to add payment event to thread ")(contactID->str())
             .Flush();
+
+        return false;
     }
 }
 
@@ -2778,6 +2797,19 @@ OTIdentifier Workflow::WriteCheque(const opentxs::Cheque& cheque) const
             .Flush();
 
         return Identifier::Factory(existing->id());
+    }
+
+    if (cheque.HasRecipient()) {
+        const auto& recipient = cheque.GetRecipientNymID();
+        const auto contactID = contact_.ContactID(recipient);
+
+        if (contactID->empty()) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": No contact exists for recipient nym ")(recipient)
+                .Flush();
+
+            return Identifier::Factory();
+        }
     }
 
     const std::string party =

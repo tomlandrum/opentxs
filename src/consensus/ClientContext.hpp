@@ -59,6 +59,7 @@ private:
     using implementation::Context::serialize;
     proto::Context serialize(const Lock& lock) const override;
     const Identifier& server_nym_id(const Lock& lock) const override;
+    std::string type() const override { return "client"; }
 
     ClientContext(
         const api::Core& api,

@@ -318,6 +318,12 @@ bool Symmetric::Decrypt(
         plaintext_key_->getMemorySize(),
         plaintext);
 
+    if (false == output) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Unable to decrypt key.").Flush();
+
+        return false;
+    }
+
     return output;
 }
 

@@ -7,6 +7,7 @@ set(MODULE_NAME opentxs-rpc)
 
 set(cxx-sources
   RPC.cpp
+  RPC.tpp
 )
 
 set(cxx-install-headers "")

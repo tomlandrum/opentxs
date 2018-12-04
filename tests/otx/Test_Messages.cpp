@@ -47,7 +47,7 @@ public:
 
         OT_ASSERT(clientVersion)
 
-        client.Sync().SetIntroductionServer(*clientVersion);
+        client.OTX().SetIntroductionServer(*clientVersion);
     }
 
     void init()

@@ -230,6 +230,15 @@ public:
         std::shared_ptr<const Nym> targetNym,
         std::shared_ptr<const Nym> signerNym);
     static crypto::OpenSSL* OpenSSL(const api::Crypto& crypto);
+    static api::client::internal::Operation* Operation(
+        const api::client::Manager& api,
+        const identifier::Nym& nym,
+        const Identifier& server);
+    static api::client::OTX* OTX(
+        const Flag& running,
+        const api::client::Manager& api,
+        OTClient& otclient,
+        const ContextLockCallback& lockCallback);
     static api::client::Pair* Pair(
         const Flag& running,
         const api::client::Manager& client);
@@ -271,12 +280,12 @@ public:
 #endif
     static opentxs::PeerObject* PeerObject(
         const api::Core& api,
-        const std::shared_ptr<PeerRequest> request,
-        const std::shared_ptr<PeerReply> reply,
+        const std::shared_ptr<const PeerRequest> request,
+        const std::shared_ptr<const PeerReply> reply,
         const std::uint32_t& version);
     static opentxs::PeerObject* PeerObject(
         const api::Core& api,
-        const std::shared_ptr<PeerRequest> request,
+        const std::shared_ptr<const PeerRequest> request,
         const std::uint32_t& version);
     static opentxs::PeerObject* PeerObject(
         const api::client::Contacts& contacts,
@@ -360,13 +369,17 @@ public:
         const api::client::Manager& api,
         const ContextLockCallback& lockCallback);
     static internal::ServerContext* ServerContext(
-        const api::Core& api,
+        const api::client::Manager& api,
+        const network::zeromq::PublishSocket& requestSent,
+        const network::zeromq::PublishSocket& replyReceived,
         const ConstNym& local,
         const ConstNym& remote,
         const Identifier& server,
         network::ServerConnection& connection);
     static internal::ServerContext* ServerContext(
-        const api::Core& api,
+        const api::client::Manager& api,
+        const network::zeromq::PublishSocket& requestSent,
+        const network::zeromq::PublishSocket& replyReceived,
         const proto::Context& serialized,
         const ConstNym& local,
         const ConstNym& remote,
@@ -441,11 +454,6 @@ public:
         const Random& random,
         const Flag& bucket);
 #endif
-    static api::client::Sync* Sync(
-        const Flag& running,
-        const api::client::Manager& api,
-        OTClient& otclient,
-        const ContextLockCallback& lockCallback);
 #if OT_CASH
     static blind::Token* Token(
         const api::Core& api,

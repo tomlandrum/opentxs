@@ -955,8 +955,9 @@ bool String::TokenizeIntoKeyValuePairs(
     {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Error calling wordexp() "
-                 "(to expand user-defined script args). Data: ")
-              (static_cast<const opentxs::String&>(*this))(".").Flush();
+            "(to expand user-defined script args). Data: ")(
+            static_cast<const opentxs::String&>(*this))(".")
+            .Flush();
         //        wordfree(&exp_result);
         return false;
     }

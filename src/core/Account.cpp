@@ -415,7 +415,7 @@ bool Account::GetOutboxHash(Identifier& output)
 
 bool Account::InitBoxes(const Nym& signer)
 {
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Generating inbox/outbox.").Flush();
+    LogDetail(OT_METHOD)(__FUNCTION__)(": Generating inbox/outbox.").Flush();
     std::unique_ptr<Ledger> inbox{LoadInbox(signer)};
     std::unique_ptr<Ledger> outbox{LoadInbox(signer)};
 

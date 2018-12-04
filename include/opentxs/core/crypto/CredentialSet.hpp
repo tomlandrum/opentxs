@@ -232,14 +232,15 @@ public:
             }
             case (proto::SIGROLE_NYMIDSOURCE): {
                 LogOutput(": Credentials to be signed "
-                      "with a nym source can not use this method.")
-                      .Flush();
+                          "with a nym source can not use this method.")
+                    .Flush();
 
                 return false;
             }
             case (proto::SIGROLE_PRIVCREDENTIAL): {
                 LogOutput(": Private credential can not "
-                      "use this method.").Flush();
+                          "use this method.")
+                    .Flush();
 
                 return false;
             }

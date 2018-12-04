@@ -120,16 +120,21 @@ bool Sodium::Derive(
         return false;
     }
 
-    return (
-        0 == crypto_pwhash(
-                 output,
-                 outputSize,
-                 reinterpret_cast<const char*>(input),
-                 inputSize,
-                 salt,
-                 operations,
-                 difficulty,
-                 crypto_pwhash_ALG_ARGON2I13));
+    const auto success = 0 == crypto_pwhash(
+                                  output,
+                                  outputSize,
+                                  reinterpret_cast<const char*>(input),
+                                  inputSize,
+                                  salt,
+                                  operations,
+                                  difficulty,
+                                  crypto_pwhash_ALG_ARGON2I13);
+
+    if (false == success) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to derive key").Flush();
+    }
+
+    return success;
 }
 
 bool Sodium::Digest(
@@ -491,7 +496,11 @@ bool Sodium::Sign(
     const crypto::key::EllipticCurve* key =
         dynamic_cast<const key::Ed25519*>(&theKey);
 
-    if (nullptr == key) { return false; }
+    if (nullptr == key) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect key type.").Flush();
+
+        return false;
+    }
 
     if (nullptr == pPWData) {
         OTPasswordData passwordData(

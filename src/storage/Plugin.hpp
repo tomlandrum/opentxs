@@ -115,9 +115,9 @@ bool opentxs::api::storage::Driver::LoadProto(
 
     if (!valid) {
         if (loaded) {
-            LogOutput(
-                ": Specified object was located but could not be "
-                  "validated.").Flush();
+            LogOutput(": Specified object was located but could not be "
+                      "validated.")
+                .Flush();
             LogOutput(": Hash: ")(hash).Flush();
             LogOutput(": Size: ")(raw.size()).Flush();
         } else {

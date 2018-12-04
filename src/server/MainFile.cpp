@@ -262,7 +262,7 @@ bool MainFile::CreateMainFile(
         LogNormal(OT_METHOD)(__FUNCTION__)(": Error loading server nym.")
             .Flush();
     } else {
-        LogNormal(OT_METHOD)(__FUNCTION__)(
+        LogVerbose(OT_METHOD)(__FUNCTION__)(
             ": OKAY, we have apparently created the new "
             "server. "
             "Let's try to load up your new server contract...")
@@ -348,17 +348,15 @@ bool MainFile::LoadMainFile(bool bReadOnly)
                             xml->getAttributeValue("transactionNum"));
                         server_.GetTransactor().transactionNumber(
                             strTransactionNumber->ToLong());
-                        {
-                            LogNormal(OT_METHOD)(__FUNCTION__)(
-                                ": Loading Open Transactions server. "
-                                "File version: ")(version_)(
-                                "Last Issued Transaction Number: ")(
-                                server_.GetTransactor().transactionNumber())(
-                                "Notary ID: ")(server_.GetServerID().str())(
-                                "Server Nym ID: ")(server_.ServerNymID())(".")
-                                .Flush();
-                        }
-
+                        LogNormal("Loading Open Transactions server").Flush();
+                        LogNormal("* File version: ")(version_).Flush();
+                        LogNormal("* Last Issued Transaction Number: ")(
+                            server_.GetTransactor().transactionNumber())
+                            .Flush();
+                        LogNormal("* Notary ID: ")(server_.GetServerID().str())
+                            .Flush();
+                        LogNormal("* Server Nym ID: ")(server_.ServerNymID())
+                            .Flush();
                     } else if (strNodeName->Compare("cachedKey")) {
                         auto ascCachedKey = Armored::Factory();
 
@@ -379,7 +377,7 @@ bool MainFile::LoadMainFile(bool bReadOnly)
                             }
                         }
                         {
-                            LogNormal(OT_METHOD)(__FUNCTION__)(
+                            LogVerbose(OT_METHOD)(__FUNCTION__)(
                                 ": Loading cachedKey: ")(ascCachedKey->Get())(
                                 ".")
                                 .Flush();
@@ -491,7 +489,7 @@ bool MainFile::LoadServerUserAndContract()
         server_.API().Wallet().Nym(Identifier::Factory(server_.ServerNymID()));
 
     if (serverNym->HasCapability(NymCapability::SIGN_MESSAGE)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Server nym is viable.").Flush();
+        LogTrace(OT_METHOD)(__FUNCTION__)(": Server nym is viable.").Flush();
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Server nym lacks private keys.")
             .Flush();
@@ -512,17 +510,17 @@ bool MainFile::LoadServerUserAndContract()
     server_.Cron().SetServerNym(serverNym);
 
     if (!server_.Cron().LoadCron()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Failed loading Cron file. (Did you just create this "
             "server?).")
             .Flush();
     }
-    LogNormal(OT_METHOD)(__FUNCTION__)(": Loading the server contract...")
+    LogDetail(OT_METHOD)(__FUNCTION__)(": Loading the server contract...")
         .Flush();
     auto pContract = server_.API().Wallet().Server(NOTARY_ID);
 
     if (pContract) {
-        LogNormal(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": ** Main Server Contract Verified **")
             .Flush();
         bSuccess = true;

@@ -11,6 +11,8 @@
 
 using namespace opentxs;
 
+#define ALICE "Alice"
+#define BOB "Bob"
 #define ACCOUNT_SUMMARY_BTC "ACCOUNT_SUMMARY_BTC"
 #define ACCOUNT_SUMMARY_BCH "ACCOUNT_SUMMARY_BCH"
 #define ACTIVITY_SUMMARY "ACTIVITY_SUMMARY"
@@ -19,7 +21,7 @@ using namespace opentxs;
 #define PAYABLE_LIST_BTC "PAYABLE_LIST_BTC"
 #define PAYABLE_LIST_BCH "PAYABLE_LIST_BCH"
 #define PROFILE "PROFILE"
-#define OT_METHOD "opentxs::Test_Basic::"
+#define OT_METHOD "::Test_Basic::"
 
 namespace
 {
@@ -28,434 +30,86 @@ bool init_{false};
 class Test_Basic : public ::testing::Test
 {
 public:
-    // name, Widget ID, counter
-    using WidgetData = std::map<std::string, std::pair<OTIdentifier, int>>;
-    // id, name
-    using WidgetMap = std::map<OTIdentifier, std::string>;
+    using WidgetCallback = std::function<bool()>;
+    // target counter value, callback
+    using WidgetCallbackData =
+        std::tuple<int, WidgetCallback, std::promise<bool>>;
+    // name, counter
+    using WidgetData = std::tuple<std::string, int, WidgetCallbackData>;
+    using WidgetMap = std::map<OTIdentifier, WidgetData>;
+    using WidgetNameMap = std::map<std::string, OTIdentifier>;
     // message type, counter
     using ServerReplyMap = std::map<std::string, int>;
+    using UIChecker = std::function<bool()>;
 
     static const opentxs::ArgList args_;
     static const std::string SeedA_;
     static const std::string SeedB_;
     static const std::string Alice_;
     static const std::string Bob_;
-    static const OTIdentifier alice_nym_id_;
-    static const OTIdentifier bob_nym_id_;
+    static const OTNymID alice_nym_id_;
+    static const OTNymID bob_nym_id_;
     static const std::shared_ptr<const ServerContract> server_contract_;
 
-    static WidgetData alice_updates_;
-    // Widget id, name
     static WidgetMap alice_widget_map_;
-    static WidgetData bob_updates_;
+    static WidgetNameMap alice_ui_names_;
     static WidgetMap bob_widget_map_;
-    static ServerReplyMap alice_server_reply_map_;
-    static ServerReplyMap bob_server_reply_map_;
+    static WidgetNameMap bob_ui_names_;
 
     static OTZMQListenCallback alice_ui_update_callback_;
     static OTZMQListenCallback bob_ui_update_callback_;
-    static OTZMQListenCallback alice_server_reply_callback_;
-    static OTZMQListenCallback bob_server_reply_callback_;
 
     static const opentxs::api::client::Manager* alice_;
     static const opentxs::api::client::Manager* bob_;
     static std::mutex callback_lock_;
-    static std::mutex server_reply_lock_;
 
     const opentxs::api::client::Manager& alice_client_;
     const opentxs::api::client::Manager& bob_client_;
-    const opentxs::api::server::Manager& server_;
-    const Identifier& server_id_;
+    const opentxs::api::server::Manager& server_1_;
+    const OTServerID server_1_id_;
     OTZMQSubscribeSocket alice_ui_update_listener_;
     OTZMQSubscribeSocket bob_ui_update_listener_;
-    OTZMQSubscribeSocket alice_server_reply_listener_;
-    OTZMQSubscribeSocket bob_server_reply_listener_;
+
+    static std::string alice_payment_code_;
+    static std::string bob_payment_code_;
 
     Test_Basic()
         : alice_client_(OT::App().StartClient(args_, 0))
         , bob_client_(OT::App().StartClient(args_, 1))
-        , server_(OT::App().StartServer(args_, 0, true))
-        , server_id_(server_.ID())
+        , server_1_(OT::App().StartServer(args_, 0, true))
+        , server_1_id_(identifier::Server::Factory(server_1_.ID().str()))
         , alice_ui_update_listener_(
               alice_client_.ZeroMQ().SubscribeSocket(alice_ui_update_callback_))
         , bob_ui_update_listener_(
               bob_client_.ZeroMQ().SubscribeSocket(bob_ui_update_callback_))
-        , alice_server_reply_listener_(alice_client_.ZeroMQ().SubscribeSocket(
-              alice_server_reply_callback_))
-        , bob_server_reply_listener_(
-              bob_client_.ZeroMQ().SubscribeSocket(bob_server_reply_callback_))
     {
 #if OT_CASH
-        server_.SetMintKeySize(OT_MINT_KEY_SIZE_TEST);
+        server_1_.SetMintKeySize(OT_MINT_KEY_SIZE_TEST);
 #endif
         subscribe_sockets();
 
         if (false == init_) { init(); }
-
-        Lock lock(server_reply_lock_);
-        alice_server_reply_map_.clear();
-        bob_server_reply_map_.clear();
     }
 
-    void add_ui_widget(
+    std::future<bool> add_ui_widget(
         const std::string& name,
         const Identifier& id,
-        WidgetData& data,
-        WidgetMap& map)
+        WidgetMap& map,
+        WidgetNameMap& nameMap,
+        int counter = 0,
+        WidgetCallback callback = {})
     {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Name: ")(name)(". ID: ")(id)(".")
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Name: ")(name)(" ID: ")(id)
             .Flush();
-        data.emplace(name, std::pair<OTIdentifier, int>({id, 0}));
-        map.emplace(id, name);
-    }
+        WidgetData data{};
+        std::get<0>(data) = name;
+        auto& [limit, cb, promise] = std::get<2>(data);
+        limit = counter, cb = callback, promise = {};
+        auto output = promise.get_future();
+        map.emplace(id, std::move(data));
+        nameMap.emplace(name, id);
 
-    static void check_alice_account_summary_btc(const int counter)
-    {
-        const auto& summary =
-            alice_->UI().AccountSummary(alice_nym_id_, proto::CITEMTYPE_BTC);
-
-        switch (counter) {
-            case 0: {
-                const auto& first = summary.First();
-                EXPECT_FALSE(first->Valid());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_alice_account_summary_bch(const int counter)
-    {
-        const auto& summary =
-            alice_->UI().AccountSummary(alice_nym_id_, proto::CITEMTYPE_BCH);
-
-        switch (counter) {
-            case 0: {
-                const auto& first = summary.First();
-                EXPECT_FALSE(first->Valid());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_alice_activity_summary(const int counter)
-    {
-        const auto& summary = alice_->UI().ActivitySummary(alice_nym_id_);
-
-        switch (counter) {
-            case 0: {
-                const auto& first = summary.First();
-                EXPECT_FALSE(first->Valid());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_alice_contacts(const int counter)
-    {
-        const auto& contacts = alice_->UI().ContactList(alice_nym_id_);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-                const auto& first = contacts.First();
-                ASSERT_TRUE(first->Valid());
-
-                EXPECT_TRUE(
-                    first->DisplayName() == "Alice" ||
-                    first->DisplayName() == "Owner");
-                EXPECT_TRUE(first->Valid());
-
-                EXPECT_STREQ("", first->ImageURI().c_str());
-                EXPECT_STREQ("ME", first->Section().c_str());
-
-                const auto& next = contacts.Next();
-                ASSERT_TRUE(next->Last());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_alice_messagable_list(const int counter)
-    {
-        const auto& list = alice_->UI().MessagableList(alice_nym_id_);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-                ASSERT_TRUE(list.First()->Valid());
-
-                // TODO check section
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_alice_payables_btc(const int counter)
-    {
-        const auto& list =
-            alice_->UI().PayableList(alice_nym_id_, proto::CITEMTYPE_BTC);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-                EXPECT_TRUE(list.First()->Valid());
-                EXPECT_STREQ("Alice", list.First()->DisplayName().c_str());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_alice_payables_bch(const int counter)
-    {
-        const auto& list =
-            alice_->UI().PayableList(alice_nym_id_, proto::CITEMTYPE_BTC);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-                EXPECT_FALSE(list.First()->Valid());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_alice_profile(const int counter)
-    {
-        const auto& profile = alice_->UI().Profile(alice_nym_id_);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-            } break;  // skip
-            case 2: {
-            } break;  // skip
-            case 3: {
-                auto alice_paymentcode_ =
-                    alice_->Factory().PaymentCode(SeedA_, 0, 1);
-                EXPECT_STREQ(
-                    alice_paymentcode_->asBase58().c_str(),
-                    profile.PaymentCode().c_str());
-
-                EXPECT_STREQ("Alice", profile.DisplayName().c_str());
-
-                const auto& alice_first_section_ = profile.First();
-
-                ASSERT_TRUE(alice_first_section_->Valid());
-
-                // TODO check section
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_bob_account_summary_btc(const int counter)
-    {
-        const auto& summary =
-            bob_->UI().AccountSummary(bob_nym_id_, proto::CITEMTYPE_BTC);
-
-        switch (counter) {
-            case 0: {
-                const auto& bob_first_account_ = summary.First();
-
-                EXPECT_FALSE(bob_first_account_->Valid());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_bob_account_summary_bch(const int counter)
-    {
-        const auto& summary =
-            bob_->UI().AccountSummary(bob_nym_id_, proto::CITEMTYPE_BCH);
-
-        switch (counter) {
-            case 0: {
-                const auto& first = summary.First();
-
-                EXPECT_FALSE(first->Valid());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_bob_activity_summary(const int counter)
-    {
-        const auto& summary = bob_->UI().ActivitySummary(bob_nym_id_);
-
-        switch (counter) {
-            case 0: {
-                const auto& first = summary.First();
-
-                EXPECT_FALSE(first->Valid());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_bob_contacts(const int counter)
-    {
-        const auto& contacts = bob_->UI().ContactList(bob_nym_id_);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-                const auto& bob_first_contact_ = contacts.First();
-                ASSERT_TRUE(bob_first_contact_->Valid());
-                EXPECT_STRNE("", bob_first_contact_->ContactID().c_str());
-
-                EXPECT_TRUE(
-                    bob_first_contact_->DisplayName() == "Bob" ||
-                    bob_first_contact_->DisplayName() == "Owner");
-
-                EXPECT_TRUE(bob_first_contact_->Valid());
-
-                EXPECT_STREQ("", bob_first_contact_->ImageURI().c_str());
-
-                EXPECT_STREQ("ME", bob_first_contact_->Section().c_str());
-
-                const auto& next_bob_contact_ = contacts.Next();
-
-                ASSERT_TRUE(next_bob_contact_->Last());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_bob_messagable_list(const int counter)
-    {
-        const auto& list = bob_->UI().MessagableList(bob_nym_id_);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-                const auto& first = list.First();
-
-                ASSERT_TRUE(first->Valid());
-
-                // TODO check section
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_bob_payables_btc(const int counter)
-    {
-        const auto& list =
-            bob_->UI().PayableList(bob_nym_id_, proto::CITEMTYPE_BTC);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-                EXPECT_TRUE(list.First()->Valid());
-                EXPECT_STREQ("Bob", list.First()->DisplayName().c_str());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_bob_payables_bch(const int counter)
-    {
-        const auto& list =
-            bob_->UI().PayableList(bob_nym_id_, proto::CITEMTYPE_BCH);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-                const auto& first = list.First();
-                EXPECT_FALSE(first->Valid());
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static void check_bob_profile(const int counter)
-    {
-        const auto& profile = bob_->UI().Profile(bob_nym_id_);
-
-        switch (counter) {
-            case 0: {
-            } break;  // skip
-            case 1: {
-            } break;  // skip
-            case 2: {
-            } break;  // skip
-            case 3: {
-                auto bob_paymentcode_ =
-                    bob_->Factory().PaymentCode(SeedB_, 0, 1);
-                EXPECT_STREQ(
-                    bob_paymentcode_->asBase58().c_str(),
-                    profile.PaymentCode().c_str());
-
-                EXPECT_STREQ("Bob", profile.DisplayName().c_str());
-
-                const auto& bob_first_section_ = profile.First();
-
-                ASSERT_TRUE(bob_first_section_->Valid());
-
-                // TODO check section
-            } break;
-            default: {
-                ASSERT_TRUE(false);
-            }
-        }
-    }
-
-    static const int& get_counter(
-        const Identifier& id,
-        WidgetData& data,
-        WidgetMap& map)
-    {
-        return data.at(map.at(id)).second;
-    }
-
-    static const int get_reply(const std::string& type, ServerReplyMap& map)
-    {
-        Lock lock(server_reply_lock_);
-
-        try {
-            return map.at(type);
-        } catch (...) {
-            return 0;
-        }
+        return output;
     }
 
     void import_server_contract(
@@ -467,17 +121,7 @@ public:
 
         OT_ASSERT(clientVersion)
 
-        client.Sync().SetIntroductionServer(*clientVersion);
-    }
-
-    static void increment_counter(
-        const Identifier& id,
-        WidgetData& data,
-        WidgetMap& map)
-    {
-        const auto& name = map.at(id);
-        auto& counter = data.at(name).second;
-        ++counter;
+        client.OTX().SetIntroductionServer(*clientVersion);
     }
 
     void init()
@@ -493,16 +137,16 @@ public:
             "palm guilt pudding laundry stay axis prosper",
             "");
         const_cast<std::string&>(Alice_) = alice_client_.Exec().CreateNymHD(
-            proto::CITEMTYPE_INDIVIDUAL, "Alice", SeedA_, 0);
+            proto::CITEMTYPE_INDIVIDUAL, ALICE, SeedA_, 0);
         const_cast<std::string&>(Bob_) = bob_client_.Exec().CreateNymHD(
-            proto::CITEMTYPE_INDIVIDUAL, "Bob", SeedB_, 0);
-        const_cast<OTIdentifier&>(alice_nym_id_) = Identifier::Factory(Alice_);
-        const_cast<OTIdentifier&>(bob_nym_id_) = Identifier::Factory(Bob_);
+            proto::CITEMTYPE_INDIVIDUAL, BOB, SeedB_, 0);
+        const_cast<OTNymID&>(alice_nym_id_) = identifier::Nym::Factory(Alice_);
+        const_cast<OTNymID&>(bob_nym_id_) = identifier::Nym::Factory(Bob_);
         const_cast<std::shared_ptr<const ServerContract>&>(server_contract_) =
-            server_.Wallet().Server(server_id_);
+            server_1_.Wallet().Server(server_1_id_);
 
         OT_ASSERT(server_contract_);
-        OT_ASSERT(false == server_id_.empty());
+        OT_ASSERT(false == server_1_id_->empty());
 
         import_server_contract(*server_contract_, alice_client_);
         import_server_contract(*server_contract_, bob_client_);
@@ -513,19 +157,38 @@ public:
         init_ = true;
     }
 
-    static void process_server_reply(
-        ServerReplyMap& map,
-        const opentxs::network::zeromq::Message& incoming)
+    std::future<bool> set_callback(
+        const std::string& name,
+        const WidgetNameMap& nameMap,
+        int limit,
+        WidgetCallback callback,
+        WidgetMap& map)
     {
-        if (0 == incoming.Body().size()) { return; }
+        Lock lock(callback_lock_);
+        auto& [counter, cb, promise] = std::get<2>(map.at(nameMap.at(name)));
+        counter += limit;
+        cb = callback;
+        promise = {};
 
-        const std::string replyType{incoming.Body().at(0)};
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Received ")(replyType)(".")
-            .Flush();
-        Lock lock(server_reply_lock_);
-        auto& counter = map[replyType];
-        LogOutput(OT_METHOD)(__FUNCTION__)(": ")(std::to_string(++counter))(".")
-            .Flush();
+        return promise.get_future();
+    }
+
+    std::future<bool> set_callback_alice(
+        const std::string& name,
+        int limit,
+        WidgetCallback callback)
+    {
+        return set_callback(
+            name, alice_ui_names_, limit, callback, alice_widget_map_);
+    }
+
+    std::future<bool> set_callback_bob(
+        const std::string& name,
+        int limit,
+        WidgetCallback callback)
+    {
+        return set_callback(
+            name, bob_ui_names_, limit, callback, bob_widget_map_);
     }
 
     void subscribe_sockets()
@@ -534,118 +197,30 @@ public:
             alice_client_.Endpoints().WidgetUpdate()));
         ASSERT_TRUE(bob_ui_update_listener_->Start(
             bob_client_.Endpoints().WidgetUpdate()));
-        ASSERT_TRUE(alice_server_reply_listener_->Start(
-            alice_client_.Endpoints().ServerReplyReceived()));
-        ASSERT_TRUE(bob_server_reply_listener_->Start(
-            bob_client_.Endpoints().ServerReplyReceived()));
     }
 
-    bool ui()
+    static void widget_updated(const Lock& lock, WidgetData& data)
     {
-        Lock lock(callback_lock_);
-        add_ui_widget(
-            PROFILE,
-            alice_client_.UI().Profile(alice_nym_id_).WidgetID(),
-            alice_updates_,
-            alice_widget_map_);
-        add_ui_widget(
-            PROFILE,
-            bob_client_.UI().Profile(bob_nym_id_).WidgetID(),
-            bob_updates_,
-            bob_widget_map_);
-        add_ui_widget(
-            ACTIVITY_SUMMARY,
-            alice_client_.UI().ActivitySummary(alice_nym_id_).WidgetID(),
-            alice_updates_,
-            alice_widget_map_);
-        add_ui_widget(
-            ACTIVITY_SUMMARY,
-            bob_client_.UI().ActivitySummary(bob_nym_id_).WidgetID(),
-            bob_updates_,
-            bob_widget_map_);
-        add_ui_widget(
-            CONTACTS_LIST,
-            alice_client_.UI().ContactList(alice_nym_id_).WidgetID(),
-            alice_updates_,
-            alice_widget_map_);
-        add_ui_widget(
-            CONTACTS_LIST,
-            bob_client_.UI().ContactList(bob_nym_id_).WidgetID(),
-            bob_updates_,
-            bob_widget_map_);
-        add_ui_widget(
-            PAYABLE_LIST_BCH,
-            alice_client_.UI()
-                .PayableList(alice_nym_id_, proto::CITEMTYPE_BCH)
-                .WidgetID(),
-            alice_updates_,
-            alice_widget_map_);
-        add_ui_widget(
-            PAYABLE_LIST_BCH,
-            bob_client_.UI()
-                .PayableList(bob_nym_id_, proto::CITEMTYPE_BCH)
-                .WidgetID(),
-            bob_updates_,
-            bob_widget_map_);
-        add_ui_widget(
-            PAYABLE_LIST_BTC,
-            alice_client_.UI()
-                .PayableList(alice_nym_id_, proto::CITEMTYPE_BTC)
-                .WidgetID(),
-            alice_updates_,
-            alice_widget_map_);
-        add_ui_widget(
-            PAYABLE_LIST_BTC,
-            bob_client_.UI()
-                .PayableList(bob_nym_id_, proto::CITEMTYPE_BTC)
-                .WidgetID(),
-            bob_updates_,
-            bob_widget_map_);
-        add_ui_widget(
-            ACCOUNT_SUMMARY_BTC,
-            alice_client_.UI()
-                .AccountSummary(alice_nym_id_, proto::CITEMTYPE_BTC)
-                .WidgetID(),
-            alice_updates_,
-            alice_widget_map_);
-        add_ui_widget(
-            ACCOUNT_SUMMARY_BTC,
-            bob_client_.UI()
-                .AccountSummary(bob_nym_id_, proto::CITEMTYPE_BTC)
-                .WidgetID(),
-            bob_updates_,
-            bob_widget_map_);
-        add_ui_widget(
-            ACCOUNT_SUMMARY_BCH,
-            alice_client_.UI()
-                .AccountSummary(alice_nym_id_, proto::CITEMTYPE_BCH)
-                .WidgetID(),
-            alice_updates_,
-            alice_widget_map_);
-        add_ui_widget(
-            ACCOUNT_SUMMARY_BCH,
-            bob_client_.UI()
-                .AccountSummary(bob_nym_id_, proto::CITEMTYPE_BCH)
-                .WidgetID(),
-            bob_updates_,
-            bob_widget_map_);
-        add_ui_widget(
-            MESSAGABLE_LIST,
-            alice_client_.UI().MessagableList(alice_nym_id_).WidgetID(),
-            alice_updates_,
-            alice_widget_map_);
-        add_ui_widget(
-            MESSAGABLE_LIST,
-            bob_client_.UI().MessagableList(bob_nym_id_).WidgetID(),
-            bob_updates_,
-            bob_widget_map_);
+        auto& [name, counter, callbackData] = data;
+        auto& [limit, callback, future] = callbackData;
+        ++counter;
 
-        EXPECT_EQ(8, alice_updates_.size());
-        EXPECT_EQ(8, bob_updates_.size());
-        EXPECT_EQ(8, alice_widget_map_.size());
-        EXPECT_EQ(8, bob_widget_map_.size());
-
-        return true;
+        if (counter >= limit) {
+            if (callback) {
+                future.set_value(callback());
+                callback = {};
+                future = {};
+                limit = 0;
+            } else {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Missing callback for ")(
+                    name)
+                    .Flush();
+            }
+        } else {
+            LogVerbose(OT_METHOD)(__FUNCTION__)(": Skipping update ")(counter)(
+                " to ")(name)
+                .Flush();
+        }
     }
 
     static void widget_updated_alice(
@@ -656,28 +231,7 @@ public:
 
         ASSERT_NE("", widgetID->str().c_str());
 
-        increment_counter(widgetID, alice_updates_, alice_widget_map_);
-        const int counter =
-            get_counter(widgetID, alice_updates_, alice_widget_map_);
-        const auto& name = alice_widget_map_.at(widgetID);
-
-        if (name == PROFILE) {
-            check_alice_profile(counter);
-        } else if (ACCOUNT_SUMMARY_BTC == name) {
-            check_alice_account_summary_btc(counter);
-        } else if (ACCOUNT_SUMMARY_BCH == name) {
-            check_alice_account_summary_bch(counter);
-        } else if (ACTIVITY_SUMMARY == name) {
-            check_alice_activity_summary(counter);
-        } else if (CONTACTS_LIST == name) {
-            check_alice_contacts(counter);
-        } else if (MESSAGABLE_LIST == name) {
-            check_alice_messagable_list(counter);
-        } else if (PAYABLE_LIST_BTC == name) {
-            check_alice_payables_btc(counter);
-        } else if (PAYABLE_LIST_BCH == name) {
-            check_alice_payables_bch(counter);
-        }
+        widget_updated(lock, alice_widget_map_.at(widgetID));
     }
 
     static void widget_updated_bob(
@@ -688,28 +242,7 @@ public:
 
         ASSERT_NE("", widgetID->str().c_str());
 
-        increment_counter(widgetID, bob_updates_, bob_widget_map_);
-        const int counter =
-            get_counter(widgetID, bob_updates_, bob_widget_map_);
-        const auto& name = bob_widget_map_.at(widgetID);
-
-        if (name == PROFILE) {
-            check_bob_profile(counter);
-        } else if (ACCOUNT_SUMMARY_BTC == name) {
-            check_bob_account_summary_btc(counter);
-        } else if (ACCOUNT_SUMMARY_BCH == name) {
-            check_bob_account_summary_bch(counter);
-        } else if (ACTIVITY_SUMMARY == name) {
-            check_bob_activity_summary(counter);
-        } else if (CONTACTS_LIST == name) {
-            check_bob_contacts(counter);
-        } else if (MESSAGABLE_LIST == name) {
-            check_bob_messagable_list(counter);
-        } else if (PAYABLE_LIST_BTC == name) {
-            check_bob_payables_btc(counter);
-        } else if (PAYABLE_LIST_BCH == name) {
-            check_bob_payables_bch(counter);
-        }
+        widget_updated(lock, bob_widget_map_.at(widgetID));
     }
 };
 
@@ -719,16 +252,14 @@ const std::string Test_Basic::SeedA_{""};
 const std::string Test_Basic::SeedB_{""};
 const std::string Test_Basic::Alice_{""};
 const std::string Test_Basic::Bob_{""};
-const OTIdentifier Test_Basic::alice_nym_id_{Identifier::Factory()};
-const OTIdentifier Test_Basic::bob_nym_id_{Identifier::Factory()};
+const OTNymID Test_Basic::alice_nym_id_{identifier::Nym::Factory()};
+const OTNymID Test_Basic::bob_nym_id_{identifier::Nym::Factory()};
 const std::shared_ptr<const ServerContract> Test_Basic::server_contract_{
     nullptr};
-Test_Basic::WidgetData Test_Basic::alice_updates_{};
 Test_Basic::WidgetMap Test_Basic::alice_widget_map_{};
-Test_Basic::WidgetData Test_Basic::bob_updates_{};
+Test_Basic::WidgetNameMap Test_Basic::alice_ui_names_{};
 Test_Basic::WidgetMap Test_Basic::bob_widget_map_{};
-Test_Basic::ServerReplyMap Test_Basic::alice_server_reply_map_{};
-Test_Basic::ServerReplyMap Test_Basic::bob_server_reply_map_{};
+Test_Basic::WidgetNameMap Test_Basic::bob_ui_names_{};
 OTZMQListenCallback Test_Basic::alice_ui_update_callback_{
     opentxs::network::zeromq::ListenCallback::Factory(
         [](const opentxs::network::zeromq::Message& incoming) -> void {
@@ -739,168 +270,345 @@ OTZMQListenCallback Test_Basic::bob_ui_update_callback_{
         [](const opentxs::network::zeromq::Message& incoming) -> void {
             widget_updated_bob(incoming);
         })};
-OTZMQListenCallback Test_Basic::alice_server_reply_callback_{
-    opentxs::network::zeromq::ListenCallback::Factory(
-        [](const opentxs::network::zeromq::Message& incoming) -> void {
-            process_server_reply(alice_server_reply_map_, incoming);
-        })};
-OTZMQListenCallback Test_Basic::bob_server_reply_callback_{
-    opentxs::network::zeromq::ListenCallback::Factory(
-        [](const opentxs::network::zeromq::Message& incoming) -> void {
-            process_server_reply(bob_server_reply_map_, incoming);
-        })};
 const opentxs::api::client::Manager* Test_Basic::alice_{nullptr};
 const opentxs::api::client::Manager* Test_Basic::bob_{nullptr};
 std::mutex Test_Basic::callback_lock_{};
-std::mutex Test_Basic::server_reply_lock_{};
+std::string Test_Basic::alice_payment_code_;
+std::string Test_Basic::bob_payment_code_;
 
-// A test that simulates Alice and Bob both setting up clients for the first
-// time up to the point at which the main screen is displayed.
-TEST_F(Test_Basic, startClients)
+TEST_F(Test_Basic, instantiate_ui_objects)
 {
-    // Configuration
-    alice_client_.Exec().SetZMQKeepAlive(30);
-    alice_client_.Exec().SetConfig_long("Connection", "keep_alive", 60);
-    alice_client_.Exec().SetConfig_long(
-        "Connection", "preferred_address_type", 3);
-    alice_client_.Exec().SetConfig_long("security", "master_key_timeout", -1);
-    alice_client_.Exec().SetConfig_long("latency", "send_timeout", 1000);
-    alice_client_.Exec().SetConfig_long("latency", "recv_timeout", 10000);
-    alice_client_.ZMQ().SetSocksProxy("127.0.0.1:9045");
+    auto cb1 = [&]() -> bool {
+        const auto& profile = alice_->UI().Profile(alice_nym_id_);
+        auto paymentCode = alice_->Factory().PaymentCode(SeedA_, 0, 1);
 
-    bob_client_.Exec().SetZMQKeepAlive(30);
-    bob_client_.Exec().SetConfig_long("Connection", "keep_alive", 60);
-    bob_client_.Exec().SetConfig_long(
-        "Connection", "preferred_address_type", 3);
-    bob_client_.Exec().SetConfig_long("security", "master_key_timeout", -1);
-    bob_client_.Exec().SetConfig_long("latency", "send_timeout", 1000);
-    bob_client_.Exec().SetConfig_long("latency", "recv_timeout", 10000);
-    bob_client_.ZMQ().SetSocksProxy("127.0.0.1:9045");
+        EXPECT_EQ(paymentCode->asBase58(), profile.PaymentCode());
+        EXPECT_STREQ(ALICE, profile.DisplayName().c_str());
 
-    // subscribe to socket
-    // Server Connection (this is currently a workaround in SW for TOR)
+        auto row = profile.First();
 
-    auto& serverID = alice_client_.Sync().IntroductionServer();
+        EXPECT_FALSE(row->Valid());
 
-    ASSERT_FALSE(serverID.empty());
+        return true;
+    };
+    auto cb2 = [&]() -> bool {
+        const auto& profile = bob_->UI().Profile(bob_nym_id_);
+        auto paymentCode = bob_->Factory().PaymentCode(SeedB_, 0, 1);
 
-    auto& connection = alice_client_.ZMQ().Server(serverID.str());
-    connection.ChangeAddressType(static_cast<proto::AddressType>(1));
+        EXPECT_EQ(paymentCode->asBase58(), profile.PaymentCode());
+        EXPECT_STREQ(BOB, profile.DisplayName().c_str());
 
-    auto& serverID_ = bob_client_.Sync().IntroductionServer();
+        auto row = profile.First();
 
-    ASSERT_FALSE(serverID_.empty());
+        EXPECT_FALSE(row->Valid());
 
-    auto& connection2 = bob_client_.ZMQ().Server(serverID_.str());
-    connection2.ChangeAddressType(static_cast<proto::AddressType>(1));
-    // alice_client_.Sync().StartIntroductionServer(alice_nym_id_);
-    // bob_client_.Sync().StartIntroductionServer(bob_nym_id_);
+        return true;
+    };
+    auto cb3 = [&]() -> bool {
+        const auto& contacts = alice_->UI().ContactList(alice_nym_id_);
+        const auto row = contacts.First();
+
+        EXPECT_TRUE(row->Valid());
+
+        if (false == row->Valid()) { return false; }
+
+        EXPECT_TRUE(
+            row->DisplayName() == ALICE || row->DisplayName() == "Owner");
+        EXPECT_TRUE(row->Valid());
+        EXPECT_STREQ("", row->ImageURI().c_str());
+        EXPECT_STREQ("ME", row->Section().c_str());
+        EXPECT_TRUE(row->Last());
+
+        return true;
+    };
+    auto cb4 = [&]() -> bool {
+        const auto& contacts = bob_->UI().ContactList(bob_nym_id_);
+        const auto row = contacts.First();
+
+        EXPECT_TRUE(row->Valid());
+
+        if (false == row->Valid()) { return false; }
+
+        EXPECT_TRUE(row->DisplayName() == BOB || row->DisplayName() == "Owner");
+        EXPECT_TRUE(row->Valid());
+        EXPECT_STREQ("", row->ImageURI().c_str());
+        EXPECT_STREQ("ME", row->Section().c_str());
+        EXPECT_TRUE(row->Last());
+
+        return true;
+    };
+    auto cb5 = [&]() -> bool {
+        const auto& list =
+            alice_->UI().PayableList(alice_nym_id_, proto::CITEMTYPE_BTC);
+        auto row = list.First();
+
+        EXPECT_TRUE(row->Valid());
+
+        if (false == row->Valid()) { return false; }
+
+        EXPECT_STREQ(ALICE, row->DisplayName().c_str());
+        EXPECT_TRUE(row->Last());
+
+        return true;
+    };
+    auto cb6 = [&]() -> bool {
+        const auto& list =
+            bob_->UI().PayableList(bob_nym_id_, proto::CITEMTYPE_BTC);
+        auto row = list.First();
+
+        EXPECT_TRUE(row->Valid());
+
+        if (false == row->Valid()) { return false; }
+
+        EXPECT_STREQ(BOB, row->DisplayName().c_str());
+        EXPECT_TRUE(row->Last());
+
+        return true;
+    };
+
+    Lock lock(callback_lock_);
+    auto future1 = add_ui_widget(
+        PROFILE,
+        alice_client_.UI().Profile(alice_nym_id_).WidgetID(),
+        alice_widget_map_,
+        alice_ui_names_,
+        2,
+        cb1);
+    auto future2 = add_ui_widget(
+        PROFILE,
+        bob_client_.UI().Profile(bob_nym_id_).WidgetID(),
+        bob_widget_map_,
+        bob_ui_names_,
+        2,
+        cb2);
+    add_ui_widget(
+        ACTIVITY_SUMMARY,
+        alice_client_.UI().ActivitySummary(alice_nym_id_).WidgetID(),
+        alice_widget_map_,
+        alice_ui_names_);
+    add_ui_widget(
+        ACTIVITY_SUMMARY,
+        bob_client_.UI().ActivitySummary(bob_nym_id_).WidgetID(),
+        bob_widget_map_,
+        bob_ui_names_);
+    auto future3 = add_ui_widget(
+        CONTACTS_LIST,
+        alice_client_.UI().ContactList(alice_nym_id_).WidgetID(),
+        alice_widget_map_,
+        alice_ui_names_,
+        1,
+        cb3);
+    auto future4 = add_ui_widget(
+        CONTACTS_LIST,
+        bob_client_.UI().ContactList(bob_nym_id_).WidgetID(),
+        bob_widget_map_,
+        bob_ui_names_,
+        1,
+        cb4);
+    add_ui_widget(
+        PAYABLE_LIST_BCH,
+        alice_client_.UI()
+            .PayableList(alice_nym_id_, proto::CITEMTYPE_BCH)
+            .WidgetID(),
+        alice_widget_map_,
+        alice_ui_names_);
+    add_ui_widget(
+        PAYABLE_LIST_BCH,
+        bob_client_.UI()
+            .PayableList(bob_nym_id_, proto::CITEMTYPE_BCH)
+            .WidgetID(),
+        bob_widget_map_,
+        bob_ui_names_);
+    auto future5 = add_ui_widget(
+        PAYABLE_LIST_BTC,
+        alice_client_.UI()
+            .PayableList(alice_nym_id_, proto::CITEMTYPE_BTC)
+            .WidgetID(),
+        alice_widget_map_,
+        alice_ui_names_,
+        1,
+        cb5);
+    auto future6 = add_ui_widget(
+        PAYABLE_LIST_BTC,
+        bob_client_.UI()
+            .PayableList(bob_nym_id_, proto::CITEMTYPE_BTC)
+            .WidgetID(),
+        bob_widget_map_,
+        bob_ui_names_,
+        1,
+        cb6);
+    add_ui_widget(
+        ACCOUNT_SUMMARY_BTC,
+        alice_client_.UI()
+            .AccountSummary(alice_nym_id_, proto::CITEMTYPE_BTC)
+            .WidgetID(),
+        alice_widget_map_,
+        alice_ui_names_);
+    add_ui_widget(
+        ACCOUNT_SUMMARY_BTC,
+        bob_client_.UI()
+            .AccountSummary(bob_nym_id_, proto::CITEMTYPE_BTC)
+            .WidgetID(),
+        bob_widget_map_,
+        bob_ui_names_);
+    add_ui_widget(
+        ACCOUNT_SUMMARY_BCH,
+        alice_client_.UI()
+            .AccountSummary(alice_nym_id_, proto::CITEMTYPE_BCH)
+            .WidgetID(),
+        alice_widget_map_,
+        alice_ui_names_);
+    add_ui_widget(
+        ACCOUNT_SUMMARY_BCH,
+        bob_client_.UI()
+            .AccountSummary(bob_nym_id_, proto::CITEMTYPE_BCH)
+            .WidgetID(),
+        bob_widget_map_,
+        bob_ui_names_);
+    add_ui_widget(
+        MESSAGABLE_LIST,
+        alice_client_.UI().MessagableList(alice_nym_id_).WidgetID(),
+        alice_widget_map_,
+        alice_ui_names_);
+    add_ui_widget(
+        MESSAGABLE_LIST,
+        bob_client_.UI().MessagableList(bob_nym_id_).WidgetID(),
+        bob_widget_map_,
+        bob_ui_names_);
+
+    EXPECT_EQ(8, alice_widget_map_.size());
+    EXPECT_EQ(8, alice_ui_names_.size());
+    EXPECT_EQ(8, bob_widget_map_.size());
+    EXPECT_EQ(8, bob_ui_names_.size());
+
+    lock.unlock();
+
+    EXPECT_TRUE(future1.get());
+    EXPECT_TRUE(future2.get());
+    EXPECT_TRUE(future3.get());
+    EXPECT_TRUE(future4.get());
+    EXPECT_TRUE(future5.get());
+    EXPECT_TRUE(future6.get());
+}
+
+TEST_F(Test_Basic, initial_messagable_list_alice)
+{
+    const auto& list = alice_->UI().MessagableList(alice_nym_id_);
+    auto first = list.First();
+
+    EXPECT_FALSE(first->Valid());
+}
+
+TEST_F(Test_Basic, initial_messagable_list_bob)
+{
+    const auto& list = bob_->UI().MessagableList(bob_nym_id_);
+    auto first = list.First();
+
+    EXPECT_FALSE(first->Valid());
+}
+
+TEST_F(Test_Basic, initial_activity_summary_alice)
+{
+    const auto& summary = alice_->UI().ActivitySummary(alice_nym_id_);
+    auto first = summary.First();
+
+    EXPECT_FALSE(first->Valid());
+}
+
+TEST_F(Test_Basic, initial_activity_summary_bob)
+{
+    const auto& summary = bob_->UI().ActivitySummary(bob_nym_id_);
+    auto first = summary.First();
+
+    EXPECT_FALSE(first->Valid());
+}
+
+TEST_F(Test_Basic, initial_account_summary_alice)
+{
+    const auto& btc =
+        alice_->UI().AccountSummary(alice_nym_id_, proto::CITEMTYPE_BTC);
+    auto first = btc.First();
+
+    EXPECT_FALSE(first->Valid());
+
+    const auto& bch =
+        alice_->UI().AccountSummary(alice_nym_id_, proto::CITEMTYPE_BCH);
+    first = bch.First();
+
+    EXPECT_FALSE(first->Valid());
+}
+
+TEST_F(Test_Basic, initial_account_summary_bob)
+{
+    const auto& btc =
+        bob_->UI().AccountSummary(bob_nym_id_, proto::CITEMTYPE_BTC);
+    auto first = btc.First();
+
+    EXPECT_FALSE(first->Valid());
+
+    const auto& bch =
+        bob_->UI().AccountSummary(bob_nym_id_, proto::CITEMTYPE_BCH);
+    first = bch.First();
+
+    EXPECT_FALSE(first->Valid());
+}
+
+TEST_F(Test_Basic, payment_codes)
+{
     auto alice = alice_client_.Wallet().mutable_Nym(alice_nym_id_);
     auto bob = bob_client_.Wallet().mutable_Nym(bob_nym_id_);
 
-    EXPECT_EQ(proto::CITEMTYPE_INDIVIDUAL, alice.Type());
-    EXPECT_EQ(proto::CITEMTYPE_INDIVIDUAL, bob.Type());
+    EXPECT_EQ(opentxs::proto::CITEMTYPE_INDIVIDUAL, alice.Type());
+    EXPECT_EQ(opentxs::proto::CITEMTYPE_INDIVIDUAL, bob.Type());
 
     auto aliceScopeSet =
-        alice.SetScope(proto::CITEMTYPE_INDIVIDUAL, "Alice", true);
-    auto bobScopeSet = bob.SetScope(proto::CITEMTYPE_INDIVIDUAL, "Bob", true);
+        alice.SetScope(opentxs::proto::CITEMTYPE_INDIVIDUAL, ALICE, true);
+    auto bobScopeSet = bob.SetScope(proto::CITEMTYPE_INDIVIDUAL, BOB, true);
 
     EXPECT_TRUE(aliceScopeSet);
     EXPECT_TRUE(bobScopeSet);
 
-    // add payment codes
-    std::cout << "Adding payment code\n";
-    auto alice_paymentcode_ = alice_client_.Factory().PaymentCode(SeedA_, 0, 1);
-    auto bob_paymentcode_ = bob_client_.Factory().PaymentCode(SeedB_, 0, 1);
+    alice_payment_code_ =
+        alice_client_.Factory().PaymentCode(SeedA_, 0, 1)->asBase58();
+    bob_payment_code_ =
+        bob_client_.Factory().PaymentCode(SeedB_, 0, 1)->asBase58();
 
-    ASSERT_STRNE("", alice_paymentcode_->asBase58().c_str());
-    ASSERT_STRNE("", bob_paymentcode_->asBase58().c_str());
+    EXPECT_FALSE(alice_payment_code_.empty());
+    EXPECT_FALSE(bob_payment_code_.empty());
 
     alice.AddPaymentCode(
-        alice_paymentcode_->asBase58(),
-        opentxs::proto::CITEMTYPE_BTC,
-        true,
-        true);
+        alice_payment_code_, opentxs::proto::CITEMTYPE_BTC, true, true);
     bob.AddPaymentCode(
-        bob_paymentcode_->asBase58(),
-        opentxs::proto::CITEMTYPE_BTC,
-        true,
-        true);
+        bob_payment_code_, opentxs::proto::CITEMTYPE_BTC, true, true);
     alice.AddPaymentCode(
-        alice_paymentcode_->asBase58(),
-        opentxs::proto::CITEMTYPE_BCH,
-        true,
-        true);
+        alice_payment_code_, opentxs::proto::CITEMTYPE_BCH, true, true);
     bob.AddPaymentCode(
-        bob_paymentcode_->asBase58(),
-        opentxs::proto::CITEMTYPE_BCH,
-        true,
-        true);
+        bob_payment_code_, opentxs::proto::CITEMTYPE_BCH, true, true);
 
-    ASSERT_STRNE("", alice.PaymentCode(proto::CITEMTYPE_BTC).c_str());
-    ASSERT_STRNE("", bob.PaymentCode(proto::CITEMTYPE_BTC).c_str());
-    ASSERT_STRNE("", alice.PaymentCode(proto::CITEMTYPE_BCH).c_str());
-    ASSERT_STRNE("", bob.PaymentCode(proto::CITEMTYPE_BCH).c_str());
+    EXPECT_FALSE(alice.PaymentCode(proto::CITEMTYPE_BTC).empty());
+    EXPECT_FALSE(bob.PaymentCode(proto::CITEMTYPE_BTC).empty());
+    EXPECT_FALSE(alice.PaymentCode(proto::CITEMTYPE_BCH).empty());
+    EXPECT_FALSE(bob.PaymentCode(proto::CITEMTYPE_BCH).empty());
 
     alice.Release();
     bob.Release();
-    alice_client_.Sync().StartIntroductionServer(alice_nym_id_);
-    bob_client_.Sync().StartIntroductionServer(bob_nym_id_);
+}
 
-    // get the first nym
+TEST_F(Test_Basic, introduction_server)
+{
+    alice_client_.OTX().StartIntroductionServer(alice_nym_id_);
+    bob_client_.OTX().StartIntroductionServer(bob_nym_id_);
+    auto task1 = alice_client_.OTX().RegisterNymPublic(
+        alice_nym_id_, server_1_id_, true);
+    auto task2 =
+        bob_client_.OTX().RegisterNymPublic(bob_nym_id_, server_1_id_, true);
 
-    ASSERT_EQ(1, alice_client_.Exec().GetNymCount());
+    ASSERT_NE(0, task1.first);
+    ASSERT_NE(0, task2.first);
+    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, task1.second.get().first);
+    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, task2.second.get().first);
 
-    auto alice_nym_ = alice_client_.Exec().GetNym_ID(0);
-
-    ASSERT_STREQ(alice_nym_id_->str().c_str(), alice_nym_.c_str());
-    ASSERT_EQ(1, bob_client_.Exec().GetNymCount());
-
-    auto bob_nym_ = bob_client_.Exec().GetNym_ID(0);
-
-    ASSERT_STREQ(bob_nym_id_->str().c_str(), bob_nym_.c_str());
-
-    ui();
-
-    while (true) {
-        Log::Sleep(std::chrono::milliseconds(10));
-
-        if (-1 == alice_updates_.at(ACCOUNT_SUMMARY_BTC).second) { continue; }
-        if (-1 == bob_updates_.at(ACCOUNT_SUMMARY_BTC).second) { continue; }
-        if (-1 == alice_updates_.at(ACCOUNT_SUMMARY_BCH).second) { continue; }
-        if (-1 == bob_updates_.at(ACCOUNT_SUMMARY_BCH).second) { continue; }
-        if (-1 == alice_updates_.at(ACTIVITY_SUMMARY).second) { continue; }
-        if (-1 == bob_updates_.at(ACTIVITY_SUMMARY).second) { continue; }
-        if (0 == alice_updates_.at(CONTACTS_LIST).second) { continue; }
-        if (0 == bob_updates_.at(CONTACTS_LIST).second) { continue; }
-        if (-1 == alice_updates_.at(MESSAGABLE_LIST).second) { continue; }
-        if (-1 == bob_updates_.at(MESSAGABLE_LIST).second) { continue; }
-        if (0 == alice_updates_.at(PAYABLE_LIST_BTC).second) { continue; }
-        if (0 == bob_updates_.at(PAYABLE_LIST_BTC).second) { continue; }
-        // TODO change -1 to 0
-        if (-1 == alice_updates_.at(PAYABLE_LIST_BCH).second) { continue; }
-        // TODO change -1 to 0
-        if (-1 == bob_updates_.at(PAYABLE_LIST_BCH).second) { continue; }
-        if (2 > alice_updates_.at(PROFILE).second) { continue; }
-        if (2 > bob_updates_.at(PROFILE).second) { continue; }
-
-        if (1 > get_reply("registerNym", alice_server_reply_map_)) { continue; }
-        if (1 > get_reply("registerNym", bob_server_reply_map_)) { continue; }
-        if (1 > get_reply("getNymbox", alice_server_reply_map_)) { continue; }
-        if (1 > get_reply("getNymbox", bob_server_reply_map_)) { continue; }
-        if (1 > get_reply("checkNym", alice_server_reply_map_)) { continue; }
-        if (1 > get_reply("checkNym", bob_server_reply_map_)) { continue; }
-
-        check_alice_activity_summary(0);
-        check_bob_activity_summary(0);
-        check_alice_account_summary_btc(0);
-        check_bob_account_summary_btc(0);
-        check_alice_account_summary_bch(0);
-        check_bob_account_summary_bch(0);
-        check_alice_messagable_list(0);
-        check_bob_messagable_list(0);
-
-        break;
-    }
+    alice_client_.OTX().ContextIdle(alice_nym_id_, server_1_id_).get();
+    bob_client_.OTX().ContextIdle(bob_nym_id_, server_1_id_).get();
 }
 }  // namespace

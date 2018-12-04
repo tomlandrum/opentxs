@@ -147,7 +147,7 @@ Issuer::operator std::string() const
         for (const auto& [id, pClaim] : group) {
             OT_ASSERT(pClaim);
 
-            const auto& notUsed[[maybe_unused]] = id;
+            const auto& notUsed [[maybe_unused]] = id;
             const auto& claim = *pClaim;
             const auto unitID = Identifier::Factory(claim.Value());
             output << " * "
@@ -254,7 +254,7 @@ bool Issuer::add_request(
     OT_ASSERT(verify_lock(lock))
 
     auto [found, it] = find_request(lock, type, requestID);
-    const auto& notUsed[[maybe_unused]] = it;
+    const auto& notUsed [[maybe_unused]] = it;
 
     if (found) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Request ")(requestID)(
@@ -318,8 +318,8 @@ bool Issuer::BailmentInitiated(const Identifier& unitID) const
         .Flush();
 
     for (const auto& [requestID, a, b] : requests) {
-        const auto& replyID[[maybe_unused]] = a;
-        const auto& isUsed[[maybe_unused]] = b;
+        const auto& replyID [[maybe_unused]] = a;
+        const auto& isUsed [[maybe_unused]] = b;
         std::time_t notUsed{0};
         auto request = wallet_.PeerRequest(
             nym_id_, requestID, StorageBox::SENTPEERREQUEST, notUsed);
@@ -359,7 +359,7 @@ std::vector<Issuer::BailmentDetails> Issuer::BailmentInstructions(
 
     for (const auto& [requestID, replyID, isUsed] : replies) {
         std::time_t notUsed{0};
-        const auto& notUsed2[[maybe_unused]] = isUsed;
+        const auto& notUsed2 [[maybe_unused]] = isUsed;
         auto request = wallet_.PeerRequest(
             nym_id_, requestID, StorageBox::FINISHEDPEERREQUEST, notUsed);
 
@@ -405,7 +405,7 @@ std::vector<Issuer::ConnectionDetails> Issuer::ConnectionInfo(
 
     for (const auto& [requestID, replyID, isUsed] : replies) {
         std::time_t notUsed{0};
-        const auto& notUsed2[[maybe_unused]] = isUsed;
+        const auto& notUsed2 [[maybe_unused]] = isUsed;
         auto request = wallet_.PeerRequest(
             nym_id_, requestID, StorageBox::FINISHEDPEERREQUEST, notUsed);
 
@@ -454,8 +454,8 @@ bool Issuer::ConnectionInfoInitiated(const proto::ConnectionInfoType type) const
         .Flush();
 
     for (const auto& [requestID, a, b] : requests) {
-        const auto& replyID[[maybe_unused]] = a;
-        const auto& isUsed[[maybe_unused]] = b;
+        const auto& replyID [[maybe_unused]] = a;
+        const auto& isUsed [[maybe_unused]] = b;
         std::time_t notUsed{0};
         auto request = wallet_.PeerRequest(
             nym_id_, requestID, StorageBox::SENTPEERREQUEST, notUsed);
@@ -596,7 +596,7 @@ std::set<proto::PeerRequestType> Issuer::RequestTypes() const
     std::set<proto::PeerRequestType> output{};
 
     for (const auto& [type, map] : peer_requests_) {
-        const auto& notUsed[[maybe_unused]] = map;
+        const auto& notUsed [[maybe_unused]] = map;
         output.emplace(type);
     }
 
@@ -659,7 +659,7 @@ bool Issuer::SetUsed(
     Lock lock(lock_);
     auto [found, it] = find_request(lock, type, requestID);
     auto& [reply, used] = it->second;
-    const auto& notUsed[[maybe_unused]] = reply;
+    const auto& notUsed [[maybe_unused]] = reply;
 
     if (false == found) { return false; }
 

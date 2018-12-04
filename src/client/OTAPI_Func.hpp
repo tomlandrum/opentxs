@@ -26,54 +26,30 @@ namespace opentxs
 {
 typedef enum {
     NO_FUNC = 0,
-    REMOVED1 = 1,
-    REGISTER_NYM = 2,
-    DELETE_NYM = 3,
-    CHECK_NYM = 4,
-    SEND_USER_MESSAGE = 5,
-    SEND_USER_INSTRUMENT = 6,
-    ISSUE_ASSET_TYPE = 7,
-    ISSUE_BASKET = 8,
-    CREATE_ASSET_ACCT = 9,
-    DELETE_ASSET_ACCT = 10,
-    ACTIVATE_SMART_CONTRACT = 11,
-    TRIGGER_CLAUSE = 12,
-    PROCESS_INBOX = 13,
-    EXCHANGE_BASKET = 14,
-    DEPOSIT_CASH = 15,
-    DEPOSIT_CHEQUE = 17,
-    WITHDRAW_VOUCHER = 18,
-    PAY_DIVIDEND = 19,
-    WITHDRAW_CASH = 20,
-    GET_CONTRACT = 21,
-    SEND_TRANSFER = 22,
-    GET_MARKET_LIST = 23,
-    CREATE_MARKET_OFFER = 24,
-    KILL_MARKET_OFFER = 25,
-    KILL_PAYMENT_PLAN = 26,
-    DEPOSIT_PAYMENT_PLAN = 27,
-    GET_NYM_MARKET_OFFERS = 28,
-    GET_MARKET_OFFERS = 29,
-    GET_MARKET_RECENT_TRADES = 30,
-    GET_MINT = 31,
-    GET_BOX_RECEIPT = 32,
-    ADJUST_USAGE_CREDITS = 33,
-    INITIATE_BAILMENT = 34,
-    INITIATE_OUTBAILMENT = 35,
-    ACKNOWLEDGE_BAILMENT = 36,
-    ACKNOWLEDGE_OUTBAILMENT = 37,
-    NOTIFY_BAILMENT = 38,
-    ACKNOWLEDGE_NOTICE = 39,
-    REQUEST_CONNECTION = 40,
-    ACKNOWLEDGE_CONNECTION = 41,
-    REGISTER_CONTRACT_NYM = 42,
-    REGISTER_CONTRACT_SERVER = 43,
-    REGISTER_CONTRACT_UNIT = 44,
-    REQUEST_ADMIN = 45,
-    SERVER_ADD_CLAIM = 46,
-    STORE_SECRET = 47,
-    GET_TRANSACTION_NUMBERS = 48,
-    SEND_USER_CASH = 49,
+    // TODO
+    DELETE_ASSET_ACCT,
+    DELETE_NYM,
+    ADJUST_USAGE_CREDITS,
+    // Vouchers
+    WITHDRAW_VOUCHER,
+    // Shares
+    PAY_DIVIDEND,
+    // Payment plans
+    KILL_PAYMENT_PLAN,
+    DEPOSIT_PAYMENT_PLAN,
+    // Basket currencies
+    ISSUE_BASKET,
+    EXCHANGE_BASKET,
+    // Markets
+    GET_MARKET_LIST,
+    CREATE_MARKET_OFFER,
+    KILL_MARKET_OFFER,
+    GET_NYM_MARKET_OFFERS,
+    GET_MARKET_OFFERS,
+    GET_MARKET_RECENT_TRADES,
+    // Smart contracts
+    ACTIVATE_SMART_CONTRACT,
+    TRIGGER_CLAUSE,
 } OTAPI_Func_Type;
 
 class OTAPI_Func : virtual public opentxs::client::ServerAction, Lockable
@@ -85,20 +61,6 @@ public:
         const api::client::Manager& api,
         const Identifier& nymID,
         const Identifier& serverID);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const bool resync);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const std::string& password);
     explicit OTAPI_Func(
         OTAPI_Func_Type theType,
         std::recursive_mutex& apilock,
@@ -120,50 +82,8 @@ public:
         const api::client::Manager& api,
         const Identifier& nymID,
         const Identifier& serverID,
-        const Identifier& targetID,
-        const proto::ConnectionInfoType& infoType);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
         const Identifier& nymID2,
         const std::int64_t& int64Val);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& accountID,
-        std::unique_ptr<Ledger>& ledger);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& targetID,
-        const Identifier& instrumentDefinitionID);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& accountID,
-        std::unique_ptr<Cheque>& cheque);
-#if OT_CASH
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& nymID2,
-        std::unique_ptr<blind::Purse>& purse);
-#endif
     explicit OTAPI_Func(
         OTAPI_Func_Type theType,
         std::recursive_mutex& apilock,
@@ -187,43 +107,9 @@ public:
         const api::client::Manager& api,
         const Identifier& nymID,
         const Identifier& serverID,
-        const Identifier& recipientID,
-        std::unique_ptr<const OTPayment>& payment);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& recipientID,
-        const std::string& message);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& accountID,
-        const RemoteBoxType& remoteBoxType,
-        const TransactionNumber& transactionNumber);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
         const Identifier& accountID,
         const std::string& agentName,
         std::unique_ptr<OTSmartContract>& contract);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& recipientID,
-        const Identifier& requestID,
-        const std::string& instructions);
     explicit OTAPI_Func(
         OTAPI_Func_Type theType,
         std::recursive_mutex& apilock,
@@ -253,16 +139,6 @@ public:
         const std::string& primary,
         const std::string& secondary,
         const proto::SecretType& secretType);
-#if OT_CASH
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& recipientID,
-        const std::shared_ptr<blind::Purse> purse);
-#endif
     explicit OTAPI_Func(
         OTAPI_Func_Type theType,
         std::recursive_mutex& apilock,
@@ -280,34 +156,11 @@ public:
         const api::client::Manager& api,
         const Identifier& nymID,
         const Identifier& serverID,
-        bool primary,
-        const proto::ContactSectionName& sectionName,
-        const proto::ContactItemType& itemType,
-        const std::string& value);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
         const Identifier& instrumentDefinitionID,
         const Identifier& basketID,
         const Identifier& accountID,
         bool direction,
         std::int32_t nTransNumsNeeded);
-    explicit OTAPI_Func(
-        OTAPI_Func_Type theType,
-        std::recursive_mutex& apilock,
-        const api::client::Manager& api,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const Identifier& recipientID,
-        const Identifier& requestID,
-        const std::string& url,
-        const std::string& login,
-        const std::string& password,
-        const std::string& key,
-        bool ack);
     explicit OTAPI_Func(
         OTAPI_Func_Type theType,
         std::recursive_mutex& apilock,
@@ -325,12 +178,16 @@ public:
         const Amount& activationPrice,
         const std::string& stopSign);
 
-    TransactionNumber GetTransactionNumber() const override;
-    SendResult LastSendResult() const override;
-    const OTIdentifier MessageID() const override;
-    const std::shared_ptr<PeerRequest>& SentPeerRequest() const override;
-    const std::shared_ptr<PeerReply>& SentPeerReply() const override;
-    const std::shared_ptr<Message>& Reply() const override;
+    SendResult LastSendResult() const override { return {}; }
+    const std::shared_ptr<Message> Reply() const override { return {}; }
+    const std::shared_ptr<PeerReply> SentPeerReply() const override
+    {
+        return {};
+    }
+    const std::shared_ptr<PeerRequest> SentPeerRequest() const override
+    {
+        return {};
+    }
 
     std::string Run(const std::size_t totalRetries = 2) override;
 
@@ -354,9 +211,6 @@ private:
     std::unique_ptr<Message> request_;
     std::unique_ptr<OTSmartContract> contract_;
     std::unique_ptr<OTPaymentPlan> paymentPlan_;
-#if OT_CASH
-    std::shared_ptr<blind::Purse> purse_;
-#endif
     std::unique_ptr<Cheque> cheque_;
     std::unique_ptr<Ledger> ledger_;
     std::unique_ptr<const OTPayment> payment_;
@@ -376,12 +230,7 @@ private:
     std::string label_;
     bool ack_{false};
     bool direction_{false};
-    bool isPrimary_{false};
     bool selling_{false};
-#if OT_CASH
-    bool cash_{false};
-#endif
-    bool resync_{false};
     time64_t lifetime_{OT_TIME_ZERO};
     std::int32_t nRequestNum_{-1};
     std::int32_t nTransNumsNeeded_{0};
@@ -392,8 +241,6 @@ private:
     const bool is_transaction_{false};
     std::shared_ptr<PeerReply> peer_reply_;
     std::shared_ptr<PeerRequest> peer_request_;
-    proto::ContactSectionName sectionName_{proto::CONTACTSECTION_ERROR};
-    proto::ContactItemType itemType_{proto::CITEMTYPE_ERROR};
     Amount activationPrice_{0};
     Amount adjustment_{0};
     Amount amount_{0};
@@ -402,7 +249,6 @@ private:
     Amount quantity_{0};
     Amount price_{0};
     Amount scale_{0};
-    RemoteBoxType remoteBoxType_{RemoteBoxType::Error};
     TransactionNumber transactionNumber_{0};  // This is not what gets returned
                                               // by GetTransactionNumber.
     proto::ConnectionInfoType infoType_{proto::CONNECTIONINFO_ERROR};
@@ -410,13 +256,10 @@ private:
     proto::UnitDefinition unitDefinition_{};
 
     void run();
-    std::int32_t send();
     std::string send_once(
         const bool bIsTransaction,
         const bool bWillRetryAfterThis,
         bool& bCanRetryAfterThis);
-    std::string send_request();
-    std::string send_transaction(const std::size_t totalRetries);
 
     explicit OTAPI_Func(
         std::recursive_mutex& apilock,

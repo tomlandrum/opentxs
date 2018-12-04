@@ -7,6 +7,8 @@
 
 #include "Internal.hpp"
 
+namespace zmq = opentxs::network::zeromq;
+
 namespace opentxs::rpc::implementation
 {
 class RPC final : virtual public rpc::internal::RPC, Lockable
@@ -21,15 +23,34 @@ private:
 
     using Args = const ::google::protobuf::RepeatedPtrField<
         ::opentxs::proto::APIArgument>;
+    using TaskID = std::string;
+    using Future = api::client::OTX::Future;
+    using Result = api::client::OTX::Result;
+    using Finish =
+        std::function<void(const Result& result, proto::TaskComplete& output)>;
+    using TaskData = std::tuple<Future, Finish, OTNymID>;
 
     const api::Native& ot_;
+    mutable std::mutex task_lock_;
+    mutable std::map<TaskID, TaskData> queued_tasks_;
+    const OTZMQListenCallback task_callback_;
     const OTZMQListenCallback push_callback_;
     const OTZMQPullSocket push_receiver_;
     const OTZMQPublishSocket rpc_publisher_;
+    const OTZMQSubscribeSocket task_subscriber_;
 
     static void add_output_status(
         proto::RPCResponse& output,
         proto::RPCResponseCode code);
+    static void add_output_status(
+        proto::TaskComplete& output,
+        proto::RPCResponseCode code);
+    static void add_output_identifier(
+        const std::string& id,
+        proto::RPCResponse& output);
+    static void add_output_identifier(
+        const std::string& id,
+        proto::TaskComplete& output);
     static void add_output_task(
         proto::RPCResponse& output,
         const std::string& taskid);
@@ -53,11 +74,36 @@ private:
     proto::RPCResponse create_unit_definition(
         const proto::RPCCommand& command) const;
     proto::RPCResponse delete_claim(const proto::RPCCommand& command) const;
-    bool establish_payment_prerequisites(
+    void evaluate_deposit_payment(
         const api::client::Manager& client,
-        const Identifier& nymID,
-        const Identifier& serverID,
-        const std::size_t transactionNumbers = 1) const;
+        const api::client::OTX::Result& result,
+        proto::TaskComplete& output) const;
+    void evaluate_move_funds(
+        const api::client::Manager& client,
+        const api::client::OTX::Result& result,
+        proto::RPCResponse& output) const;
+    template <typename T>
+    void evaluate_register_account(
+        const api::client::OTX::Result& result,
+        T& output) const;
+    template <typename T>
+    void evaluate_register_nym(
+        const api::client::OTX::Result& result,
+        T& output) const;
+    void evaluate_send_payment_cheque(
+        const api::client::OTX::Result& result,
+        proto::TaskComplete& output) const;
+    void evaluate_send_payment_transfer(
+        const api::client::Manager& client,
+        const api::client::OTX::Result& result,
+        proto::RPCResponse& output) const;
+    template <typename T>
+    void evaluate_transaction_reply(
+        const api::client::Manager& client,
+        const Message& reply,
+        T& output,
+        const proto::RPCResponseCode code =
+            proto::RPCRESPONSE_TRANSACTION_FAILED) const;
     const api::client::Manager* get_client(std::int32_t instance) const;
     proto::RPCResponse get_account_activity(
         const proto::RPCCommand& command) const;
@@ -82,6 +128,18 @@ private:
     proto::RPCResponse get_unit_definitions(
         const proto::RPCCommand& command) const;
     proto::RPCResponse get_workflow(const proto::RPCCommand& command) const;
+    bool immediate_create_account(
+        const api::client::Manager& client,
+        const identifier::Nym& owner,
+        const identifier::Server& notary,
+        const identifier::UnitDefinition& unit) const;
+    bool immediate_register_issuer_account(
+        const api::client::Manager& client,
+        const identifier::Nym& owner,
+        const identifier::Server& notary) const;
+    bool immediate_register_nym(
+        const api::client::Manager& client,
+        const identifier::Server& notary) const;
     proto::RPCResponse import_seed(const proto::RPCCommand& command) const;
     proto::RPCResponse import_server_contract(
         const proto::RPCCommand& command) const;
@@ -103,11 +161,19 @@ private:
     proto::RPCResponse lookup_account_id(
         const proto::RPCCommand& command) const;
     proto::RPCResponse move_funds(const proto::RPCCommand& command) const;
+    void queue_task(
+        const identifier::Nym& nymID,
+        const std::string taskID,
+        Finish&& finish,
+        Future&& future,
+        proto::RPCResponse& output) const;
     proto::RPCResponse register_nym(const proto::RPCCommand& command) const;
     proto::RPCResponse rename_account(const proto::RPCCommand& command) const;
     proto::RPCResponse send_payment(const proto::RPCCommand& command) const;
     proto::RPCResponse start_client(const proto::RPCCommand& command) const;
     proto::RPCResponse start_server(const proto::RPCCommand& command) const;
+
+    void task_handler(const zmq::Message& message);
 
     RPC(const api::Native& native);
     RPC() = delete;

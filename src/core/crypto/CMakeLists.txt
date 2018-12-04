@@ -1,3 +1,6 @@
+#[[
+// clang-format off
+]]#
 # Copyright (c) 2018 The Open-Transactions developers
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +25,6 @@ set(cxx-sources
   OTCaller.cpp
   OTEnvelope.cpp
   OTKeyring.cpp
-  OTNymOrSymmetricKey.cpp
   OTPassword.cpp
   OTPasswordData.cpp
   OTSignatureMetadata.cpp
@@ -49,7 +51,6 @@ set(cxx-install-headers
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OTCaller.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OTEnvelope.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OTKeyring.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OTNymOrSymmetricKey.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OTPasswordData.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OTPassword.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../include/opentxs/core/crypto/OTSignatureMetadata.hpp"
@@ -100,3 +101,6 @@ set_property(TARGET ${MODULE_NAME} PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_lib_property(${MODULE_NAME})
 target_include_directories(${MODULE_NAME} PUBLIC ${OT_SSL_HEADERS})
 target_include_directories(${MODULE_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../../deps/")
+#[[
+// clang-format on
+]]#

@@ -26,17 +26,18 @@ TEST_F(Test_NewAccount, TestNymDoesNotExist)
 {
     const std::string nym = "Inexistent Nym";
     const std::string Result = String::Factory(client_.Blockchain().NewAccount(
-                                          Identifier::Factory(nym),
-                                          BlockchainAccountType::BIP32,
-                                          proto::CITEMTYPE_BTC))
+                                                   Identifier::Factory(nym),
+                                                   BlockchainAccountType::BIP32,
+                                                   proto::CITEMTYPE_BTC))
                                    ->Get();
     EXPECT_STREQ(Result.c_str(), "");
 
-    const std::string Result2 = String::Factory(client_.Blockchain().NewAccount(
-                                           Identifier::Factory(nym),
-                                           BlockchainAccountType::BIP32,
-                                           proto::CITEMTYPE_BTC))
-                                    ->Get();
+    const std::string Result2 =
+        String::Factory(client_.Blockchain().NewAccount(
+                            Identifier::Factory(nym),
+                            BlockchainAccountType::BIP32,
+                            proto::CITEMTYPE_BTC))
+            ->Get();
     EXPECT_STREQ(Result2.c_str(), "");
 }
 
@@ -66,16 +67,19 @@ TEST_F(Test_NewAccount, TestSeedRoot)
         BlockchainAccountType::BIP32,
         proto::CITEMTYPE_BTC);
 
-    std::cout << "Created Nym 0's Account: " << String::Factory(Acc0ID)->Get() << " !!\n";
+    std::cout << "Created Nym 0's Account: " << String::Factory(Acc0ID)->Get()
+              << " !!\n";
     OTIdentifier Acc1ID = client_.Blockchain().NewAccount(
         Identifier::Factory(Nym1),
         BlockchainAccountType::BIP32,
         proto::CITEMTYPE_BTC);
 
-    std::cout << "Created Nym 1's Account: " << String::Factory(Acc1ID)->Get() << " !!\n";
+    std::cout << "Created Nym 1's Account: " << String::Factory(Acc1ID)->Get()
+              << " !!\n";
 
     // Test difference in index on BIP32 implies a different account
-    EXPECT_STRNE(String::Factory(Acc0ID)->Get(), String::Factory(Acc1ID)->Get());
+    EXPECT_STRNE(
+        String::Factory(Acc0ID)->Get(), String::Factory(Acc1ID)->Get());
     std::shared_ptr<proto::Bip44Account> Acc0 =
         client_.Blockchain().Account(Identifier::Factory(Nym0), Acc0ID);
     ASSERT_TRUE(bool(Acc0));
@@ -128,7 +132,8 @@ TEST_F(Test_NewAccount, TestNymsDiff)
     ASSERT_TRUE(bool(BobAccount));
 
     ASSERT_EQ((*AliceAccount.get()).version(), 1);
-    ASSERT_EQ((*AliceAccount.get()).id(), String::Factory(AliceAccountID)->Get());
+    ASSERT_EQ(
+        (*AliceAccount.get()).id(), String::Factory(AliceAccountID)->Get());
     ASSERT_EQ((*AliceAccount.get()).type(), proto::CITEMTYPE_BTC);
     ASSERT_EQ((*AliceAccount.get()).internalindex(), 0);
     ASSERT_EQ((*AliceAccount.get()).externalindex(), 0);
@@ -150,25 +155,25 @@ TEST_F(Test_NewAccount, TestNym_AccountIdempotence)
 
     const std::string CharlyBIP32AccountID =
         String::Factory(client_.Blockchain().NewAccount(
-                   Identifier::Factory(Charly),
-                   BlockchainAccountType::BIP32,
-                   proto::CITEMTYPE_BTC))
+                            Identifier::Factory(Charly),
+                            BlockchainAccountType::BIP32,
+                            proto::CITEMTYPE_BTC))
             ->Get();
 
     const std::string CharlyBIP44AccountID =
         String::Factory(client_.Blockchain().NewAccount(
-                   Identifier::Factory(Charly),
-                   BlockchainAccountType::BIP44,
-                   proto::CITEMTYPE_BTC))
+                            Identifier::Factory(Charly),
+                            BlockchainAccountType::BIP44,
+                            proto::CITEMTYPE_BTC))
             ->Get();
 
     EXPECT_STREQ(CharlyBIP32AccountID.c_str(), CharlyBIP44AccountID.c_str());
 
     const std::string CharlyBIP44DupAccountID =
         String::Factory(client_.Blockchain().NewAccount(
-                   Identifier::Factory(Charly),
-                   BlockchainAccountType::BIP44,
-                   proto::CITEMTYPE_BTC))
+                            Identifier::Factory(Charly),
+                            BlockchainAccountType::BIP44,
+                            proto::CITEMTYPE_BTC))
             ->Get();
 
     EXPECT_STREQ(CharlyBIP44AccountID.c_str(), CharlyBIP44DupAccountID.c_str());
@@ -185,16 +190,16 @@ TEST_F(Test_NewAccount, TestChainDiff)
 
     const std::string AliceBTCAccountID =
         String::Factory(client_.Blockchain().NewAccount(
-                   Identifier::Factory(Alice),
-                   BlockchainAccountType::BIP32,
-                   proto::CITEMTYPE_BTC))
+                            Identifier::Factory(Alice),
+                            BlockchainAccountType::BIP32,
+                            proto::CITEMTYPE_BTC))
             ->Get();
 
     const std::string AliceLTCAccountID =
         String::Factory(client_.Blockchain().NewAccount(
-                   Identifier::Factory(Alice),
-                   BlockchainAccountType::BIP44,
-                   proto::CITEMTYPE_LTC))
+                            Identifier::Factory(Alice),
+                            BlockchainAccountType::BIP44,
+                            proto::CITEMTYPE_LTC))
             ->Get();
 
     EXPECT_STRNE(AliceBTCAccountID.c_str(), AliceLTCAccountID.c_str());

@@ -138,7 +138,8 @@ public:
             case (proto::KEYROLE_ENCRYPT):
             default:
                 LogOutput(": Can not sign with the "
-                      "specified key.").Flush();
+                          "specified key.")
+                    .Flush();
                 return false;
         }
 

@@ -11,9 +11,9 @@
 #endif
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/Manager.hpp"
+#include "opentxs/api/client/OTX.hpp"
 #include "opentxs/api/client/Pair.hpp"
 #include "opentxs/api/client/ServerAction.hpp"
-#include "opentxs/api/client/Sync.hpp"
 #include "opentxs/api/client/UI.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/crypto/Crypto.hpp"
@@ -108,7 +108,7 @@ Manager::Manager(
     , server_action_(opentxs::Factory::ServerAction(
           *this,
           std::bind(&Manager::get_lock, this, std::placeholders::_1)))
-    , sync_(opentxs::Factory::Sync(
+    , otx_(opentxs::Factory::OTX(
           running_,
           *this,
           *ot_api_->m_pClient,
@@ -133,7 +133,7 @@ Manager::Manager(
     OT_ASSERT(ot_api_);
     OT_ASSERT(otapi_exec_);
     OT_ASSERT(server_action_);
-    OT_ASSERT(sync_);
+    OT_ASSERT(otx_);
     OT_ASSERT(ui_);
     OT_ASSERT(pair_);
 
@@ -168,7 +168,7 @@ void Manager::Cleanup()
 
     ui_.reset();
     pair_.reset();
-    sync_.reset();
+    otx_.reset();
     server_action_.reset();
     otapi_exec_.reset();
     ot_api_.reset();
@@ -229,6 +229,13 @@ const OT_API& Manager::OTAPI(const std::string&) const
     return *ot_api_;
 }
 
+const api::client::OTX& Manager::OTX() const
+{
+    OT_ASSERT(otx_);
+
+    return *otx_;
+}
+
 const api::client::Pair& Manager::Pair() const
 {
     OT_ASSERT(pair_);
@@ -276,13 +283,6 @@ opentxs::OTWallet* Manager::StartWallet()
     wallet->SaveWallet();
 
     return wallet;
-}
-
-const api::client::Sync& Manager::Sync() const
-{
-    OT_ASSERT(sync_);
-
-    return *sync_;
 }
 
 const api::client::UI& Manager::UI() const

@@ -19,11 +19,17 @@ struct Context : virtual public opentxs::Context {
 
     virtual std::mutex& GetLock() = 0;
     virtual bool UpdateSignature(const Lock& lock) = 0;
+
+    virtual ~Context() = default;
 };
 struct ClientContext : virtual public opentxs::ClientContext,
                        virtual public internal::Context {
+
+    virtual ~ClientContext() = default;
 };
 struct ServerContext : virtual public opentxs::ServerContext,
                        virtual public internal::Context {
+
+    virtual ~ServerContext() = default;
 };
 }  // namespace opentxs::internal

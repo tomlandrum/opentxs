@@ -147,16 +147,15 @@ private:
     //
     OTString m_strName;    // Name of the account (for use in scripts.)
     OTString m_strAcctID;  // The Account ID itself.
-    OTString m_strInstrumentDefinitionID;  // The instrument definition ID for the
-                                         // account.
-                                         // Stored
+    OTString m_strInstrumentDefinitionID;  // The instrument definition ID for
+                                           // the account. Stored
     // because parties agree on this even before the
     // account ID is selected. Compare() uses this
     // even when the account ID is blank, and when
     // acct ID *is* added, its instrument definition must match
     // this.
     OTString m_strAgentName;  // The name of the agent who has rights to this
-                            // account.
+                              // account.
     // Entity, role, and Nym information are not stored here.
     // Entity is already known on the party who owns this account (and I should
     // have a ptr to him.)

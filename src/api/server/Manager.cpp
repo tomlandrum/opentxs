@@ -51,7 +51,7 @@
 #define MINT_GENERATE_DAYS 7
 #endif  // OT_CASH
 
-#define OT_METHOD "opentxs::api::server::implementation::Server::"
+#define OT_METHOD "opentxs::api::server::implementation::Manager::"
 
 namespace opentxs
 {
@@ -146,7 +146,7 @@ Manager::Manager(
 
 void Manager::Cleanup()
 {
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Shutting down and cleaning up.")
+    LogDetail(OT_METHOD)(__FUNCTION__)(": Shutting down and cleaning up.")
         .Flush();
     message_processor_.cleanup();
     message_processor_p_.reset();
@@ -225,22 +225,22 @@ void Manager::generate_mint(
         100000000,
         1000000000,
         mint_key_size_.load());
-
     Lock mintLock(mint_lock_);
 
     if (mints_.end() != mints_.find(unitID)) {
         mints_.at(unitID).erase(PUBLIC_SERIES);
     }
 
-    mint->SetSavePrivateKeys();
+    mint->SetSavePrivateKeys(true);
     mint->SignContract(nym);
     mint->SaveContract();
-    mint->SaveMint();
     mint->SaveMint(seriesID.c_str());
+    mint->SetSavePrivateKeys(false);
     mint->ReleaseSignatures();
     mint->SignContract(nym);
     mint->SaveContract();
     mint->SaveMint(PUBLIC_SERIES);
+    mint->SaveMint();
 }
 #endif  // OT_CASH
 const std::string Manager::get_arg(const std::string& argName) const
@@ -329,24 +329,16 @@ std::shared_ptr<blind::Mint> Manager::GetPrivateMint(
     const std::string id{unitID.str()};
     const std::string seriesID =
         std::string(SERIES_DIVIDER) + std::to_string(index);
-    auto currency = mints_.find(id);
-
-    if (mints_.end() == currency) {
-
-        return load_private_mint(lock, id, seriesID);
-    }
-
-    auto& seriesMap = currency->second;
-    // Modifying the private version may invalid the public version
+    auto& seriesMap = mints_[id];
+    // Modifying the private version may invalidate the public version
     seriesMap.erase(PUBLIC_SERIES);
-    auto series = seriesMap.find(seriesID);
+    auto& output = seriesMap[seriesID];
 
-    if (seriesMap.end() == series) {
-
-        return load_private_mint(lock, id, seriesID);
+    if (false == bool(output)) {
+        output = load_private_mint(lock, id, seriesID);
     }
 
-    return series->second;
+    return output;
 }
 
 std::shared_ptr<const blind::Mint> Manager::GetPublicMint(
@@ -355,22 +347,13 @@ std::shared_ptr<const blind::Mint> Manager::GetPublicMint(
     Lock lock(mint_lock_);
     const std::string id{unitID.str()};
     const std::string seriesID{PUBLIC_SERIES};
-    auto currency = mints_.find(id);
+    auto& output = mints_[id][seriesID];
 
-    if (mints_.end() == currency) {
-
-        return load_public_mint(lock, id, seriesID);
+    if (false == bool(output)) {
+        output = load_public_mint(lock, id, seriesID);
     }
 
-    auto& seriesMap = currency->second;
-    auto series = seriesMap.find(seriesID);
-
-    if (seriesMap.end() == series) {
-
-        return load_public_mint(lock, id, seriesID);
-    }
-
-    return series->second;
+    return output;
 }
 #endif  // OT_CASH
 
@@ -424,14 +407,12 @@ std::shared_ptr<blind::Mint> Manager::load_private_mint(
 {
     OT_ASSERT(verify_lock(lock, mint_lock_));
 
-    std::shared_ptr<blind::Mint> mint{factory_
-                                          ->Mint(
-                                              String::Factory(ID()),
-                                              String::Factory(NymID()),
-                                              String::Factory(unitID.c_str()))
-                                          .release()};
+    std::shared_ptr<blind::Mint> mint{factory_->Mint(
+        String::Factory(ID()),
+        String::Factory(NymID()),
+        String::Factory(unitID.c_str()))};
 
-    OT_ASSERT(false != bool(mint));
+    OT_ASSERT(mint);
 
     return verify_mint(lock, unitID, seriesID, mint);
 }
@@ -444,10 +425,9 @@ std::shared_ptr<blind::Mint> Manager::load_public_mint(
     OT_ASSERT(verify_lock(lock, mint_lock_));
 
     std::shared_ptr<blind::Mint> mint{
-        factory_->Mint(String::Factory(ID()), String::Factory(unitID.c_str()))
-            .release()};
+        factory_->Mint(String::Factory(ID()), String::Factory(unitID.c_str()))};
 
-    OT_ASSERT(false != bool(mint));
+    OT_ASSERT(mint);
 
     return verify_mint(lock, unitID, seriesID, mint);
 }
@@ -511,7 +491,7 @@ void Manager::mint() const
         if (generate) {
             generate_mint(serverID, unitID, next);
         } else {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Existing mint file for ")(
+            LogDetail(OT_METHOD)(__FUNCTION__)(": Existing mint file for ")(
                 unitID)(" is still valid.")
                 .Flush();
         }
@@ -608,15 +588,7 @@ std::shared_ptr<blind::Mint> Manager::verify_mint(
         return {};
     }
 
-    auto& output = mints_[unitID][seriesID];
-
-    OT_ASSERT(false == bool(output));
-
-    output = mint;
-
-    OT_ASSERT(true == bool(output));
-
-    return output;
+    return mint;
 }
 
 bool Manager::verify_mint_directory(const std::string& serverID) const

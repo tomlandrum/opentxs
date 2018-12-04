@@ -45,4 +45,3 @@ TEST_F(Test_ListenCallback, ListenCallback_Process)
 
     listenCallback->Process(testMessage);
 }
-

@@ -255,7 +255,7 @@ void Contacts::import_contacts(const rLock& lock)
 
 void Contacts::init_nym_map(const rLock& lock)
 {
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Upgrading indices.").Flush();
+    LogDetail(OT_METHOD)(__FUNCTION__)(": Upgrading indices.").Flush();
 
     for (const auto& it : api_.Storage().ContactList()) {
         const auto& contactID = Identifier::Factory(it.first);
@@ -302,7 +302,7 @@ Contacts::ContactMap::iterator Contacts::load_contact(
     const auto loaded = api_.Storage().Load(id.str(), serialized, SILENT);
 
     if (false == loaded) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Unable to load contact ")(id)(".")
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Unable to load contact ")(id)
             .Flush();
 
         return contact_map_.end();
@@ -711,7 +711,7 @@ std::shared_ptr<const class Contact> Contacts::Update(
     const auto contactID = Identifier::Factory(contactIdentifier);
 
     if (contactIdentifier.empty()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Nym ")(nymID)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Nym ")(nymID)(
             " is not associated with a contact. Creating a new contact.")
             .Flush();
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47

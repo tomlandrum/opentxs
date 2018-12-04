@@ -12,8 +12,8 @@
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/Issuer.hpp"
 #include "opentxs/api/client/Manager.hpp"
+#include "opentxs/api/client/OTX.hpp"
 #include "opentxs/api/client/Pair.hpp"
-#include "opentxs/api/client/Sync.hpp"
 #include "opentxs/api/client/UI.hpp"
 #include "opentxs/api/network/ZMQ.hpp"
 #include "opentxs/api/crypto/Crypto.hpp"
@@ -3190,7 +3190,7 @@ std::uint8_t SwigWrap::Can_Message(
     const std::string& senderNymID,
     const std::string& recipientContactID)
 {
-    return static_cast<std::uint8_t>(client_->Sync().CanMessage(
+    return static_cast<std::uint8_t>(client_->OTX().CanMessage(
         Identifier::Factory(senderNymID),
         Identifier::Factory(recipientContactID)));
 }
@@ -3201,36 +3201,37 @@ bool SwigWrap::Deposit_Cheque(
 {
     std::set<OTIdentifier> ids{Identifier::Factory(chequeID)};
 
-    return 1 == client_->Sync().DepositCheques(Identifier::Factory(nymID), ids);
+    return 1 == client_->OTX().DepositCheques(Identifier::Factory(nymID), ids);
 }
 
 bool SwigWrap::Deposit_Cheques(const std::string& nymID)
 {
-    return 0 < client_->Sync().DepositCheques(Identifier::Factory(nymID));
+    return 0 < client_->OTX().DepositCheques(Identifier::Factory(nymID));
 }
 
 std::string SwigWrap::Find_Nym(const std::string& nymID)
 {
-    return client_->Sync().FindNym(Identifier::Factory(nymID))->str();
+    return std::to_string(
+        std::get<0>(client_->OTX().FindNym(Identifier::Factory(nymID))));
 }
 
 std::string SwigWrap::Find_Nym_Hint(
     const std::string& nymID,
     const std::string& serverID)
 {
-    return client_->Sync()
-        .FindNym(Identifier::Factory(nymID), Identifier::Factory(serverID))
-        ->str();
+    return std::to_string(std::get<0>(client_->OTX().FindNym(
+        Identifier::Factory(nymID), Identifier::Factory(serverID))));
 }
 
 std::string SwigWrap::Find_Server(const std::string& serverID)
 {
-    return client_->Sync().FindServer(Identifier::Factory(serverID))->str();
+    return std::to_string(
+        std::get<0>(client_->OTX().FindServer(Identifier::Factory(serverID))));
 }
 
 std::string SwigWrap::Get_Introduction_Server()
 {
-    return client_->Sync().IntroductionServer().str();
+    return client_->OTX().IntroductionServer().str();
 }
 
 std::string SwigWrap::Import_Nym(const std::string& armored)
@@ -3249,12 +3250,12 @@ std::string SwigWrap::Message_Contact(
     const std::string& contactID,
     const std::string& message)
 {
-    const auto output = client_->Sync().MessageContact(
+    const auto output = client_->OTX().MessageContact(
         Identifier::Factory(senderNymID),
         Identifier::Factory(contactID),
         message);
 
-    return output->str();
+    return std::to_string(std::get<0>(output));
 }
 
 bool SwigWrap::Pair_Node(
@@ -3310,7 +3311,7 @@ std::string SwigWrap::Paired_Server(
 
 std::uint64_t SwigWrap::Refresh_Counter()
 {
-    return client_->Sync().RefreshCount();
+    return client_->OTX().RefreshCount();
 }
 
 std::string SwigWrap::Register_Nym_Public(
@@ -3319,13 +3320,13 @@ std::string SwigWrap::Register_Nym_Public(
     const bool setContactData,
     const bool primary)
 {
-    const auto taskID = client_->Sync().RegisterNym(
+    const auto taskID = client_->OTX().RegisterNymPublic(
         Identifier::Factory(nym),
         Identifier::Factory(server),
         setContactData,
         primary);
 
-    return taskID->str();
+    return std::to_string(std::get<0>(taskID));
 }
 
 std::string SwigWrap::Send_Cheque(
@@ -3335,14 +3336,14 @@ std::string SwigWrap::Send_Cheque(
     const std::int64_t value,
     const std::string& memo)
 {
-    const auto taskID = client_->Sync().SendCheque(
+    const auto taskID = client_->OTX().SendCheque(
         Identifier::Factory(localNymID),
         Identifier::Factory(sourceAccountID),
         Identifier::Factory(recipientContactID),
         value,
         memo);
 
-    return taskID->str();
+    return std::to_string(std::get<0>(taskID));
 }
 
 std::string SwigWrap::Set_Introduction_Server(const std::string& contract)
@@ -3353,21 +3354,30 @@ std::string SwigWrap::Set_Introduction_Server(const std::string& contract)
 
     if (false == bool(instantiated)) { return {}; }
 
-    return client_->Sync().SetIntroductionServer(*instantiated)->str();
+    return client_->OTX().SetIntroductionServer(*instantiated)->str();
 }
 
 void SwigWrap::Start_Introduction_Server(const std::string& localNymID)
 {
-    client_->Sync().StartIntroductionServer(Identifier::Factory(localNymID));
+    client_->OTX().StartIntroductionServer(Identifier::Factory(localNymID));
 }
 
 std::uint8_t SwigWrap::Task_Status(const std::string& id)
 {
-    return static_cast<std::uint8_t>(
-        client_->Sync().Status(Identifier::Factory(id)));
+    api::client::OTX::TaskID taskID{0};
+    ThreadStatus output{ThreadStatus::ERROR};
+
+    try {
+        taskID = std::stoi(id);
+        output = client_->OTX().Status(taskID);
+    } catch (...) {
+        output = ThreadStatus::ERROR;
+    }
+
+    return static_cast<std::uint8_t>(output);
 }
 
-void SwigWrap::Trigger_Refresh() { client_->Sync().Refresh(); }
+void SwigWrap::Trigger_Refresh() { client_->OTX().Refresh(); }
 
 const ui::ActivitySummary& SwigWrap::ActivitySummary(const std::string& nymID)
 {

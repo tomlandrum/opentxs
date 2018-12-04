@@ -18,23 +18,21 @@ public:
     EXPORT virtual bool hasOpenTransactions() const = 0;
     using Context::IssuedNumbers;
     EXPORT virtual std::size_t IssuedNumbers(
-        const std::set<TransactionNumber>& exclude) const = 0;
+        const TransactionNumbers& exclude) const = 0;
     EXPORT virtual std::size_t OpenCronItems() const = 0;
     EXPORT virtual bool Verify(
         const TransactionStatement& statement,
-        const std::set<TransactionNumber>& excluded,
-        const std::set<TransactionNumber>& included) const = 0;
+        const TransactionNumbers& excluded,
+        const TransactionNumbers& included) const = 0;
     EXPORT virtual bool VerifyCronItem(
         const TransactionNumber number) const = 0;
     using Context::VerifyIssuedNumber;
     EXPORT virtual bool VerifyIssuedNumber(
         const TransactionNumber& number,
-        const std::set<TransactionNumber>& exclude) const = 0;
+        const TransactionNumbers& exclude) const = 0;
 
-    EXPORT virtual bool AcceptIssuedNumbers(
-        std::set<TransactionNumber>& newNumbers) = 0;
-    EXPORT virtual void FinishAcknowledgements(
-        const std::set<RequestNumber>& req) = 0;
+    EXPORT virtual bool AcceptIssuedNumbers(TransactionNumbers& newNumbers) = 0;
+    EXPORT virtual void FinishAcknowledgements(const RequestNumbers& req) = 0;
     EXPORT virtual bool IssueNumber(const TransactionNumber& number) = 0;
 
     virtual ~ClientContext() override = default;

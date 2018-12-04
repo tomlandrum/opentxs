@@ -74,17 +74,32 @@ protected:
     proto::Context serialize(const Lock& lock, const proto::ConsensusType type)
         const;
     virtual proto::Context serialize(const Lock& lock) const = 0;
+    virtual std::string type() const = 0;
     bool validate(const Lock& lock) const override;
 
     bool add_acknowledged_number(const Lock& lock, const RequestNumber req);
+    bool consume_available(const Lock& lock, const TransactionNumber& number);
+    bool consume_issued(const Lock& lock, const TransactionNumber& number);
     void finish_acknowledgements(
         const Lock& lock,
         const std::set<RequestNumber>& req);
     bool issue_number(const Lock& lock, const TransactionNumber& number);
+    bool recover_available_number(
+        const Lock& lock,
+        const TransactionNumber& number);
     bool remove_acknowledged_number(
         const Lock& lock,
         const std::set<RequestNumber>& req);
+    bool save(const Lock& lock);
+    void set_local_nymbox_hash(const Lock& lock, const Identifier& hash);
+    void set_remote_nymbox_hash(const Lock& lock, const Identifier& hash);
     bool update_signature(const Lock& lock) override;
+    bool verify_available_number(const Lock& lock, const TransactionNumber& req)
+        const;
+    bool verify_acknowledged_number(const Lock& lock, const RequestNumber& req)
+        const;
+    bool verify_issued_number(const Lock& lock, const TransactionNumber& number)
+        const;
 
     Context(
         const api::Core& api,

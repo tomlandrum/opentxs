@@ -90,9 +90,9 @@ public:
     void IncrementCounter(const std::string& widgetID)
     {
         Lock lock(counter_lock_);
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Widget ")(widgetID)(" update counter set to ")
-              (++counter_[widgetID])(".").Flush();
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Widget ")(widgetID)(
+            " update counter set to ")(++counter_[widgetID])(".")
+            .Flush();
     }
 
     int GetCounter(const std::string& widgetID)

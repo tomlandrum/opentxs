@@ -183,6 +183,12 @@ bool ServerConnection::EnableProxy()
     return true;
 }
 
+void ServerConnection::disable_push(const Identifier& nymID)
+{
+    Lock registrationLock(registration_lock_);
+    registered_for_push_[nymID] = true;
+}
+
 std::string ServerConnection::endpoint() const
 {
     std::uint32_t port{0};
@@ -359,7 +365,8 @@ void ServerConnection::reset_timer()
 
 NetworkReplyMessage ServerConnection::Send(
     const ServerContext& context,
-    const Message& message)
+    const Message& message,
+    const Push push)
 {
     struct Cleanup {
         const Lock& lock_;
@@ -394,7 +401,14 @@ NetworkReplyMessage ServerConnection::Send(
         }
     };
 
-    register_for_push(context);
+    if (Push::Enable == push) {
+        LogTrace(OT_METHOD)(__FUNCTION__)(": Registering for push").Flush();
+        register_for_push(context);
+    } else {
+        LogTrace(OT_METHOD)(__FUNCTION__)(": Skipping push").Flush();
+        disable_push(context.Nym()->ID());
+    }
+
     NetworkReplyMessage output{SendResult::ERROR, nullptr};
     auto& status = output.first;
     auto& reply = output.second;
@@ -406,7 +420,11 @@ NetworkReplyMessage ServerConnection::Send(
     message.SaveContractRaw(raw);
     auto envelope = Armored::Factory(raw);
 
-    if (false == envelope->Exists()) { return output; }
+    if (false == envelope->Exists()) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to armor message").Flush();
+
+        return output;
+    }
 
     Lock socketLock(lock_);
     Cleanup cleanup(socketLock, *this, status, reply);

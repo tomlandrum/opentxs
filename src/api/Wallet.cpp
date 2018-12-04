@@ -2175,8 +2175,7 @@ OTIdentifier Wallet::server_to_nym(OTIdentifier& input) const
         if (contract) {
             output = Identifier::Factory(contract->Contract().nymid());
         } else {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Non-existent server: ")(
-                input)(".")
+            LogDetail(OT_METHOD)(__FUNCTION__)(": Non-existent server: ")(input)
                 .Flush();
         }
     }

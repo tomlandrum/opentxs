@@ -115,7 +115,6 @@ void Receiver<T>::thread()
     poll[0].events = ZMQ_POLLIN;
 
     while (running_.get()) {
-        std::this_thread::yield();
         Lock lock(lock_, std::try_to_lock);
 
         if (false == lock.owns_lock()) { continue; }
@@ -146,6 +145,8 @@ void Receiver<T>::thread()
         }
 
         process_incoming(lock, reply);
+        lock.unlock();
+        std::this_thread::yield();
     }
 }
 

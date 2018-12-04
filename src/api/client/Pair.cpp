@@ -6,8 +6,8 @@
 #include "stdafx.hpp"
 
 #include "opentxs/api/client/Manager.hpp"
+#include "opentxs/api/client/OTX.hpp"
 #include "opentxs/api/client/Pair.hpp"
-#include "opentxs/api/client/Sync.hpp"
 #include "opentxs/api/client/Issuer.hpp"
 #include "opentxs/api/client/ServerAction.hpp"
 #include "opentxs/api/Endpoints.hpp"
@@ -22,6 +22,9 @@
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
+#include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/core/identifier/Server.hpp"
+#include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Lockable.hpp"
@@ -86,6 +89,7 @@ Pair::Pair(const Flag& running, const api::client::Manager& client)
     , update_()
     , pair_event_(client.ZeroMQ().PublishSocket())
     , pending_bailment_(client.ZeroMQ().PublishSocket())
+    , next_task_id_(0)
 {
     // WARNING: do not access client_.Wallet() during construction
     refresh_thread_.reset(new std::thread(&Pair::check_refresh, this));
@@ -164,11 +168,11 @@ void Pair::check_pairing() const
 
 void Pair::check_refresh() const
 {
-    auto taskID = Identifier::Factory();
+    int taskID{0};
     bool update{false};
 
     while (running_) {
-        const auto current = client_.Sync().RefreshCount();
+        const auto current = client_.OTX().RefreshCount();
         const auto previous = last_refresh_.exchange(current);
 
         if (previous != current) { refresh(); }
@@ -199,19 +203,19 @@ std::pair<bool, OTIdentifier> Pair::get_connection(
 {
     std::pair<bool, OTIdentifier> output{false, Identifier::Factory()};
     auto& [success, requestID] = output;
-    auto action = client_.ServerAction().InitiateRequestConnection(
-        localNymID, serverID, issuerNymID, type);
-    action->Run();
 
-    if (SendResult::VALID_REPLY != action->LastSendResult()) { return output; }
+    auto setID = [&](const Identifier& in) -> void { output.second = in; };
+    auto [taskID, future] = client_.OTX().InitiateRequestConnection(
+        identifier::Nym::Factory(localNymID.str()),   // TODO nym id type
+        identifier::Server::Factory(serverID.str()),  // TODO server id type
+        identifier::Nym::Factory(issuerNymID.str()),  // TODO nym id type
+        type,
+        setID);
 
-    OT_ASSERT(action->Reply());
+    if (0 == taskID) { return output; }
 
-    success = action->Reply()->m_bSuccess;
-
-    OT_ASSERT(action->SentPeerRequest());
-
-    requestID = action->SentPeerRequest()->ID();
+    const auto result = std::get<0>(future.get());
+    success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
 
     return output;
 }
@@ -223,7 +227,7 @@ std::pair<bool, OTIdentifier> Pair::initiate_bailment(
     const Identifier& unitID) const
 {
     std::pair<bool, OTIdentifier> output(false, Identifier::Factory());
-    auto& [success, requestID] = output;
+    auto& success = std::get<0>(output);
     const auto contract = client_.Wallet().UnitDefinition(unitID);
 
     if (false == bool(contract)) {
@@ -232,19 +236,18 @@ std::pair<bool, OTIdentifier> Pair::initiate_bailment(
         return output;
     }
 
-    auto action = client_.ServerAction().InitiateBailment(
-        nymID, serverID, issuerID, unitID);
-    action->Run();
+    auto setID = [&](const Identifier& in) -> void { output.second = in; };
+    auto [taskID, future] = client_.OTX().InitiateBailment(
+        identifier::Nym::Factory(nymID.str()),        // TODO nym id type
+        identifier::Server::Factory(serverID.str()),  // TODO server id type
+        identifier::Nym::Factory(issuerID.str()),     // TODO nym id type
+        identifier::UnitDefinition::Factory(unitID.str()),  // TODO unit id type
+        setID);
 
-    if (SendResult::VALID_REPLY != action->LastSendResult()) { return output; }
+    if (0 == taskID) { return output; }
 
-    OT_ASSERT(action->Reply());
-
-    success = action->Reply()->m_bSuccess;
-
-    OT_ASSERT(action->SentPeerRequest());
-
-    requestID = action->SentPeerRequest()->ID();
+    const auto result = std::get<0>(future.get());
+    success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
 
     return output;
 }
@@ -314,7 +317,7 @@ void Pair::process_connection_info(
 
     if (added) {
         client_.Wallet().PeerRequestComplete(nymID, replyID);
-        update_.Push(Identifier::Random(), true);
+        update_.Push(++next_task_id_, true);
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to add reply.").Flush();
     }
@@ -431,8 +434,8 @@ void Pair::process_pending_bailment(
     OT_ASSERT(proto::PEERREQUEST_PENDINGBAILMENT == request.type())
 
     const auto requestID = Identifier::Factory(request.id());
-    const auto issuerNymID = Identifier::Factory(request.initiator());
-    const auto serverID = Identifier::Factory(request.server());
+    const auto issuerNymID = identifier::Nym::Factory(request.initiator());
+    const auto serverID = identifier::Server::Factory(request.server());
     auto editor = client_.Wallet().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.It();
     const auto added =
@@ -450,17 +453,30 @@ void Pair::process_pending_bailment(
                 .Flush();
         }
 
-        auto action = client_.ServerAction().AcknowledgeNotice(
-            nymID, serverID, issuerNymID, requestID, true);
-        action->Run();
+        auto [taskID, future] = client_.OTX().AcknowledgeNotice(
+            identifier::Nym::Factory(nymID.str()),  // TODO nym id type
+            serverID,
+            issuerNymID,
+            requestID,
+            true);
 
-        if (SendResult::VALID_REPLY == action->LastSendResult()) {
-            OT_ASSERT(action->SentPeerReply())
+        if (0 == taskID) {
+            LogDetail(OT_METHOD)(__FUNCTION__)(
+                ": Acknowledgement request already queued.")
+                .Flush();
 
-            const auto replyID(action->SentPeerReply()->ID());
+            return;
+        }
+
+        const auto result = future.get();
+        const auto status = std::get<0>(result);
+        if (proto::LASTREPLYSTATUS_MESSAGESUCCESS == status) {
+            const auto message = std::get<1>(result);
+            auto replyID{Identifier::Factory()};
+            message->GetIdentifier(replyID);
             issuer.AddReply(
                 proto::PEERREQUEST_PENDINGBAILMENT, requestID, replyID);
-            update_.Push(Identifier::Random(), true);
+            update_.Push(++next_task_id_, true);
         }
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to add request.").Flush();
@@ -486,7 +502,7 @@ void Pair::process_request_bailment(
 
     if (added) {
         client_.Wallet().PeerRequestComplete(nymID, replyID);
-        update_.Push(Identifier::Random(), true);
+        update_.Push(++next_task_id_, true);
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to add reply.").Flush();
     }
@@ -511,7 +527,7 @@ void Pair::process_request_outbailment(
 
     if (added) {
         client_.Wallet().PeerRequestComplete(nymID, replyID);
-        update_.Push(Identifier::Random(), true);
+        update_.Push(++next_task_id_, true);
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to add reply.").Flush();
     }
@@ -536,7 +552,7 @@ void Pair::process_store_secret(
 
     if (added) {
         client_.Wallet().PeerRequestComplete(nymID, replyID);
-        update_.Push(Identifier::Random(), true);
+        update_.Push(++next_task_id_, true);
         proto::PairEvent event;
         event.set_version(1);
         event.set_type(proto::PAIREVENT_STORESECRET);
@@ -562,8 +578,8 @@ void Pair::queue_nym_download(
     const Identifier& localNymID,
     const Identifier& targetNymID) const
 {
-    client_.Sync().StartIntroductionServer(localNymID);
-    client_.Sync().FindNym(targetNymID);
+    client_.OTX().StartIntroductionServer(localNymID);
+    client_.OTX().FindNym(targetNymID);
 }
 
 void Pair::queue_nym_registration(
@@ -571,15 +587,15 @@ void Pair::queue_nym_registration(
     const Identifier& serverID,
     const bool setData) const
 {
-    client_.Sync().RegisterNym(nymID, serverID, setData);
+    client_.OTX().RegisterNym(nymID, serverID, setData);
 }
 
 void Pair::queue_server_contract(
     const Identifier& nymID,
     const Identifier& serverID) const
 {
-    client_.Sync().StartIntroductionServer(nymID);
-    client_.Sync().FindServer(serverID);
+    client_.OTX().StartIntroductionServer(nymID);
+    client_.OTX().FindServer(serverID);
 }
 
 void Pair::queue_unit_definition(
@@ -587,7 +603,7 @@ void Pair::queue_unit_definition(
     const Identifier& serverID,
     const Identifier& unitID) const
 {
-    client_.Sync().ScheduleDownloadContract(nymID, serverID, unitID);
+    client_.OTX().DownloadContract(nymID, serverID, unitID);
 }
 
 void Pair::refresh() const
@@ -611,18 +627,20 @@ std::pair<bool, OTIdentifier> Pair::register_account(
         return output;
     }
 
-    auto action =
-        client_.ServerAction().RegisterAccount(nymID, serverID, unitID);
-    action->Run();
+    auto [taskID, future] =
+        client_.OTX().RegisterAccount(nymID, serverID, unitID);
 
-    if (SendResult::VALID_REPLY != action->LastSendResult()) { return output; }
+    if (0 == taskID) { return output; }
 
-    OT_ASSERT(action->Reply());
+    const auto [result, pReply] = future.get();
+    success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
 
-    const auto& reply = *action->Reply();
+    if (success) {
+        OT_ASSERT(pReply);
 
-    success = reply.m_bSuccess;
-    accountID->SetString(reply.m_strAcctID);
+        const auto& reply = *pReply;
+        accountID->SetString(reply.m_strAcctID);
+    }
 
     return output;
 }
@@ -877,29 +895,26 @@ std::pair<bool, OTIdentifier> Pair::store_secret(
 {
     std::pair<bool, OTIdentifier> output{false, Identifier::Factory()};
     auto& [success, requestID] = output;
-    auto action = client_.ServerAction().InitiateStoreSecret(
-        localNymID,
-        serverID,
-        issuerNymID,
+
+    auto setID = [&](const Identifier& in) -> void { output.second = in; };
+    auto [taskID, future] = client_.OTX().InitiateStoreSecret(
+        identifier::Nym::Factory(localNymID.str()),   // TODO nym id type
+        identifier::Server::Factory(serverID.str()),  // TODO server id type
+        identifier::Nym::Factory(issuerNymID.str()),  // TODO nym id type
         proto::SECRETTYPE_BIP39,
         client_.Exec().Wallet_GetWords(),
-        client_.Exec().Wallet_GetPassphrase());
-    action->Run();
+        client_.Exec().Wallet_GetPassphrase(),
+        setID);
 
-    if (SendResult::VALID_REPLY != action->LastSendResult()) { return output; }
+    if (0 == taskID) { return output; }
 
-    OT_ASSERT(action->Reply());
-
-    success = action->Reply()->m_bSuccess;
-
-    OT_ASSERT(action->SentPeerRequest());
-
-    requestID = action->SentPeerRequest()->ID();
+    const auto result = std::get<0>(future.get());
+    success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
 
     return output;
 }
 
-void Pair::Update() const { update_.Push(Identifier::Random(), true); }
+void Pair::Update() const { update_.Push(++next_task_id_, true); }
 
 void Pair::update_pairing() const
 {

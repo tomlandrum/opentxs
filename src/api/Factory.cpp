@@ -695,8 +695,8 @@ std::unique_ptr<opentxs::PeerObject> Factory::PeerObject(
 #endif
 
 std::unique_ptr<opentxs::PeerObject> Factory::PeerObject(
-    [[maybe_unused]] const std::shared_ptr<PeerRequest> request,
-    [[maybe_unused]] const std::shared_ptr<PeerReply> reply,
+    [[maybe_unused]] const std::shared_ptr<const PeerRequest> request,
+    [[maybe_unused]] const std::shared_ptr<const PeerReply> reply,
     [[maybe_unused]] const std::uint32_t& version) const
 {
     LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -707,7 +707,7 @@ std::unique_ptr<opentxs::PeerObject> Factory::PeerObject(
 }
 
 std::unique_ptr<opentxs::PeerObject> Factory::PeerObject(
-    [[maybe_unused]] const std::shared_ptr<PeerRequest> request,
+    [[maybe_unused]] const std::shared_ptr<const PeerRequest> request,
     [[maybe_unused]] const std::uint32_t& version) const
 {
     LogOutput(OT_METHOD)(__FUNCTION__)(

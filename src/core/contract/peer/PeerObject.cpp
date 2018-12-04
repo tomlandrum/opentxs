@@ -78,8 +78,8 @@ opentxs::PeerObject* Factory::PeerObject(
 
 opentxs::PeerObject* Factory::PeerObject(
     const api::Core& api,
-    const std::shared_ptr<PeerRequest> request,
-    const std::shared_ptr<PeerReply> reply,
+    const std::shared_ptr<const PeerRequest> request,
+    const std::shared_ptr<const PeerReply> reply,
     const std::uint32_t& version)
 {
     std::unique_ptr<opentxs::PeerObject> output(
@@ -92,7 +92,7 @@ opentxs::PeerObject* Factory::PeerObject(
 
 opentxs::PeerObject* Factory::PeerObject(
     const api::Core& api,
-    const std::shared_ptr<PeerRequest> request,
+    const std::shared_ptr<const PeerRequest> request,
     const std::uint32_t& version)
 {
     std::unique_ptr<opentxs::PeerObject> output(
@@ -151,8 +151,8 @@ Object::Object(
     const ConstNym& nym,
     const std::string& message,
     const std::string& payment,
-    const std::shared_ptr<PeerReply> reply,
-    const std::shared_ptr<PeerRequest> request,
+    const std::shared_ptr<const PeerReply> reply,
+    const std::shared_ptr<const PeerRequest> request,
 #if OT_CASH
     const std::shared_ptr<blind::Purse> purse,
 #endif
@@ -298,8 +298,8 @@ Object::Object(
 
 Object::Object(
     const api::Core& api,
-    const std::shared_ptr<PeerRequest> request,
-    const std::shared_ptr<PeerReply> reply,
+    const std::shared_ptr<const PeerRequest> request,
+    const std::shared_ptr<const PeerReply> reply,
     const std::uint32_t& version)
     : Object(
           api,
@@ -318,7 +318,7 @@ Object::Object(
 
 Object::Object(
     const api::Core& api,
-    const std::shared_ptr<PeerRequest> request,
+    const std::shared_ptr<const PeerRequest> request,
     const std::uint32_t& version)
     : Object(
           api,

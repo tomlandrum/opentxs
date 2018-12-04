@@ -5,6 +5,7 @@
 
 #include "stdafx.hpp"
 
+#include "opentxs/api/storage/Storage.hpp"
 #include "opentxs/api/Core.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/Wallet.hpp"
@@ -113,16 +114,26 @@ std::size_t Context::AvailableNumbers() const
     return available_transaction_numbers_.size();
 }
 
-bool Context::ConsumeAvailable(const TransactionNumber& number)
+bool Context::consume_available(
+    const Lock& lock,
+    const TransactionNumber& number)
 {
-    Lock lock(lock_);
+    OT_ASSERT(verify_write_lock(lock));
+
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+        "Consuming number ")(number)
+        .Flush();
 
     return 1 == available_transaction_numbers_.erase(number);
 }
 
-bool Context::ConsumeIssued(const TransactionNumber& number)
+bool Context::consume_issued(const Lock& lock, const TransactionNumber& number)
 {
-    Lock lock(lock_);
+    OT_ASSERT(verify_write_lock(lock));
+
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+        "Consuming number ")(number)
+        .Flush();
 
     if (0 < available_transaction_numbers_.count(number)) {
         LogDetail(OT_METHOD)(__FUNCTION__)(
@@ -133,6 +144,20 @@ bool Context::ConsumeIssued(const TransactionNumber& number)
     }
 
     return 1 == issued_transaction_numbers_.erase(number);
+}
+
+bool Context::ConsumeAvailable(const TransactionNumber& number)
+{
+    Lock lock(lock_);
+
+    return consume_available(lock, number);
+}
+
+bool Context::ConsumeIssued(const TransactionNumber& number)
+{
+    Lock lock(lock_);
+
+    return consume_issued(lock, number);
 }
 
 proto::Context Context::contract(const Lock& lock) const
@@ -267,8 +292,8 @@ bool Context::InitializeNymbox()
         ownerNymID, server_id_, ledgerType::nymbox, true);
 
     if (false == generated) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Unable to generate nymbox for ")(
-            ownerNymID)(".")
+        LogOutput(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+            "Unable to generate nymbox for ")(ownerNymID)(".")
             .Flush();
 
         return false;
@@ -279,24 +304,24 @@ bool Context::InitializeNymbox()
     OT_ASSERT(nym_)
 
     if (false == nymbox->SignContract(*nym_)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Unable to sign nymbox for ")(
-            ownerNymID)(".")
+        LogOutput(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+            "Unable to sign nymbox for ")(ownerNymID)(".")
             .Flush();
 
         return false;
     }
 
     if (false == nymbox->SaveContract()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Unable to serialize nymbox for ")(
-            ownerNymID)(".")
+        LogOutput(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+            "Unable to serialize nymbox for ")(ownerNymID)(".")
             .Flush();
 
         return false;
     }
 
     if (false == nymbox->SaveNymbox(local_nymbox_hash_)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Unable to save nymbox for ")(
-            ownerNymID)
+        LogOutput(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+            "Unable to save nymbox for ")(ownerNymID)
             .Flush();
 
         return false;
@@ -330,8 +355,8 @@ bool Context::issue_number(const Lock& lock, const TransactionNumber& number)
     const bool output = issued && available;
 
     if (!output) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to issue number ")(number)(
-            ".")
+        LogOutput(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+            "Failed to issue number ")(number)(".")
             .Flush();
         issued_transaction_numbers_.erase(number);
         available_transaction_numbers_.erase(number);
@@ -389,17 +414,26 @@ std::unique_ptr<const opentxs::NymFile> Context::Nymfile(
     return api_.Wallet().Nymfile(nym_->ID(), reason);
 }
 
-bool Context::RecoverAvailableNumber(const TransactionNumber& number)
+bool Context::recover_available_number(
+    const Lock& lock,
+    const TransactionNumber& number)
 {
-    if (0 == number) { return false; }
+    OT_ASSERT(verify_write_lock(lock));
 
-    Lock lock(lock_);
+    if (0 == number) { return false; }
 
     const bool issued = 1 == issued_transaction_numbers_.count(number);
 
     if (!issued) { return false; }
 
     return available_transaction_numbers_.insert(number).second;
+}
+
+bool Context::RecoverAvailableNumber(const TransactionNumber& number)
+{
+    Lock lock(lock_);
+
+    return recover_available_number(lock, number);
 }
 
 proto::Context Context::Refresh()
@@ -456,6 +490,16 @@ void Context::Reset()
     request_number_.store(0);
 }
 
+bool Context::save(const Lock& lock)
+{
+    OT_ASSERT(verify_write_lock(lock));
+
+    if (false == UpdateSignature(lock)) { return false; }
+    if (false == ValidateContext(lock)) { return false; }
+
+    return api_.Storage().Store(GetContract(lock));
+}
+
 proto::Context Context::serialize(
     const Lock& lock,
     const proto::ConsensusType type) const
@@ -502,18 +546,38 @@ proto::Context Context::Serialized() const
 
 const Identifier& Context::Server() const { return server_id_; }
 
+void Context::set_local_nymbox_hash(const Lock& lock, const Identifier& hash)
+{
+    OT_ASSERT(verify_write_lock(lock));
+
+    local_nymbox_hash_ = Identifier::Factory(hash);
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+        "Set local nymbox hash to: ")(local_nymbox_hash_->asHex())
+        .Flush();
+    CalculateID(lock);
+}
+
+void Context::set_remote_nymbox_hash(const Lock& lock, const Identifier& hash)
+{
+    OT_ASSERT(verify_write_lock(lock));
+
+    remote_nymbox_hash_ = Identifier::Factory(hash);
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+        "Set remote nymbox hash to: ")(remote_nymbox_hash_->asHex())
+        .Flush();
+    CalculateID(lock);
+}
+
 void Context::SetLocalNymboxHash(const Identifier& hash)
 {
     Lock lock(lock_);
-    local_nymbox_hash_ = Identifier::Factory(hash);
-    CalculateID(lock);
+    set_local_nymbox_hash(lock, hash);
 }
 
 void Context::SetRemoteNymboxHash(const Identifier& hash)
 {
     Lock lock(lock_);
-    remote_nymbox_hash_ = Identifier::Factory(hash);
-    CalculateID(lock);
+    set_remote_nymbox_hash(lock, hash);
 }
 
 void Context::SetRequest(const RequestNumber req)
@@ -552,7 +616,8 @@ bool Context::update_signature(const Lock& lock)
     if (success) {
         signatures_.emplace_front(new proto::Signature(signature));
     } else {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to create signature.")
+        LogOutput(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+            "Failed to create signature.")
             .Flush();
     }
 
@@ -574,23 +639,29 @@ bool Context::validate(const Lock& lock) const
     return verify_signature(lock, *signatures_.front());
 }
 
-bool Context::VerifyAcknowledgedNumber(const RequestNumber& req) const
+bool Context::verify_acknowledged_number(
+    const Lock& lock,
+    const RequestNumber& req) const
 {
-    Lock lock(lock_);
+    OT_ASSERT(verify_write_lock(lock));
 
     return (0 < acknowledged_request_numbers_.count(req));
 }
 
-bool Context::VerifyAvailableNumber(const TransactionNumber& number) const
+bool Context::verify_available_number(
+    const Lock& lock,
+    const TransactionNumber& number) const
 {
-    Lock lock(lock_);
+    OT_ASSERT(verify_write_lock(lock));
 
     return (0 < available_transaction_numbers_.count(number));
 }
 
-bool Context::VerifyIssuedNumber(const TransactionNumber& number) const
+bool Context::verify_issued_number(
+    const Lock& lock,
+    const TransactionNumber& number) const
 {
-    Lock lock(lock_);
+    OT_ASSERT(verify_write_lock(lock));
 
     return (0 < issued_transaction_numbers_.count(number));
 }
@@ -602,7 +673,8 @@ bool Context::verify_signature(
     OT_ASSERT(verify_write_lock(lock));
 
     if (!Signable::verify_signature(lock, signature)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Error: invalid signature.")
+        LogOutput(OT_METHOD)(__FUNCTION__)(": (")(type())(") ")(
+            "Error: invalid signature.")
             .Flush();
 
         return false;
@@ -613,5 +685,26 @@ bool Context::verify_signature(
     sigProto.CopyFrom(signature);
 
     return nym_->VerifyProto(serialized, sigProto);
+}
+
+bool Context::VerifyAcknowledgedNumber(const RequestNumber& req) const
+{
+    Lock lock(lock_);
+
+    return verify_acknowledged_number(lock, req);
+}
+
+bool Context::VerifyAvailableNumber(const TransactionNumber& number) const
+{
+    Lock lock(lock_);
+
+    return verify_available_number(lock, number);
+}
+
+bool Context::VerifyIssuedNumber(const TransactionNumber& number) const
+{
+    Lock lock(lock_);
+
+    return verify_issued_number(lock, number);
 }
 }  // namespace opentxs::implementation

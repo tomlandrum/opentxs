@@ -145,7 +145,7 @@ CredentialSet::CredentialSet(
 
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
     if (!haveChildCredential) {
-        LogNormal(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Creating an ed25519 child key credential.")
             .Flush();
         revisedParameters.setNymParameterType(NymParameterType::ED25519);
@@ -155,7 +155,7 @@ CredentialSet::CredentialSet(
 
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
     if (!haveChildCredential) {
-        LogNormal(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Creating an secp256k1 child key credential.")
             .Flush();
         revisedParameters.setNymParameterType(NymParameterType::SECP256K1);
@@ -165,7 +165,7 @@ CredentialSet::CredentialSet(
 
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
     if (!haveChildCredential) {
-        LogNormal(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Creating an RSA child key credential.")
             .Flush();
         revisedParameters.setNymParameterType(NymParameterType::RSA);
@@ -1085,7 +1085,7 @@ void CredentialSet::RevokeVerificationCredentials(
 
 bool CredentialSet::AddContactCredential(const proto::ContactData& contactData)
 {
-    LogNormal(OT_METHOD)(__FUNCTION__)(": Adding a contact credential.")
+    LogDetail(OT_METHOD)(__FUNCTION__)(": Adding a contact credential.")
         .Flush();
 
     if (!m_MasterCredential) { return false; }
@@ -1112,7 +1112,7 @@ bool CredentialSet::AddContactCredential(const proto::ContactData& contactData)
 bool CredentialSet::AddVerificationCredential(
     const proto::VerificationSet& verificationSet)
 {
-    LogNormal(OT_METHOD)(__FUNCTION__)(": Adding a verification credential.")
+    LogDetail(OT_METHOD)(__FUNCTION__)(": Adding a verification credential.")
         .Flush();
 
     if (!m_MasterCredential) { return false; }

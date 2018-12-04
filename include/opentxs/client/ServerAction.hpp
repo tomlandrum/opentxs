@@ -15,22 +15,16 @@
 
 namespace opentxs
 {
-class Message;
-class PeerReply;
-class PeerRequest;
-
 namespace client
 {
-class ServerAction
+class [[deprecated]] ServerAction
 {
 public:
-    EXPORT virtual TransactionNumber GetTransactionNumber() const = 0;
     EXPORT virtual SendResult LastSendResult() const = 0;
-    EXPORT virtual const OTIdentifier MessageID() const = 0;
-    EXPORT virtual const std::shared_ptr<PeerRequest>& SentPeerRequest()
+    EXPORT virtual const std::shared_ptr<PeerRequest> SentPeerRequest()
         const = 0;
-    EXPORT virtual const std::shared_ptr<PeerReply>& SentPeerReply() const = 0;
-    EXPORT virtual const std::shared_ptr<Message>& Reply() const = 0;
+    EXPORT virtual const std::shared_ptr<PeerReply> SentPeerReply() const = 0;
+    EXPORT virtual const std::shared_ptr<Message> Reply() const = 0;
 
     EXPORT virtual std::string Run(const std::size_t totalRetries = 2) = 0;
 
@@ -41,7 +35,7 @@ protected:
 
 private:
     ServerAction(const ServerAction&) = delete;
-    ServerAction(ServerAction&&) = delete;
+    ServerAction(ServerAction &&) = delete;
     ServerAction& operator=(const ServerAction&) = delete;
     ServerAction& operator=(ServerAction&&) = delete;
 };

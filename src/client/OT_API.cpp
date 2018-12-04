@@ -8,6 +8,7 @@
 #include "opentxs/client/OT_API.hpp"
 
 #include "opentxs/api/client/Activity.hpp"
+#include "opentxs/api/client/Manager.hpp"
 #include "opentxs/api/client/Pair.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/crypto/Crypto.hpp"
@@ -20,10 +21,7 @@
 #include "opentxs/api/Native.hpp"
 #include "opentxs/api/Settings.hpp"
 #include "opentxs/api/Wallet.hpp"
-#if OT_CASH
 #include "opentxs/blind/Mint.hpp"
-#include "opentxs/blind/Purse.hpp"
-#endif  // OT_CASH
 #include "opentxs/client/Helpers.hpp"
 #include "opentxs/client/NymData.hpp"
 #include "opentxs/client/OTClient.hpp"
@@ -31,18 +29,18 @@
 #include "opentxs/client/OTWallet.hpp"
 #include "opentxs/consensus/ManagedNumber.hpp"
 #include "opentxs/consensus/ServerContext.hpp"
+#include "opentxs/consensus/TransactionStatement.hpp"
 #include "opentxs/contact/ContactData.hpp"
 #include "opentxs/core/contract/basket/Basket.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
-#include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
+#include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/crypto/OTCachedKey.hpp"
 #include "opentxs/core/crypto/OTEnvelope.hpp"
 #if defined(OT_KEYRING_FLATFILE)
 #include "opentxs/core/crypto/OTKeyring.hpp"
 #endif
-#include "opentxs/core/crypto/OTNymOrSymmetricKey.hpp"
 #include "opentxs/core/crypto/OTPassword.hpp"
 #include "opentxs/core/crypto/OTPasswordData.hpp"
 #if OT_CRYPTO_SUPPORTED_SOURCE_BIP47
@@ -281,8 +279,6 @@ OT_API::OT_API(
     , m_pWallet(nullptr)
     , m_pClient(nullptr)
     , lock_callback_(lockCallback)
-    , request_sent_(api.ZeroMQ().PublishSocket())
-    , reply_received_(api.ZeroMQ().PublishSocket())
 {
     // WARNING: do not access api_.Wallet() during construction
 
@@ -292,11 +288,6 @@ OT_API::OT_API(
     }
 
     OT_ASSERT(m_pClient);
-
-    auto bound = request_sent_->Start(api.Endpoints().ServerRequestSent());
-    bound &= reply_received_->Start(api.Endpoints().ServerReplyReceived());
-
-    OT_ASSERT(bound);
 }
 
 void OT_API::AddHashesToTransaction(
@@ -385,7 +376,7 @@ bool OT_API::Init()
             .Flush();
 
         m_pWallet = new OTWallet(api_);
-        m_pClient.reset(new OTClient(api_, activity_, contacts_, workflow_));
+        m_pClient.reset(new OTClient(api_));
 
         return true;
     } else {
@@ -3788,7 +3779,7 @@ Cheque* OT_API::WriteCheque(
         return nullptr;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         number->Value())(".")
         .Flush();
 
@@ -3829,7 +3820,8 @@ Cheque* OT_API::WriteCheque(
 
         return nullptr;
     } else {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Started workflow ")(workflow)(".")
+        LogVerbose(OT_METHOD)(__FUNCTION__)(": Started workflow ")(workflow)(
+            ".")
             .Flush();
     }
 
@@ -6539,7 +6531,12 @@ CommandResult OT_API::issueBasket(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message, label);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_),
+        {},
+        context,
+        *message,
+        label);
 
     return output;
 }
@@ -6697,7 +6694,7 @@ bool OT_API::AddBasketExchangeItem(
         return false;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         number->Value())(".")
         .Flush();
     number->SetSuccess(true);
@@ -6916,7 +6913,7 @@ CommandResult OT_API::exchangeBasket(
         return output;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         managedNumber->Value())(".")
         .Flush();
     transactionNum = managedNumber->Value();
@@ -6948,7 +6945,7 @@ CommandResult OT_API::exchangeBasket(
         return output;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         closingNumber->Value())(".")
         .Flush();
     basket->SetClosingNum(closingNumber->Value());
@@ -6991,45 +6988,23 @@ CommandResult OT_API::exchangeBasket(
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
     account.Release();
-    result = send_message(managed, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_),
+        managed,
+        context,
+        *message);
 
     return output;
 }
 
-CommandResult OT_API::getTransactionNumbers(ServerContext& context) const
+std::unique_ptr<Message> OT_API::getTransactionNumbers(
+    ServerContext& context) const
 {
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto nCount = context.AvailableNumbers();
-    // TODO no hardcoding. (max transaction nums allowed out at a single
-    // time.)
-    const std::size_t nMaxCount = 50;
-
-    if (nCount > nMaxCount) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failure: That Nym already "
-            "has "
-            "more than ")(nMaxCount)(" transaction numbers signed out."
-                                     " (Use those first).")(".")
-            .Flush();
-        requestNum = 1;
-        status = SendResult::UNNECESSARY;
-
-        return output;
-    }
-
-    auto message{api_.Factory().Message()};
-    requestNum = m_pClient->ProcessUserCommand(
+    auto output{api_.Factory().Message()};
+    auto requestNum = m_pClient->ProcessUserCommand(
         MessageType::getTransactionNumbers,
         context,
-        *message,
+        *output,
         Identifier::Factory(),
         Identifier::Factory());
 
@@ -7039,327 +7014,11 @@ CommandResult OT_API::getTransactionNumbers(ServerContext& context) const
             "getTransactionNumber command. Return value: ")(requestNum)(".")
             .Flush();
 
-        return output;
+        return {};
     }
-
-    result = send_message({}, context, *message);
 
     return output;
 }
-
-#if OT_CASH
-CommandResult OT_API::notarizeWithdrawal(
-    ServerContext& context,
-    const Identifier& accountID,
-    const Amount amount) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto& nym = *context.Nym();
-    const auto& nymID = nym.ID();
-    const auto& serverID = context.Server();
-    const auto& serverNym = context.RemoteNym();
-    auto account = api_.Wallet().Account(accountID);
-
-    if (false == bool(account)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load account.").Flush();
-
-        return output;
-    }
-
-    // TODO unit id type
-    const auto contractID = identifier::UnitDefinition::Factory(
-        account.get().GetInstrumentDefinitionID().str());
-    const bool exists = OTDB::Exists(
-        api_.DataFolder(),
-        OTFolders::Mint().Get(),
-        serverID.str(),
-        contractID->str(),
-        "");
-
-    if (false == exists) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": File does not exist: ")(
-            OTFolders::Mint())(Log::PathSeparator())(serverID)(
-            Log::PathSeparator())(contractID)(".")
-            .Flush();
-
-        return output;
-    }
-
-    auto mint{api_.Factory().Mint(
-        String::Factory(serverID), String::Factory(contractID))};
-
-    if (false == bool(mint)) { return output; }
-
-    const bool validMint = mint->LoadMint() && mint->VerifyMint(serverNym);
-
-    if (false == validMint) { return output; }
-
-    std::unique_ptr<Ledger> inbox(account.get().LoadInbox(nym));
-
-    if (false == bool(inbox)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading inbox for "
-                                           "account ")(accountID)(".")
-            .Flush();
-
-        return output;
-    }
-
-    std::unique_ptr<Ledger> outbox(account.get().LoadOutbox(nym));
-
-    if (false == bool(outbox)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading outbox for "
-                                           "account ")(accountID)(".")
-            .Flush();
-
-        return output;
-    }
-
-    std::set<OTManagedNumber> managed{};
-    managed.insert(
-        context.NextTransactionNumber(MessageType::notarizeTransaction));
-    auto& managedNumber = *managed.rbegin();
-
-    if (false == managedNumber->Valid()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": No transaction numbers were available. "
-            "Try requesting the server for a new one.")
-            .Flush();
-        status = SendResult::TRANSACTION_NUMBERS;
-
-        return output;
-    }
-
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
-        managedNumber->Value())(".")
-        .Flush();
-    transactionNum = managedNumber->Value();
-    auto transaction{api_.Factory().Transaction(
-        nymID,
-        accountID,
-        serverID,
-        transactionType::withdrawal,
-        originType::not_applicable,
-        transactionNum)};
-
-    if (false == bool(transaction)) { return output; }
-
-    auto item{api_.Factory().Item(
-        *transaction, itemType::withdrawal, Identifier::Factory())};
-
-    if (false == bool(item)) { return output; }
-
-    item->SetNote(String::Factory("Gimme cash!"));
-    std::shared_ptr<blind::Purse> pPurse{
-        api_.Factory().Purse(context, contractID, *mint, amount)};
-
-    if (false == bool(pPurse)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to construct purse")
-            .Flush();
-
-        return output;
-    }
-
-    auto& purse = *pPurse;
-    item->SetAttachment(proto::ProtoAsData(purse.Serialize()));
-    item->SignContract(nym);
-    item->SaveContract();
-    std::shared_ptr<Item> pitem{item.release()};
-    transaction->AddItem(pitem);
-    std::unique_ptr<Item> balanceItem(inbox->GenerateBalanceStatement(
-        amount * (-1), *transaction, context, account.get(), *outbox));
-
-    if (false == bool(balanceItem)) { return output; }
-
-    std::shared_ptr<Item> pbalanceItem{balanceItem.release()};
-    transaction->AddItem(pbalanceItem);
-    AddHashesToTransaction(*transaction, context, account.get());
-    transaction->SignContract(nym);
-    transaction->SaveContract();
-    auto ledger{api_.Factory().Ledger(nymID, accountID, serverID)};
-    ledger->GenerateLedger(accountID, serverID, ledgerType::message);
-    std::shared_ptr<OTTransaction> ptransaction{transaction.release()};
-    ledger->AddTransaction(ptransaction);
-    ledger->SignContract(nym);
-    ledger->SaveContract();
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::notarizeTransaction,
-        Armored::Factory(String::Factory(*ledger)),
-        accountID,
-        requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    account.Release();
-    result = send_message(managed, context, *message);
-
-    return output;
-}
-
-// Request the server to accept some digital cash and deposit it to an asset
-// account.
-CommandResult OT_API::notarizeDeposit(
-    ServerContext& context,
-    const Identifier& accountID,
-    const std::shared_ptr<blind::Purse> purse) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto& nym = *context.Nym();
-    const auto& nymID = nym.ID();
-    const auto& serverID = context.Server();
-    auto account = api_.Wallet().Account(accountID);
-
-    if (false == bool(account)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load account.").Flush();
-
-        return output;
-    }
-
-    std::unique_ptr<Ledger> inbox(account.get().LoadInbox(nym));
-
-    if (false == bool(inbox)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading inbox for "
-                                           "account ")(accountID)(".")
-            .Flush();
-
-        return output;
-    }
-
-    std::unique_ptr<Ledger> outbox(account.get().LoadOutbox(nym));
-
-    if (nullptr == outbox) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading outbox for "
-                                           "account ")(accountID)(".")
-            .Flush();
-
-        return output;
-    }
-
-    std::set<OTManagedNumber> managed;
-    managed.insert(
-        context.NextTransactionNumber(MessageType::notarizeTransaction));
-    auto& managedNumber = *managed.rbegin();
-
-    if (false == managedNumber->Valid()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": No transaction numbers were available. "
-            "Try requesting the server for a new one.")
-            .Flush();
-        status = SendResult::TRANSACTION_NUMBERS;
-
-        return output;
-    }
-
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
-        managedNumber->Value())(".")
-        .Flush();
-    transactionNum = managedNumber->Value();
-
-    auto transaction{api_.Factory().Transaction(
-        nymID,
-        accountID,
-        serverID,
-        transactionType::deposit,
-        originType::not_applicable,
-        transactionNum)};
-
-    if (false == bool(transaction)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed generate deposit txn. "
-                                           "account ")(accountID)
-            .Flush();
-
-        return output;
-    }
-
-    auto item{api_.Factory().Item(
-        *transaction, itemType::deposit, Identifier::Factory())};
-
-    if (false == bool(item)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed generate deposit txn "
-                                           "item. Account ")(accountID)
-            .Flush();
-
-        return output;
-    }
-
-    item->SetAttachment(proto::ProtoAsData(purse->Serialize()));
-    item->SignContract(nym);
-    item->SaveContract();
-
-    Item* pItem = item.get();
-
-    std::shared_ptr<Item> pitem{item.release()};
-    transaction->AddItem(pitem);
-    std::unique_ptr<Item> balanceItem(inbox->GenerateBalanceStatement(
-        pItem->GetAmount(), *transaction, context, account.get(), *outbox));
-
-    if (false == bool(balanceItem)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed to generate balance statement.")
-            .Flush();
-
-        return output;
-    }
-
-    std::shared_ptr<Item> pbalanceItem{balanceItem.release()};
-    transaction->AddItem(pbalanceItem);
-    AddHashesToTransaction(*transaction, context, account.get());
-    transaction->SignContract(nym);
-    transaction->SaveContract();
-    auto ledger{api_.Factory().Ledger(nymID, accountID, serverID)};
-    ledger->GenerateLedger(accountID, serverID, ledgerType::message);
-    std::shared_ptr<OTTransaction> ptransaction{transaction.release()};
-    ledger->AddTransaction(ptransaction);
-    ledger->SignContract(nym);
-    ledger->SaveContract();
-
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::notarizeTransaction,
-        Armored::Factory(String::Factory(*ledger)),
-        accountID,
-        requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed to generate deposit message.")
-            .Flush();
-
-        return output;
-    }
-
-    if (false == context.FinalizeServerCommand(*message)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed to finalize server command for deposit message.")
-            .Flush();
-
-        return output;
-    }
-
-    account.Release();
-    result = send_message(managed, context, *message);
-
-    return output;
-}
-#endif  // OT_CASH
 
 // Let's pretend you are paying a dollar dividend for Pepsi shares...
 // Therefore accountID needs to be a dollar account, and
@@ -7496,7 +7155,7 @@ CommandResult OT_API::payDividend(
         return output;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         managedNumber->Value())(".")
         .Flush();
     transactionNum = managedNumber->Value();
@@ -7643,7 +7302,11 @@ CommandResult OT_API::payDividend(
 
     dividendAccount.Release();
     issuerAccount.Release();
-    result = send_message(managed, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_),
+        managed,
+        context,
+        *message);
 
     return output;
 }
@@ -7696,11 +7359,11 @@ CommandResult OT_API::withdrawVoucher(
         return output;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         withdrawalNumber->Value())(" for withdrawal.")
         .Flush();
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         voucherNumber->Value())(" for voucher.")
         .Flush();
 
@@ -7802,7 +7465,8 @@ CommandResult OT_API::withdrawVoucher(
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
     account.Release();
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -7928,257 +7592,6 @@ bool OT_API::DiscardCheque(
             "Cheque contents: ")(THE_CHEQUE)(".")
             .Flush();
     return false;
-}
-
-// DEPOSIT CHEQUE
-//
-// NOTE: If THE_CHEQUE is drawn on the account denoted by accountID (meaning
-// it's being deposited back into the same account that originally wrote
-// the cheque) this means the original cheque writer is CANCELLING the
-// cheque, to prevent the recipient from depositing it.
-CommandResult OT_API::depositCheque(
-    ServerContext& context,
-    const Identifier& accountID,
-    const Cheque& theCheque) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto& nym = *context.Nym();
-    const auto& nymID = nym.ID();
-    const auto& serverID = context.Server();
-    auto account = api_.Wallet().Account(accountID);
-
-    if (false == bool(account)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load account.").Flush();
-
-        return output;
-    }
-
-    if (theCheque.GetNotaryID() != serverID) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": NotaryID on cheque (")(
-            theCheque.GetNotaryID())(
-            ") doesn't "
-            "match notaryID where it's being deposited to (")(serverID)(").")
-            .Flush();
-
-        return output;
-    }
-
-    std::unique_ptr<Ledger> inbox(account.get().LoadInbox(nym));
-
-    if (false == bool(inbox)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading inbox for acct ")(
-            accountID)(".")
-            .Flush();
-
-        return output;
-    }
-
-    // If bCancellingCheque==true, we're actually cancelling the cheque by
-    // "depositing" it back into the same account it's drawn on.
-    bool bCancellingCheque{false};
-    auto copy{api_.Factory().Cheque(
-        serverID, account.get().GetInstrumentDefinitionID())};
-
-    if (theCheque.HasRemitter()) {
-        bCancellingCheque =
-            ((theCheque.GetRemitterAcctID() == accountID) &&
-             (theCheque.GetRemitterNymID() == nymID));
-    } else {
-        bCancellingCheque =
-            ((theCheque.GetSenderAcctID() == accountID) &&
-             (theCheque.GetSenderNymID() == nymID));
-        if (bCancellingCheque)
-            bCancellingCheque = theCheque.VerifySignature(nym);
-    }
-
-    // By this point he's definitely TRYING to cancel the cheque.
-    if (bCancellingCheque) {
-        bCancellingCheque =
-            context.VerifyIssuedNumber(theCheque.GetTransactionNum());
-
-        // If we TRIED to cancel the cheque (being in this block...) yet the
-        // signature fails to verify, or the transaction number isn't even
-        // issued, then our attempt to cancel the cheque is going to fail.
-        if (!bCancellingCheque) {
-            // This is the "tried and failed" block.
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Cannot cancel this cheque. Either the "
-                "signature fails to verify, "
-                "or the transaction number is already closed "
-                "out. (Failure)! Cheque contents: ")(
-                String::Factory(theCheque))(".")
-                .Flush();
-
-            return output;
-        }
-
-        // Else we succeeded in verifying signature and issued num.
-        // Let's just make sure there isn't a chequeReceipt or
-        // voucherReceipt already sitting in the inbox, for this same
-        // cheque.
-        auto pChequeReceipt =
-            inbox->GetChequeReceipt(theCheque.GetTransactionNum());
-
-        if (false != bool(pChequeReceipt))  // Hmm looks like there's ALREADY a
-                                            // chequeReceipt in the inbox (so we
-                                            // can't cancel it.)
-        {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Cannot cancel this cheque. There is "
-                "already a ")(
-                theCheque.HasRemitter() ? "voucherReceipt" : "chequeReceipt")(
-                " for it in the inbox. "
-                "(Failure)! Cheque contents: ")(String::Factory(theCheque))(".")
-                .Flush();
-
-            return output;
-        }
-
-        if (!copy->LoadContractFromString(String::Factory(theCheque))) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Unable to load cheque from string. Sorry. "
-                "Contents: ")(String::Factory(theCheque))(".")
-                .Flush();
-
-            return output;
-        }
-    }
-
-    // By this point, we're either NOT cancelling the cheque, or if we are,
-    // we've already verified the signature and transaction number on the
-    // cheque. (AND we've already verified that there aren't any
-    // chequeReceipts for this cheque, in the inbox.)
-    const bool cancel = (bCancellingCheque && !theCheque.HasRemitter());
-
-    if (cancel) {
-        copy->CancelCheque();       // Sets the amount to zero.
-        copy->ReleaseSignatures();  // Usually when you deposit a
-                                    // cheque,
-                                    // it's signed by someone else.
-        copy->SignContract(nym);    // But if we are CANCELING a cheque,
-                                    // that means we wrote that cheque
-        copy->SaveContract();       // originally, so we are the original
-                                    // signer.
-    }                               // cancelling cheque
-
-    const auto& cheque = cancel ? *copy : theCheque;
-    std::set<OTManagedNumber> managed{};
-    managed.insert(
-        context.NextTransactionNumber(MessageType::notarizeTransaction));
-    auto& managedNumber = *managed.rbegin();
-
-    if (false == managedNumber->Valid()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": No transaction numbers were available. "
-            "Try requesting the server for a new one.")
-            .Flush();
-        status = SendResult::TRANSACTION_NUMBERS;
-
-        return output;
-    }
-
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
-        managedNumber->Value())(".")
-        .Flush();
-    transactionNum = managedNumber->Value();
-    auto transaction{api_.Factory().Transaction(
-        nymID,
-        accountID,
-        serverID,
-        transactionType::deposit,
-        originType::not_applicable,
-        transactionNum)};
-
-    if (false == bool(transaction)) { return output; }
-
-    auto item{api_.Factory().Item(
-        *transaction, itemType::depositCheque, Identifier::Factory())};
-
-    if (false == bool(item)) { return output; }
-
-    const auto strNote = String::Factory(
-        bCancellingCheque ? "Cancel this cheque, please!"
-                          : "Deposit this cheque, please!");  // TODO
-    item->SetNote(strNote);
-    item->SetAttachment(String::Factory(cheque));
-    item->SignContract(nym);
-    item->SaveContract();
-
-    std::shared_ptr<Item> pitem{item.release()};
-    transaction->AddItem(pitem);
-    std::unique_ptr<Ledger> outbox(account.get().LoadOutbox(nym));
-
-    if (false == bool(outbox)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading outbox for acct ")(
-            accountID)(".")
-            .Flush();
-
-        return output;
-    }
-
-    std::unique_ptr<Item> balanceItem(inbox->GenerateBalanceStatement(
-        cheque.GetAmount(), *transaction, context, account.get(), *outbox));
-
-    if (false == bool(balanceItem)) { return output; }
-
-    std::shared_ptr<Item> pbalanceItem{balanceItem.release()};
-    transaction->AddItem(pbalanceItem);
-
-    AddHashesToTransaction(*transaction, context, account.get());
-
-    transaction->SignContract(nym);
-    transaction->SaveContract();
-
-    auto ledger{api_.Factory().Ledger(nymID, accountID, serverID)};
-    const bool generated =
-        ledger->GenerateLedger(accountID, serverID, ledgerType::message);
-
-    if (false == generated) { return output; }
-
-    std::shared_ptr<OTTransaction> ptransaction{transaction.release()};
-    ledger->AddTransaction(ptransaction);
-
-    // sign the ledger
-    ledger->SignContract(nym);
-    ledger->SaveContract();
-
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::notarizeTransaction,
-        Armored::Factory(String::Factory(*ledger)),
-        accountID,
-        requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    account.Release();
-    result = send_message(managed, context, *message);
-
-    if (0 < cheque.GetAmount()) {
-        const auto workflowUpdated = workflow_.DepositCheque(
-            nymID, accountID, cheque, *message, reply.get());
-
-        if (workflowUpdated) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Successfully updated workflow.")(".")
-                .Flush();
-        } else {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to update workflow.")
-                .Flush();
-        }
-    }
-
-    return output;
 }
 
 // DEPOSIT PAYMENT PLAN
@@ -8314,7 +7727,8 @@ CommandResult OT_API::depositPaymentPlan(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -8355,7 +7769,8 @@ CommandResult OT_API::triggerClause(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -8667,7 +8082,8 @@ CommandResult OT_API::activateSmartContract(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -8755,7 +8171,7 @@ CommandResult OT_API::cancelCronItem(
         return output;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         managedNumber->Value())(".")
         .Flush();
     transactionNum = managedNumber->Value();
@@ -8809,7 +8225,11 @@ CommandResult OT_API::cancelCronItem(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message(managed, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_),
+        managed,
+        context,
+        *message);
 
     return output;
 }
@@ -8908,7 +8328,7 @@ CommandResult OT_API::issueMarketOffer(
         return output;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         openingNumber->Value())(".")
         .Flush();
     transactionNum = openingNumber->Value();
@@ -8925,7 +8345,7 @@ CommandResult OT_API::issueMarketOffer(
         return output;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         assetClosingNumber->Value())(".")
         .Flush();
     managed.insert(
@@ -8941,7 +8361,7 @@ CommandResult OT_API::issueMarketOffer(
         return output;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+    LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
         currencyClosingNumber->Value())(".")
         .Flush();
 
@@ -9162,7 +8582,11 @@ CommandResult OT_API::issueMarketOffer(
 
     assetAccount.Release();
     currencyAccount.Release();
-    result = send_message(managed, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_),
+        managed,
+        context,
+        *message);
 
     return output;
 }
@@ -9195,7 +8619,8 @@ CommandResult OT_API::getMarketList(ServerContext& context) const
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -9230,7 +8655,8 @@ CommandResult OT_API::getMarketOffers(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -9268,7 +8694,8 @@ CommandResult OT_API::getMarketRecentTrades(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -9298,450 +8725,8 @@ CommandResult OT_API::getNymMarketOffers(ServerContext& context) const
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-// Request the server to transfer from one account to another.
-CommandResult OT_API::notarizeTransfer(
-    ServerContext& context,
-    const Identifier& ACCT_FROM,
-    const Identifier& ACCT_TO,
-    const Amount amount,
-    const String& NOTE) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto& nym = *context.Nym();
-    const auto& nymID = nym.ID();
-    const auto& serverID = context.Server();
-    auto account = api_.Wallet().Account(ACCT_FROM);
-
-    if (false == bool(account)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load account.").Flush();
-
-        return output;
-    }
-
-    std::set<OTManagedNumber> managed{};
-    managed.insert(
-        context.NextTransactionNumber(MessageType::notarizeTransaction));
-    auto& managedNumber = *managed.rbegin();
-
-    if (false == managedNumber->Valid()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": No transaction numbers were available. Suggest "
-            "requesting the server for one.")
-            .Flush();
-        status = SendResult::TRANSACTION_NUMBERS;
-
-        return output;
-    }
-
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
-        managedNumber->Value())(".")
-        .Flush();
-    transactionNum = managedNumber->Value();
-    auto transaction{api_.Factory().Transaction(
-        nymID,
-        ACCT_FROM,
-        serverID,
-        transactionType::transfer,
-        originType::not_applicable,
-        transactionNum)};
-
-    if (false == bool(transaction)) { return output; }
-
-    std::shared_ptr<Item> item{
-        api_.Factory().Item(*transaction, itemType::transfer, ACCT_TO)};
-
-    if (false == bool(item)) { return output; }
-
-    item->SetAmount(amount);
-
-    // The user can include a note here for the recipient.
-    if (NOTE.Exists() && NOTE.GetLength() > 2) { item->SetNote(NOTE); }
-
-    // sign the item
-    item->SignContract(nym);
-    item->SaveContract();
-    std::unique_ptr<Ledger> inbox(account.get().LoadInbox(nym));
-    std::unique_ptr<Ledger> outbox(account.get().LoadOutbox(nym));
-
-    if (false == bool(inbox)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading inbox for "
-                                           "acct: ")(ACCT_FROM)(".")
-            .Flush();
-
-        return output;
-    }
-
-    if (nullptr == outbox) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading outbox for "
-                                           "acct: ")(ACCT_FROM)(".")
-            .Flush();
-        return output;
-    }
-
-    // Need to setup a dummy outbox transaction (to mimic the one that
-    // will be on the server side when this pending transaction is
-    // actually put into the real outbox.)
-    // When the server adds its own, and then compares the two, they
-    // should both show the same pending transaction, in order for this
-    // balance agreement to be valid..
-    // Otherwise the server would have to refuse it for being inaccurate
-    // (server can't sign something inaccurate!) So I throw a dummy on
-    // there before generating balance statement.
-    auto outboxTransaction{api_.Factory().Transaction(
-        *outbox,
-        transactionType::pending,
-        originType::not_applicable,
-        /* TODO pick some number that everyone agrees doesn't matter,
-         * like
-         * 1. The referring-to is the important number in this case, and
-         * perhaps server should update this value too before signing
-         * and returning.*/
-        1)};  // TODO use a constant instead of '1'
-
-    OT_ASSERT(outboxTransaction);
-
-    outboxTransaction->SetReferenceString(String::Factory(*item));
-    outboxTransaction->SetReferenceToNum(item->GetTransactionNum());
-    std::shared_ptr<OTTransaction> poutboxTransaction{
-        outboxTransaction.release()};
-    outbox->AddTransaction(poutboxTransaction);
-    transaction->AddItem(item);
-
-    // BALANCE AGREEMENT
-    // balanceItem is signed and saved within this call. No need to do
-    // that twice.
-    std::unique_ptr<Item> balanceItem(inbox->GenerateBalanceStatement(
-        amount * (-1), *transaction, context, account.get(), *outbox));
-
-    OT_ASSERT(balanceItem);
-
-    std::shared_ptr<Item> pbalanceItem{balanceItem.release()};
-    transaction->AddItem(pbalanceItem);
-
-    AddHashesToTransaction(*transaction.get(), context, account.get());
-
-    transaction->SignContract(nym);
-    transaction->SaveContract();
-
-    // set up the ledger
-    auto ledger{api_.Factory().Ledger(nymID, ACCT_FROM, serverID)};
-    ledger->GenerateLedger(
-        ACCT_FROM,
-        serverID,
-        ledgerType::message);  // bGenerateLedger
-                               // defaults to false,
-                               // which is correct.
-    std::shared_ptr<OTTransaction> ptransaction{transaction.release()};
-    ledger->AddTransaction(ptransaction);
-
-    // sign the ledger
-    ledger->SignContract(nym);
-    ledger->SaveContract();
-
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::notarizeTransaction,
-        Armored::Factory(String::Factory(*ledger)),
-        ACCT_FROM,
-        requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    account.Release();
-    const auto workflowID = workflow_.CreateTransfer(*item, *message);
-
-    if (workflowID->empty()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed to create transfer workflow")
-            .Flush();
-    } else {
-        LogNormal(OT_METHOD)(__FUNCTION__)(": Created transfer workflow ")(
-            workflowID)
-            .Flush();
-    }
-
-    result = send_message(managed, context, *message);
-
-    return output;
-}
-
-// Grab a copy of my nymbox (contains messages and new transaction
-// numbers)
-CommandResult OT_API::getNymbox(ServerContext& context) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto [newRequestNumber, message] =
-        context.InitializeServerCommand(MessageType::getNymbox, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-CommandResult OT_API::processNymbox(ServerContext& context) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto& nym = *context.Nym();
-    const auto& nymID = nym.ID();
-    const auto& serverID = context.Server();
-    auto nymbox{api_.Factory().Ledger(nymID, nymID, serverID)};
-
-    if (false == nymbox->LoadNymbox()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed loading Nymbox: ")(nymID)(
-            ".")
-            .Flush();
-
-        return output;
-    }
-
-    if (false == nymbox->VerifyAccount(nym)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed verifying Nymbox: ")(
-            nymID)(".")
-            .Flush();
-
-        return output;
-    }
-
-    if (1 > nymbox->GetTransactionCount()) {
-        LogDetail(OT_METHOD)(__FUNCTION__)(": Nymbox (")(nymID)(
-            ") is empty (so, skipping processNymbox).")
-            .Flush();
-
-        requestNum = 0;
-        status = SendResult::UNNECESSARY;
-
-        return output;
-    }
-
-    auto message{api_.Factory().Message()};
-    const auto accepted =
-        m_pClient->AcceptEntireNymbox(*nymbox, context, *message);
-    requestNum = atoi(message->m_strRequestNum->Get());
-
-    if (false == accepted) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed trying to accept the "
-            "entire Nymbox. (And no, it's not empty).")
-            .Flush();
-
-        return output;
-    }
-
-    context.LocalNymboxHash()->GetString(message->m_strNymboxHash);
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-CommandResult OT_API::processInbox(
-    ServerContext& context,
-    const Identifier& accountID,
-    const String& ACCT_LEDGER) const
-{
-    const auto& nymID = context.Nym()->ID();
-    const auto& serverID = context.Server();
-    rLock lock(lock_callback_({nymID.str(), serverID.str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-
-    {
-        auto account = api_.Wallet().Account(accountID);
-
-        if (false == bool(account)) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load account.")
-                .Flush();
-
-            return output;
-        }
-    }
-
-    std::unique_ptr<Ledger> inbox(LoadInbox(serverID, nymID, accountID));
-
-    if (false == bool(inbox)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load inbox.").Flush();
-
-        return output;
-    }
-
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::processInbox,
-        Armored::Factory(ACCT_LEDGER),
-        accountID,
-        requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-    const auto cheques =
-        extract_cheques(nymID, accountID, serverID, ACCT_LEDGER, *inbox);
-
-    for (const auto& cheque : cheques) {
-        OT_ASSERT(cheque)
-
-        const auto workflowUpdated =
-            workflow_.FinishCheque(*cheque, *message, reply.get());
-
-        if (workflowUpdated) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Successfully updated workflow.")
-                .Flush();
-        } else {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to update workflow.")
-                .Flush();
-        }
-    }
-
-    return output;
-}
-
-CommandResult OT_API::registerInstrumentDefinition(
-    ServerContext& context,
-    const proto::UnitDefinition& THE_CONTRACT,
-    const std::string& label) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto contract = api_.Wallet().UnitDefinition(THE_CONTRACT);
-
-    if (false == bool(contract)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Invalid verifying asset contract.")
-            .Flush();
-
-        return output;
-    }
-
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::registerInstrumentDefinition, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    OTIdentifier newID = contract->ID();
-    newID->GetString(message->m_strInstrumentDefinitionID);
-    message->m_ascPayload->SetData(
-        proto::ProtoAsData<proto::UnitDefinition>(contract->PublicContract()));
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message, label);
-
-    return output;
-}
-
-CommandResult OT_API::getInstrumentDefinition(
-    ServerContext& context,
-    const Identifier& INSTRUMENT_DEFINITION_ID) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::getInstrumentDefinition, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    message->m_strInstrumentDefinitionID =
-        String::Factory(INSTRUMENT_DEFINITION_ID);
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-CommandResult OT_API::getMint(
-    ServerContext& context,
-    const Identifier& INSTRUMENT_DEFINITION_ID) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto unitDefinition =
-        api_.Wallet().UnitDefinition(INSTRUMENT_DEFINITION_ID);
-
-    if (false == bool(unitDefinition)) { return output; }
-
-    auto [newRequestNumber, message] =
-        context.InitializeServerCommand(MessageType::getMint, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    message->m_strInstrumentDefinitionID =
-        String::Factory(INSTRUMENT_DEFINITION_ID);
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -9778,47 +8763,8 @@ CommandResult OT_API::queryInstrumentDefinitions(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-// Create an asset account for a certain notaryID, NymID, and
-// Instrument Definition ID. These accounts are where users actually
-// store their digital assets of various types. Account files are
-// stored on user's computer, signed by notary server. Server also
-// maintains its own copy. Users can create an unlimited number of
-// accounts for any instrument definition that they choose.
-CommandResult OT_API::registerAccount(
-    ServerContext& context,
-    const Identifier& INSTRUMENT_DEFINITION_ID,
-    const std::string& label) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto contract = api_.Wallet().UnitDefinition(INSTRUMENT_DEFINITION_ID);
-
-    if (false == bool(contract)) { return output; }
-
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::registerAccount, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    message->m_strInstrumentDefinitionID =
-        String::Factory(INSTRUMENT_DEFINITION_ID);
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message, label);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -9853,7 +8799,8 @@ CommandResult OT_API::deleteAssetAccount(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -9881,81 +8828,6 @@ bool OT_API::DoesBoxReceiptExist(
         lTransactionNum);
 }
 
-CommandResult OT_API::getBoxReceipt(
-    ServerContext& context,
-    const Identifier& ACCOUNT_ID,  // If for Nymbox (vs
-                                   // inbox/outbox) then pass NYM_ID
-                                   // in this field also.
-    std::int32_t nBoxType,         // 0/nymbox, 1/inbox, 2/outbox
-    const TransactionNumber& lTransactionNum) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto& nym = *context.Nym();
-    const auto& nymID = nym.ID();
-
-    if (nymID != ACCOUNT_ID) {
-        auto account = api_.Wallet().Account(ACCOUNT_ID);
-
-        if (false == bool(account)) { return output; }
-    }
-
-    auto [newRequestNumber, message] =
-        context.InitializeServerCommand(MessageType::getBoxReceipt, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    message->m_strAcctID = String::Factory(ACCOUNT_ID);
-    message->m_lDepth = static_cast<std::int64_t>(nBoxType);
-    message->m_lTransactionNum = lTransactionNum;
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-CommandResult OT_API::getAccountData(
-    ServerContext& context,
-    const Identifier& accountID) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto accounts = api_.Storage().AccountsByOwner(context.Nym()->ID());
-
-    if (0 == accounts.count(Identifier::Factory(accountID))) { return output; }
-
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::getAccountData, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    message->m_strAcctID = String::Factory(accountID);
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
 CommandResult OT_API::usageCredits(
     ServerContext& context,
     const Identifier& NYM_ID_CHECK,
@@ -9980,117 +8852,8 @@ CommandResult OT_API::usageCredits(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-// Request a user's public key based on Nym ID included with the
-// request. (If you want to send him cash or a check, your wallet
-// will encrypt portions of the tokens, etc, to the Nym of the
-// recipient.)
-CommandResult OT_API::checkNym(
-    ServerContext& context,
-    const Identifier& targetNymID) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::checkNym, targetNymID, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-CommandResult OT_API::registerContract(
-    ServerContext& context,
-    const ContractType TYPE,
-    const Identifier& CONTRACT) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto [newRequestNumber, message] = context.InitializeServerCommand(
-        MessageType::registerContract, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    message->enum_ = static_cast<std::uint8_t>(TYPE);
-
-    switch (TYPE) {
-        case (ContractType::NYM): {
-            const auto contract = api_.Wallet().Nym(CONTRACT);
-
-            if (!contract) {
-                LogOutput(OT_METHOD)(__FUNCTION__)(": Nym not found: ")(
-                    CONTRACT)(".")
-                    .Flush();
-
-                return output;
-            }
-
-            message->m_ascPayload->SetData(
-                proto::ProtoAsData(contract->asPublicNym()));
-        } break;
-        case (ContractType::SERVER): {
-            const auto contract = api_.Wallet().Server(CONTRACT);
-
-            if (!contract) {
-                LogOutput(OT_METHOD)(__FUNCTION__)(": Server not found: ")(
-                    CONTRACT)(".")
-                    .Flush();
-
-                return output;
-            }
-
-            message->m_ascPayload->SetData(
-                proto::ProtoAsData(contract->PublicContract()));
-        } break;
-        case (ContractType::UNIT): {
-            const auto contract = api_.Wallet().UnitDefinition(CONTRACT);
-
-            if (!contract) {
-                LogOutput(OT_METHOD)(__FUNCTION__)(
-                    ": Unit definition not found: ")(CONTRACT)(".")
-                    .Flush();
-
-                return output;
-            }
-
-            message->m_ascPayload->SetData(
-                proto::ProtoAsData(contract->Contract()));
-        } break;
-        default: {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid contract type.")
-                .Flush();
-
-            return output;
-        }
-    }
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -10150,323 +8913,8 @@ CommandResult OT_API::sendNymObject(
 
     if (false == context.FinalizeServerCommand(*message)) { return output; }
 
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-/// WARNING: Make sure you download the public Nym of the recipient
-/// before calling this function. Just because you have someone's
-/// Nym ID doesn't mean you have his public key. Make sure you can
-/// load him up, and if you can't then download him, THEN call this
-/// function.
-CommandResult OT_API::sendNymMessage(
-    ServerContext& context,
-    const Identifier& recipientNymID,
-    const std::string& THE_MESSAGE,
-    Identifier& messageID) const
-{
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto& nym = *context.Nym();
-    const auto& nymID = nym.ID();
-    const auto object = api_.Factory().PeerObject(context.Nym(), THE_MESSAGE);
-
-    if (false == bool(object)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to create peer object.")
-            .Flush();
-
-        return output;
-    }
-
-    std::unique_ptr<Message> request{nullptr};
-    output =
-        sendNymObject(context, request, recipientNymID, *object, requestNum);
-
-    if (SendResult::VALID_REPLY != status) { return output; }
-
-    OT_ASSERT(reply)
-
-    if (false == reply->m_bSuccess) { return output; }
-
-    // store a copy in the outmail.
-    auto sent{api_.Factory().Message()};
-
-    OT_ASSERT(false != bool(sent));
-
-    sent->m_strCommand = String::Factory("outmailMessage");
-    sent->m_strNymID = String::Factory(nymID);
-    sent->m_strNymID2 = String::Factory(recipientNymID);
-    sent->m_strNotaryID = String::Factory(context.Server());
-    sent->m_strRequestNum->Format("%" PRId64, requestNum);
-    auto copy = api_.Factory().PeerObject(nullptr, THE_MESSAGE);
-
-    OT_ASSERT(copy);
-
-    auto plaintext(proto::ProtoAsArmored(
-        copy->Serialize(), String::Factory("PEER OBJECT")));
-    OTEnvelope theEnvelope;
-
-    if (!theEnvelope.Seal(nym, plaintext)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed sealing envelope.")
-            .Flush();
-
-        return output;
-    }
-
-    if (!theEnvelope.GetCiphertext(sent->m_ascPayload)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed sealing envelope.")
-            .Flush();
-
-        return output;
-    }
-
-    sent->SignContract(nym);
-    sent->SaveContract();
-    messageID.SetString(activity_.Mail(nymID, *sent, StorageBox::MAILOUTBOX));
-
-    return output;
-}
-
-#if OT_CASH
-CommandResult OT_API::sendNymCash(
-    ServerContext& context,
-    const Identifier& recipientNymID,
-    std::shared_ptr<blind::Purse> purse) const
-{
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto object = api_.Factory().PeerObject(context.Nym(), purse);
-
-    if (false == bool(object)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to create peer object.")
-            .Flush();
-
-        return output;
-    }
-
-    std::unique_ptr<Message> request{nullptr};
-
-    return sendNymObject(context, request, recipientNymID, *object, requestNum);
-}
-#endif
-
-/// UPDATE: Sometimes you want to send something to yourself,
-/// meaning just put a copy in your outpayments box, without sending
-/// anything to anyone. (Specifically, after a withdrawVoucher is
-/// performed, you want to save a copy in your outbox since the
-/// transaction number on it is signed out to you.) So I'm updating
-/// this function so that if NYM_ID and NYM_ID_RECIPIENT are the
-/// same, it puts a copy in your outpayment box, without sending
-/// anything at all.
-///
-/// WARNING: Make sure you download the public Nym of the recipient
-/// before calling this function. Just because you have someone's
-/// Nym ID doesn't mean you have his public key. Make sure you can
-/// load him up, and if you can't then download him, THEN call this
-/// function.
-///
-/// pINSTRUMENT_FOR_SENDER
-/// This is only used for cash purses. It's a copy of the same purse
-/// that's in THE_INSTRUMENT, except all the tokens are already
-/// encrypted to the sender's public key, instead of the recipient's
-/// public key (as THE_INSTRUMENT is.) This is what we put in the
-/// sender's outpayments, so he can retrieve those tokens if he
-/// needs to.
-///
-CommandResult OT_API::sendNymInstrument(
-    ServerContext& context,
-    std::unique_ptr<Message>& request,
-    const Identifier& recipientNymID,
-    const OTPayment& instrument,
-    bool storeOutpayment,
-    const OTPayment* senderCopy) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    const auto& nym = *context.Nym();
-    const auto& nymID = nym.ID();
-    const auto recipientNym = api_.Wallet().Nym(recipientNymID);
-
-    if (false == bool(recipientNym)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Recipient Nym public key not "
-            "found in local storage. DOWNLOAD IT FROM THE "
-            "SERVER FIRST "
-            "BEFORE CALLING THIS FUNCTION.")
-            .Flush();
-
-        return output;
-    }
-
-    const crypto::key::Asymmetric& recipientPubkey =
-        recipientNym->GetPublicEncrKey();
-    auto strInstrumentForRecipient = String::Factory();
-    auto strInstrumentForSender = String::Factory();
-    const bool bGotPaymentContents =
-        instrument.GetPaymentContents(strInstrumentForRecipient);
-
-    if (!bGotPaymentContents) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed attempt to send a blank payment.")
-            .Flush();
-
-        return output;
-    }
-
-    const bool bGotSenderPmntContents =
-        (nullptr == senderCopy)
-            ? false
-            : senderCopy->GetPaymentContents(strInstrumentForSender);
-
-    const auto& strInstrumentForLocalCopy{
-        (bGotSenderPmntContents ? strInstrumentForSender
-                                : strInstrumentForRecipient)};
-
-    // REMOVE OLDER DUPLICATE (if applicable) FROM OUTPAYMENTS BOX.
-    if (storeOutpayment) {
-        auto nymfile = context.mutable_Nymfile(__FUNCTION__);
-        std::int64_t lInstrumentOpeningNum{0};
-        const bool bGotTransNum =
-            instrument.GetOpeningNum(lInstrumentOpeningNum, nymID);
-
-        if (bGotTransNum) {
-            nymfile.It().RemoveOutpaymentsByTransNum(lInstrumentOpeningNum);
-        }
-    }
-
-    auto theMessage{api_.Factory().Message()};
-
-    OT_ASSERT(false != bool(theMessage));
-
-    theMessage->m_strCommand = String::Factory("sendNymInstrument");
-    theMessage->m_strNymID = String::Factory(nymID);
-    theMessage->m_strNymID2 = String::Factory(recipientNymID);
-    theMessage->m_strNotaryID = String::Factory(context.Server());
-
-    // ADD OUTPAYMENT COPY, and _then_ SEND if that was successful.
-    // That way if send fails, at least you still already have your
-    // own outgoing copy, and thus retain the theoretical ability
-    // to later attempt a re-send.
-    auto pMessageLocalCopy{api_.Factory().Message()};
-
-    OT_ASSERT(false != bool(pMessageLocalCopy));
-
-    pMessageLocalCopy->m_strCommand = String::Factory("outpaymentsMessage");
-    pMessageLocalCopy->m_strNymID = String::Factory(nymID);
-    pMessageLocalCopy->m_strNymID2 = String::Factory(recipientNymID);
-    pMessageLocalCopy->m_strNotaryID = String::Factory(context.Server());
-    pMessageLocalCopy->m_ascPayload->SetString(strInstrumentForLocalCopy);
-
-    // We only actually SEND if sender and recipient are different
-    // nyms. (If they're the same Nym, we instead only save a copy
-    // in the outbox.)
-    if (nymID != recipientNymID) {
-        bool bSendIt{false};
-        // Grab the requestNum here from the context. sendNymObject
-        // doesn't grab its own new request number if a non-zero one
-        // is already passed in. That way we can set it on our
-        // outpayments copy, and save that, before trying to send
-        // the message.
-        requestNum = context.Request();
-        pMessageLocalCopy->m_strRequestNum->Format("%" PRId64, requestNum);
-        theMessage->m_strRequestNum->Format("%" PRId64, requestNum);
-        OTEnvelope theEnvelope;
-        const bool encrypted =
-            theEnvelope.Seal(recipientPubkey, strInstrumentForRecipient) &&
-            theEnvelope.GetCiphertext(theMessage->m_ascPayload);
-
-        if (encrypted) {
-            context.IncrementRequest();
-            theMessage->SignContract(nym);
-            theMessage->SaveContract();
-
-            if (storeOutpayment) {
-                // Back to the outpayments message...
-                // (We may want it saved in the outpayment box,
-                // before the reply from the above message arrives.
-                // Actually that might be wrong, since we care more
-                // about the receipt from the recipient depositing
-                // the instrument, then we do about the reply for
-                // the sendInstrument itself. Anyway, better safe
-                // than sorry...)
-                pMessageLocalCopy->SignContract(nym);
-                pMessageLocalCopy->SaveContract();
-                auto nymfile = context.mutable_Nymfile(__FUNCTION__);
-                std::shared_ptr<Message> message{pMessageLocalCopy.release()};
-                nymfile.It().AddOutpayments(message);
-            }
-
-            bSendIt = true;
-        }
-
-        if (bSendIt) {
-            const auto strMessageForRecipient = String::Factory(*theMessage);
-            // Create the peer object we'll be sending to the
-            // recipient.
-            const auto object = api_.Factory().PeerObject(
-                context.Nym(),
-                strMessageForRecipient->Get(),
-                true);  // isPayment=true on creation.
-
-            OT_NEW_ASSERT_MSG(
-                true == bool(object), "Failed trying to create a PeerObject.");
-
-            output = sendNymObject(
-                context, request, recipientNymID, *object, requestNum);
-        }
-    } else {
-        // You may be wondering why this code seems to repeat?
-        // The answer is because above, it needs to happen BEFORE
-        // the message is sent, SINCE the processing of the server
-        // reply may expect the outpayments copy to already exist.
-        //
-        // (NOTE: That may actually not be true. That is more true
-        // for when the receipt comes in, from the recipient
-        // depositing the cheque, versus the server reply to the
-        // sendInstrument itself. Anyway...)
-        //
-        // Whereas here, it needs to happen in the case where the
-        // message is NOT sent. (USER as RECIPIENT means "just put
-        // a copy in my outpayments box", so nothing needs to be
-        // sent.)
-        //
-        // Notice if it DOES happen BEFORE, then we want to properly
-        // add the request number to it (even though we apparently
-        // don't use the request number on outpayments messages).
-        // Whereas here, we don't HAVE a request number, (since
-        // nothing was even sent) so it just gets set to 0 instead,
-        // which is also what's returned.
-        requestNum = 0;
-
-        if (storeOutpayment) {
-            pMessageLocalCopy->m_strRequestNum->Format("%" PRId64, requestNum);
-            pMessageLocalCopy->SignContract(nym);
-            pMessageLocalCopy->SaveContract();
-            auto nymfile = context.mutable_Nymfile(__FUNCTION__);
-            std::shared_ptr<Message> message{pMessageLocalCopy.release()};
-            nymfile.It().AddOutpayments(message);
-        }
-
-        status = SendResult::UNNECESSARY;
-    }
+    result = context.SendMessage(
+        dynamic_cast<const api::client::Manager&>(api_), {}, context, *message);
 
     return output;
 }
@@ -11044,78 +9492,6 @@ bool OT_API::Ledger_FinalizeResponse(
         accountID, context.It(), responseLedger, *inbox);
 }
 
-// PROBLEM: How can I put anything in an "out" box (ledger) when I
-// can't generate a transaction number on the client side?  Normally
-// I download the outbox and it contains transactions that the
-// SERVER put there--not me!
-
-// THEREFORE!!! The paymentOutbox NEEDS to be like OUTMAIL! It's
-// just a message on a Nym. (No transaction numbers.) The instrument
-// I sent will be a payload on a message, and that message will be
-// copied into the paymentOutbox...
-
-// The messages definitely go OUT as messages, as do instruments,
-// and those same messages end up "in reference to" on transactions
-// stuffed in my nymbox and then those transactions have their
-// message copied OUT, and added as a message to my OUTMAIL.
-// Therefore Payment Outbox needs to be similar. It will contain the
-// message originally sent -- no more.
-
-// whereas payment inbox comes from Nymbox (just copy it over.)
-// Similarly, recordbox comes from either payment inbox or asset
-// account inbox.
-
-// So tomorrow:  REMOVE the payment Outbox since it is BULLSHIT and
-// replace with "outmail" like functionality for that box.
-//
-// Update: DONE.
-
-CommandResult OT_API::registerNym(ServerContext& context, const bool resync)
-    const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto [newRequestNumber, message] =
-        context.InitializeServerCommand(MessageType::registerNym, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    const auto& nym = *context.Nym();
-
-    if (!nym.HasCapability(NymCapability::SIGN_MESSAGE)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid nym.").Flush();
-
-        return output;
-    }
-
-    message->m_ascPayload->SetData(proto::ProtoAsData(nym.asPublicNym()));
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message, "", resync);
-
-    if (SendResult::VALID_REPLY == status) {
-        OT_ASSERT(reply);
-
-        if (reply->m_bSuccess) { context.SetRevision(nym.Revision()); }
-    }
-
-    if (0 == requestNum) {
-        context.InitializeNymbox();
-        context.SetRemoteNymboxHash(context.LocalNymboxHash());
-    }
-
-    return output;
-}
-
 CommandResult OT_API::unregisterNym(ServerContext& context) const
 {
     rLock lock(
@@ -11136,7 +9512,11 @@ CommandResult OT_API::unregisterNym(ServerContext& context) const
         Identifier::Factory());
 
     if (0 < requestNum) {
-        result = send_message({}, context, *message);
+        result = context.SendMessage(
+            dynamic_cast<const api::client::Manager&>(api_),
+            {},
+            context,
+            *message);
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Error in "
                                            "m_pClient->ProcessUserCommand().")
@@ -11144,28 +9524,6 @@ CommandResult OT_API::unregisterNym(ServerContext& context) const
     }
 
     return output;
-}
-
-NetworkReplyMessage OT_API::send_message(
-    const std::set<OTManagedNumber>& pending,
-    ServerContext& context,
-    const Message& message,
-    const std::string& label,
-    const bool resync) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    m_pClient->QueueOutgoingMessage(message);
-    request_sent_->Publish(message.m_strCommand->Get());
-    auto result = context.Connection().Send(context, message);
-
-    if (SendResult::VALID_REPLY == result.first) {
-        m_pClient->processServerReply(
-            pending, resync, context, result.second, label);
-        reply_received_->Publish(message.m_strCommand->Get());
-    }
-
-    return result;
 }
 
 CommandResult OT_API::initiatePeerRequest(
@@ -11301,68 +9659,6 @@ CommandResult OT_API::initiatePeerReply(
     return output;
 }
 
-CommandResult OT_API::requestAdmin(
-    ServerContext& context,
-    const std::string& PASSWORD) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto [newRequestNumber, message] =
-        context.InitializeServerCommand(MessageType::requestAdmin, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    message->m_strAcctID = String::Factory(PASSWORD.c_str());
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
-CommandResult OT_API::serverAddClaim(
-    ServerContext& context,
-    const std::string& section,
-    const std::string& type,
-    const std::string& value,
-    const bool primary) const
-{
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    CommandResult output{};
-    auto& [requestNum, transactionNum, result] = output;
-    auto& [status, reply] = result;
-    requestNum = -1;
-    transactionNum = 0;
-    status = SendResult::ERROR;
-    reply.reset();
-    auto [newRequestNumber, message] =
-        context.InitializeServerCommand(MessageType::addClaim, requestNum);
-    requestNum = newRequestNumber;
-
-    if (false == bool(message)) { return output; }
-
-    message->m_strNymID2 = String::Factory(section.c_str());
-    message->m_strInstrumentDefinitionID = String::Factory(type.c_str());
-    message->m_strAcctID = String::Factory(value.c_str());
-    message->m_bBool = primary;
-
-    if (false == context.FinalizeServerCommand(*message)) { return output; }
-
-    result = send_message({}, context, *message);
-
-    return output;
-}
-
 ConnectionState OT_API::CheckConnection(const std::string& server) const
 {
     return zmq_.Status(server);
@@ -11420,7 +9716,6 @@ OT_API::ProcessInbox OT_API::CreateProcessInbox(
 {
     rLock lock(
         lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
-    const std::string account = accountID.str();
     const auto& serverID = context.Server();
     const auto& nym = *context.Nym();
     const auto& nymID = nym.ID();
@@ -11430,12 +9725,30 @@ OT_API::ProcessInbox OT_API::CreateProcessInbox(
 
     if (false == bool(inbox)) {
         LogDetail(OT_METHOD)(__FUNCTION__)(
-            ": Unable to load inbox for account ")(account)
+            ": Unable to load inbox for account ")(accountID)
             .Flush();
 
         return {};
     }
 
+    auto create = CreateProcessInbox(accountID, context, *inbox);
+    processInbox.reset(std::get<0>(create).release());
+    number = std::get<1>(create);
+
+    return output;
+}
+
+OT_API::ProcessInboxOnly OT_API::CreateProcessInbox(
+    const Identifier& accountID,
+    ServerContext& context,
+    [[maybe_unused]] Ledger& inbox) const
+{
+    const std::string account = accountID.str();
+    const auto& serverID = context.Server();
+    const auto& nym = *context.Nym();
+    const auto& nymID = nym.ID();
+    OT_API::ProcessInboxOnly output{};
+    auto& [processInbox, number] = output;
     processInbox.reset(
         api_.Factory()
             .Ledger(nymID, accountID, serverID, ledgerType::message)
@@ -11446,6 +9759,7 @@ OT_API::ProcessInbox OT_API::CreateProcessInbox(
             ": Error generating process inbox ledger for "
             "account ")(account)
             .Flush();
+
         return {};
     }
 
@@ -11550,6 +9864,40 @@ bool OT_API::FinalizeProcessInbox(
     Ledger& response,
     Ledger& inbox) const
 {
+    rLock lock(
+        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
+    auto nym = context.Nym();
+    auto& nymID = nym->ID();
+    auto& serverID = context.Server();
+    auto outbox{api_.Factory().Ledger(nymID, accountID, serverID)};
+
+    OT_ASSERT(outbox);
+
+    bool boxesLoaded = true;
+    boxesLoaded &= (boxesLoaded && outbox->LoadOutbox());
+    boxesLoaded &= (boxesLoaded && outbox->VerifyAccount(*nym));
+
+    if (false == boxesLoaded) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Unable to load or verify outbox for account ")(accountID)(".")
+            .Flush();
+
+        return false;
+    }
+
+    return FinalizeProcessInbox(accountID, context, response, inbox, *outbox);
+}
+
+bool OT_API::FinalizeProcessInbox(
+    const Identifier& accountID,
+    ServerContext& context,
+    Ledger& response,
+    Ledger& inbox,
+    Ledger& outbox) const
+{
+    OT_ASSERT(ledgerType::inbox == inbox.GetType());
+    OT_ASSERT(ledgerType::outbox == outbox.GetType());
+
     class Cleanup
     {
     public:
@@ -11576,14 +9924,10 @@ bool OT_API::FinalizeProcessInbox(
         TransactionNumber number_{0};
     };
 
-    rLock lock(
-        lock_callback_({context.Nym()->ID().str(), context.Server().str()}));
     auto nym = context.Nym();
-    auto& nymID = nym->ID();
-    auto& serverID = context.Server();
     auto processInbox = response.GetTransaction(transactionType::processInbox);
 
-    if (nullptr == processInbox) {
+    if (false == bool(processInbox)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Response ledger does not contain processInbox.")
             .Flush();
@@ -11608,19 +9952,6 @@ bool OT_API::FinalizeProcessInbox(
 
     if (false == bool(account)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load account.").Flush();
-
-        return false;
-    }
-
-    bool boxesLoaded = true;
-    auto outbox{api_.Factory().Ledger(nymID, accountID, serverID)};
-    boxesLoaded &= (boxesLoaded && outbox->LoadOutbox());
-    boxesLoaded &= (boxesLoaded && outbox->VerifyAccount(*nym));
-
-    if (!boxesLoaded) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Unable to load or verify outbox for account ")(accountID)(".")
-            .Flush();
 
         return false;
     }
@@ -11711,7 +10042,7 @@ bool OT_API::FinalizeProcessInbox(
                                    *processInbox,
                                    context,
                                    account.get(),
-                                   *outbox,
+                                   outbox,
                                    issuedClosing)
                                .release());
 
@@ -11726,7 +10057,6 @@ bool OT_API::FinalizeProcessInbox(
     bool output = true;
     processInbox->AddItem(balanceStatement);
     processInbox->ReleaseSignatures();
-
     AddHashesToTransaction(*processInbox.get(), context, account.get());
 
     output &= (output && processInbox->SignContract(*nym));
@@ -11972,7 +10302,7 @@ OTTransaction* OT_API::get_or_create_process_inbox(
             return {};
         }
 
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
+        LogVerbose(OT_METHOD)(__FUNCTION__)(": Allocated transaction number ")(
             number->Value())(".")
             .Flush();
 

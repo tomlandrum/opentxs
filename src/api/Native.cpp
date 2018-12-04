@@ -353,16 +353,16 @@ Native::Native(
           get_arg(args, OPENTXS_ARG_LOGENDPOINT)))
     , crypto_(nullptr)
     , legacy_(opentxs::Factory::Legacy())
-    , client_()
-    , server_()
     , zap_(nullptr)
     , args_(args)
     , shutdown_callback_{nullptr}
     , null_callback_{nullptr}
     , default_external_password_callback_{nullptr}
     , external_password_callback_{externalPasswordCallback}
-    , rpc_(opentxs::Factory::RPC(*this))
     , pid_(nullptr)
+    , server_()
+    , client_()
+    , rpc_(opentxs::Factory::RPC(*this))
 {
     // NOTE: OT_ASSERT is not available until Init() has been called
     assert(legacy_);

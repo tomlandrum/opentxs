@@ -42,7 +42,7 @@ class OTBylaw
 {
     OTString m_strName;      // Name of this Bylaw.
     OTString m_strLanguage;  // Language that the scripts are written in, for
-                           // this bylaw.
+                             // this bylaw.
 
     mapOfVariables m_mapVariables;  // constant, persistant, and important
                                     // variables (strings and longs)

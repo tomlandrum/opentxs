@@ -105,7 +105,7 @@ Nym::Nym(const api::Core& api, const NymParameters& nymParameters)
     const bool defaultIndex = nymParameters.UseAutoIndex();
 
     if (!defaultIndex) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Re-creating nym at specified path.")
             .Flush();
 

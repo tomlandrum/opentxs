@@ -63,8 +63,8 @@ std::unique_ptr<opentxs::PeerObject> Factory::PeerObject(
 #endif
 
 std::unique_ptr<opentxs::PeerObject> Factory::PeerObject(
-    const std::shared_ptr<PeerRequest> request,
-    const std::shared_ptr<PeerReply> reply,
+    const std::shared_ptr<const PeerRequest> request,
+    const std::shared_ptr<const PeerReply> reply,
     const std::uint32_t& version) const
 {
     return std::unique_ptr<opentxs::PeerObject>{
@@ -72,7 +72,7 @@ std::unique_ptr<opentxs::PeerObject> Factory::PeerObject(
 }
 
 std::unique_ptr<opentxs::PeerObject> Factory::PeerObject(
-    const std::shared_ptr<PeerRequest> request,
+    const std::shared_ptr<const PeerRequest> request,
     const std::uint32_t& version) const
 {
     return std::unique_ptr<opentxs::PeerObject>{

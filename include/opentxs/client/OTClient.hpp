@@ -14,41 +14,18 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
+#include <vector>
 
 namespace opentxs
 {
 class OTClient
 {
 public:
-    bool AcceptEntireNymbox(
-        Ledger& theNymbox,
-        ServerContext& context,
-        Message& theMessage);
     inline OTMessageOutbuffer& GetMessageOutbuffer()
     {
         return m_MessageOutbuffer;
     }
-    bool ProcessNotification(
-        const otx::Reply& notification,
-        ServerContext& context);
-    bool processServerReply(
-        const std::set<OTManagedNumber>& managed,
-        const bool resync,
-        ServerContext& context,
-        std::shared_ptr<Message>& reply,
-        const std::string& label);
-    bool processServerReply(
-        const std::set<OTManagedNumber>& managed,
-        ServerContext& context,
-        std::shared_ptr<Message>& reply,
-        Ledger* pNymbox);
-    bool processServerReply(
-        const std::set<OTManagedNumber>& managed,
-        const bool resync,
-        ServerContext& context,
-        std::shared_ptr<Message>& reply,
-        Ledger* pNymbox,
-        const std::string& label);
     std::int32_t ProcessUserCommand(
         const MessageType requestedCommand,
         ServerContext& context,
@@ -60,194 +37,11 @@ public:
         const UnitDefinition* pMyUnitDefinition = nullptr);
     void QueueOutgoingMessage(const Message& theMessage);
 
-    explicit OTClient(
-        const api::Core& api,
-        const api::client::Activity& activity,
-        const api::client::Contacts& contacts,
-        const api::client::Workflow& workflow);
+    explicit OTClient(const api::Core& api);
 
 private:
-    enum class TransactionAttempt : bool { Accepted = true, Rejected = false };
-
     const api::Core& api_;
-    const api::client::Activity& activity_;
-    const api::client::Contacts& contacts_;
-    const api::client::Workflow& workflow_;
     OTMessageOutbuffer m_MessageOutbuffer;
-
-    bool add_item_to_workflow(
-        const Nym& nym,
-        const Message& transportItem,
-        const std::string& item) const;
-    void complete_incoming_transfer_workflow(
-        const ServerContext& context,
-        const Identifier& accountID,
-        const Item& acceptItemReceipt,
-        const Message& serverReply) const;
-    void complete_transfer_workflow(
-        const ServerContext& context,
-        const Identifier& accountID,
-        const Item& acceptItemReceipt,
-        const Message& serverReply) const;
-    bool createInstrumentNoticeFromPeerObject(
-        const ServerContext& context,
-        const Message& message,
-        const PeerObject& peerObject,
-        const TransactionNumber number);
-    bool harvest_unused(ServerContext& context);
-    bool init_new_account(const Identifier& accountID, ServerContext& context)
-        const;
-    void load_str_trans_add_to_ledger(
-        const Identifier& the_nym_id,
-        const String& str_trans,
-        const String& str_box_type,
-        const TransactionNumber& lTransNum,
-        const Nym& the_nym,
-        Ledger& ledger) const;
-    void process_incoming_instrument(
-        const String& serialized,
-        const ServerContext& context,
-        const OTTransaction& receipt);
-    void process_incoming_message(
-        const ServerContext& context,
-        const OTTransaction& receipt);
-    bool process_account_data(
-        const Identifier& accountID,
-        const String& account,
-        const String& inboxHash,
-        const String& inbox,
-        const String& outboxHash,
-        const String& outbox,
-        ServerContext& context);
-    bool process_account_push(
-        const proto::OTXPush& push,
-        ServerContext& context);
-    bool process_box_item(const proto::OTXPush& push, ServerContext& context);
-    void ProcessIncomingTransaction(
-        const Message& theReply,
-        ServerContext& context,
-        std::shared_ptr<OTTransaction> pTransaction,
-        String& strReceiptID) const;
-    void ProcessIncomingTransactions(
-        const Message& theReply,
-        const Identifier& accountID,
-        ServerContext& context) const;
-#if OT_CASH
-    void ProcessWithdrawalResponse(
-        const Message& theReply,
-        ServerContext& context,
-        OTTransaction& theTransaction) const;
-#endif  // OT_CASH
-    void ProcessDepositResponse(
-        const Message& theReply,
-        const ServerContext& context,
-        OTTransaction& theTransaction) const;
-    void ProcessDepositChequeResponse(
-        const ServerContext& context,
-        std::shared_ptr<Item> pReplyItem) const;
-    void ProcessPayDividendResponse(OTTransaction& theTransaction) const;
-    bool processServerReplyTriggerClause(
-        const Message& theReply,
-        ServerContext& context);
-    bool processServerReplyCheckNym(
-        const Message& theReply,
-        ServerContext& context);
-    bool processServerReplyNotarizeTransaction(
-        const Message& theReply,
-        const Identifier& accountID,
-        ServerContext& context);
-    bool processServerReplyGetTransactionNumbers(
-        const Message& theReply,
-        ServerContext& context);
-    bool processServerReplyGetNymBox(
-        const Message& theReply,
-        Ledger* pNymbox,
-        ServerContext& context);
-    bool processServerReplyGetBoxReceipt(
-        const Identifier& accountID,
-        const Message& theReply,
-        Ledger* pNymbox,
-        ServerContext& context);
-    bool processServerReplyGetBoxReceipt(
-        const Identifier& accountID,
-        OTTransaction& receipt,
-        ServerContext& context,
-        const String& serialized,
-        const std::int64_t boxType);
-    bool processServerReplyProcessBox(
-        const Message& theReply,
-        const Identifier& accountID,
-        Ledger* pNymbox,
-        ServerContext& context);
-    bool processServerReplyProcessInbox(
-        const Message& theReply,
-        const Identifier& accountID,
-        Ledger* pNymbox,
-        ServerContext& context,
-        OTTransaction* pTransaction,
-        OTTransaction* pReplyTransaction);
-    bool processServerReplyProcessNymbox(
-        const Message& theReply,
-        Ledger* pNymbox,
-        ServerContext& context,
-        OTTransaction* pTransaction,
-        OTTransaction* pReplyTransaction);
-    bool processServerReplyGetAccountData(
-        const Message& theReply,
-        const Identifier& accountID,
-        ServerContext& context);
-    bool processServerReplyGetInstrumentDefinition(
-        const Message& theReply,
-        ServerContext& context);
-#if OT_CASH
-    bool processServerReplyGetMint(const Message& theReply);
-#endif  // OT_CASH
-    bool processServerReplyGetMarketList(const Message& theReply);
-    bool processServerReplyGetMarketOffers(const Message& theReply);
-    bool processServerReplyGetMarketRecentTrades(const Message& theReply);
-    bool processServerReplyGetNymMarketOffers(const Message& theReply);
-    bool processServerReplyUnregisterNym(
-        const Message& theReply,
-        ServerContext& context);
-    bool processServerReplyUnregisterAccount(
-        const Message& theReply,
-        ServerContext& context);
-    bool processServerReplyRegisterInstrumentDefinition(
-        const Message& theReply,
-        const Identifier& accountID,
-        const std::string& label,
-        ServerContext& context);
-    bool processServerReplyRegisterAccount(
-        const Message& theReply,
-        const Identifier& accountID,
-        const std::string& label,
-        ServerContext& context);
-    bool processServerReplyResyncContext(
-        const Message& theReply,
-        ServerContext& context);
-    void ProcessIncomingCronItemReply(
-        std::shared_ptr<Item> pReplyItem,
-        std::unique_ptr<OTCronItem>& pCronItem,
-        ServerContext& context,
-        const TransactionNumber& lNymOpeningNumber,
-        std::shared_ptr<OTTransaction> pTransaction,
-        const String& strCronItem) const;
-#if OT_CASH
-    bool save_incoming_cash(
-        const ServerContext& context,
-        const Message& message,
-        const PeerObject& peerObject,
-        const TransactionNumber number);
-#endif
-    void setRecentHash(
-        const Message& theReply,
-        bool setNymboxHash,
-        ServerContext& context);
-    bool update_workflow_send_transfer(
-        const Message& reply,
-        const ServerContext& context,
-        const Item& responseItem,
-        const TransactionAttempt status) const;
 };
 }  // namespace opentxs
 #endif

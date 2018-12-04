@@ -22,7 +22,7 @@ public:
         Ledger& inbox,
         Ledger& outbox,
         bool& outSuccess);
-    void NotarizeProcessNymbox(
+    bool NotarizeProcessNymbox(
         ClientContext& context,
         OTTransaction& tranIn,
         OTTransaction& tranOut,

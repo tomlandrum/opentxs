@@ -20,6 +20,7 @@ namespace internal
 struct Activity;
 struct Contacts;
 struct Manager;
+struct Operation;
 }  // namespace internal
 }  // namespace client
 
@@ -247,8 +248,9 @@ using ActivitySummarySortKey =
 // Activity thread
 using ActivityThreadExternalInterface = ui::ActivityThread;
 using ActivityThreadInternalInterface = ui::internal::ActivityThread;
-/** item id, box, accountID */
-using ActivityThreadRowID = std::tuple<OTIdentifier, StorageBox, OTIdentifier>;
+/** item id, box, accountID, taskID */
+using ActivityThreadRowID =
+    std::tuple<OTIdentifier, StorageBox, OTIdentifier, int>;
 using ActivityThreadRowInterface = ui::ActivityThreadItem;
 using ActivityThreadRowInternal = ui::internal::ActivityThreadItem;
 using ActivityThreadRowBlank = ActivityThreadItemBlank;

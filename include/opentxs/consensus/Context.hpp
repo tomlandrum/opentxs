@@ -21,15 +21,18 @@ namespace opentxs
 class Context : virtual public Signable
 {
 public:
-    EXPORT virtual std::set<RequestNumber> AcknowledgedNumbers() const = 0;
+    using TransactionNumbers = std::set<TransactionNumber>;
+    using RequestNumbers = std::set<RequestNumber>;
+
+    EXPORT virtual RequestNumbers AcknowledgedNumbers() const = 0;
     EXPORT virtual const api::Core& Api() const = 0;
     EXPORT virtual std::size_t AvailableNumbers() const = 0;
     EXPORT virtual bool HaveLocalNymboxHash() const = 0;
-    EXPORT virtual std::set<TransactionNumber> IssuedNumbers() const = 0;
     EXPORT virtual bool HaveRemoteNymboxHash() const = 0;
-    EXPORT virtual bool NymboxHashMatch() const = 0;
+    EXPORT virtual TransactionNumbers IssuedNumbers() const = 0;
     EXPORT virtual std::string LegacyDataFolder() const = 0;
     EXPORT virtual OTIdentifier LocalNymboxHash() const = 0;
+    EXPORT virtual bool NymboxHashMatch() const = 0;
     EXPORT virtual std::unique_ptr<const opentxs::NymFile> Nymfile(
         const OTPasswordData& reason) const = 0;
     EXPORT virtual const opentxs::Nym& RemoteNym() const = 0;
@@ -56,8 +59,7 @@ public:
     EXPORT virtual bool OpenCronItem(const TransactionNumber) = 0;
     EXPORT virtual bool RecoverAvailableNumber(
         const TransactionNumber& number) = 0;
-    EXPORT virtual bool RemoveAcknowledgedNumber(
-        const std::set<RequestNumber>& req) = 0;
+    EXPORT virtual bool RemoveAcknowledgedNumber(const RequestNumbers& req) = 0;
     EXPORT virtual void Reset() = 0;
     EXPORT virtual proto::Context Refresh() = 0;
     EXPORT virtual void SetLocalNymboxHash(const Identifier& hash) = 0;

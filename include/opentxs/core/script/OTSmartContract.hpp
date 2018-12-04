@@ -365,18 +365,18 @@ private:
     // the information is
     // stored in m_mapStashes, not in the accounts themselves, which are only
     // reserves for those stashes.
-    OTString m_strLastSenderUser;     // These four strings are here so that each
-                                    // sender or recipient (of a transfer of
-                                    // funds)
-    OTString m_strLastSenderAcct;     // is clearly saved in each inbox receipt.
-                                    // That way, if the receipt has a monetary
-                                    // value, then
+    OTString m_strLastSenderUser;  // These four strings are here so that each
+                                   // sender or recipient (of a transfer of
+                                   // funds)
+    OTString m_strLastSenderAcct;  // is clearly saved in each inbox receipt.
+                                   // That way, if the receipt has a monetary
+                                   // value, then
     OTString m_strLastRecipientUser;  // we know who was sending and who was
-                                    // receiving. Also, if a STASH was the last
-                                    // action, then
-    OTString m_strLastRecipientAcct;  // the sender (or recipient) will be blank,
-                                    // signifying that the source or
-                                    // destination was a stash.
+                                      // receiving. Also, if a STASH was the
+                                      // last action, then
+    OTString m_strLastRecipientAcct;  // the sender (or recipient) will be
+                                      // blank, signifying that the source or
+                                      // destination was a stash.
 
     // If onProcess() is on a timer (say, to wake up in a week) then this will
     // contain the

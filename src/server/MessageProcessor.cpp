@@ -112,7 +112,7 @@ void MessageProcessor::associate_connection(
     const auto result = active_connections_.emplace(nymID, connection);
 
     if (std::get<1>(result)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Nym ")(nymID)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Nym ")(nymID)(
             " is available via connection ")(connection.asHex())(".")
             .Flush();
     }
@@ -188,9 +188,7 @@ void MessageProcessor::init(
         throw std::invalid_argument("Cannot connect to endpoint.");
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Bound to endpoint ")(endpoint.str())(
-        ".")
-        .Flush();
+    LogNormal("Bound to endpoint: ")(endpoint.str()).Flush();
 }
 
 void MessageProcessor::run()
@@ -394,7 +392,7 @@ void MessageProcessor::process_notification(const zmq::Message& incoming)
     const auto connection = query_connection(nymID);
 
     if (connection->empty()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
+        LogDebug(OT_METHOD)(__FUNCTION__)(
             ": No notification channel available for ")(nymID)(".")
             .Flush();
 

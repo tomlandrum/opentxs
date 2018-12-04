@@ -149,7 +149,7 @@ LogSource::Source& LogSource::get_buffer(std::string& out)
 {
     const auto id = std::this_thread::get_id();
     std::stringstream convert{};
-    convert << id;
+    convert << std::hex << id;
     out = convert.str();
     auto it = buffer_.find(id);
 

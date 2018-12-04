@@ -19,9 +19,9 @@
 #include <opentxs/api/client/Contacts.hpp>
 #include <opentxs/api/client/Issuer.hpp>
 #include <opentxs/api/client/Manager.hpp>
+#include <opentxs/api/client/OTX.hpp>
 #include <opentxs/api/client/Pair.hpp>
 #include <opentxs/api/client/ServerAction.hpp>
-#include <opentxs/api/client/Sync.hpp>
 #include <opentxs/api/client/UI.hpp>
 #include <opentxs/api/client/Workflow.hpp>
 #include <opentxs/api/crypto/Config.hpp>
@@ -182,5 +182,4 @@
 #include <opentxs/OT.hpp>
 #include <opentxs/Proto.hpp>
 #include <opentxs/Types.hpp>
-
 #endif

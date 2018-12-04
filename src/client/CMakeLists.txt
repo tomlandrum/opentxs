@@ -1,3 +1,6 @@
+#[[
+// clang-format off
+]]#
 # Copyright (c) 2018 The Open-Transactions developers
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +36,7 @@ set(cxx-install-headers
 
 set(cxx-headers
   ${cxx-install-headers}
-  ${CMAKE_CURRENT_SOURCE_DIR}/OTAPI_Func.hpp
+  OTAPI_Func.hpp
 )
 
 if(WIN32)
@@ -66,3 +69,6 @@ install(FILES ${cxx-install-headers}
 set_property(TARGET ${MODULE_NAME} PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_lib_property(${MODULE_NAME})
 target_include_directories(${MODULE_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/")
+#[[
+// clang-format on
+]]#

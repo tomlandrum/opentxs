@@ -7,7 +7,7 @@
 
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/Manager.hpp"
-#include "opentxs/api/client/Sync.hpp"
+#include "opentxs/api/client/OTX.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #include "opentxs/api/Core.hpp"
@@ -109,8 +109,8 @@ bool ChequeBalanceItem::get_contract() const
 
     if (contract_) { return true; }
 
-    api_.Sync().ScheduleDownloadContract(
-        nym_id_, api_.Sync().IntroductionServer(), contractID);
+    api_.OTX().DownloadContract(
+        nym_id_, api_.OTX().IntroductionServer(), contractID);
 
     return false;
 }

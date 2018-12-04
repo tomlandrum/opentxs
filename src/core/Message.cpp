@@ -101,6 +101,7 @@
 #define REQUEST_ADMIN_RESPONSE "requestAdminResponse"
 #define ADD_CLAIM "addClaim"
 #define ADD_CLAIM_RESPONSE "addClaimResponse"
+#define OUTMAIL "outmailMessage"
 
 // PROTOCOL DOCUMENT
 
@@ -184,6 +185,7 @@ const Message::TypeMap Message::message_names_{
     {MessageType::requestAdminResponse, REQUEST_ADMIN_RESPONSE},
     {MessageType::addClaim, ADD_CLAIM},
     {MessageType::addClaimResponse, ADD_CLAIM_RESPONSE},
+    {MessageType::outmail, OUTMAIL},
 };
 
 const std::map<MessageType, MessageType> Message::reply_message_{
@@ -273,7 +275,7 @@ MessageType Message::reply_command(const MessageType& type)
     try {
 
         return reply_message_.at(type);
-    } catch (const std::out_of_range&) {
+    } catch (...) {
 
         return MessageType::badID;
     }
@@ -284,7 +286,7 @@ std::string Message::Command(const MessageType type)
     try {
 
         return message_names_.at(type);
-    } catch (const std::out_of_range&) {
+    } catch (...) {
 
         return ERROR_STRING;
     }
@@ -295,7 +297,7 @@ MessageType Message::Type(const std::string& type)
     try {
 
         return message_types_.at(type);
-    } catch (const std::out_of_range&) {
+    } catch (...) {
 
         return MessageType::badID;
     }
@@ -617,16 +619,11 @@ bool Message::SignContract(const Nym& theNym, const OTPasswordData* pPWData)
     //
     m_bIsSigned = Contract::SignContractAuthent(theNym, pPWData);
 
-    if (m_bIsSigned) {
-        //        otErr <<
-        // "\n******************************************************\n"
-        //                "Contents of signed
-        // message:\n\n%s******************************************************\n\n",
-        // m_xmlUnsigned->Get());
-    } else
-        LogDetail(OT_METHOD)(__FUNCTION__)(": Failure signing message: ")(
+    if (false == m_bIsSigned) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failure signing message: ")(
             m_xmlUnsigned)
             .Flush();
+    }
 
     return m_bIsSigned;
 }
@@ -720,7 +717,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetMarketOffers::reg(
-    "getMarketOffers",
+    GET_MARKET_OFFERS,
     new StrategyGetMarketOffers());
 
 class StrategyGetMarketOffersResponse : public OTMessageStrategy
@@ -804,7 +801,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetMarketOffersResponse::reg(
-    "getMarketOffersResponse",
+    GET_MARKET_OFFERS_RESPONSE,
     new StrategyGetMarketOffersResponse());
 
 class StrategyGetMarketRecentTrades : public OTMessageStrategy
@@ -841,7 +838,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetMarketRecentTrades::reg(
-    "getMarketRecentTrades",
+    GET_MARKET_RECENT_TRADES,
     new StrategyGetMarketRecentTrades());
 
 class StrategyGetMarketRecentTradesResponse : public OTMessageStrategy
@@ -925,7 +922,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetMarketRecentTradesResponse::reg(
-    "getMarketRecentTradesResponse",
+    GET_MARKET_RECENT_TRADES_RESPONSE,
     new StrategyGetMarketRecentTradesResponse());
 
 class StrategyGetNymMarketOffers : public OTMessageStrategy
@@ -960,7 +957,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetNymMarketOffers::reg(
-    "getNymMarketOffers",
+    GET_NYM_MARKET_OFFERS,
     new StrategyGetNymMarketOffers());
 
 class StrategyGetNymMarketOffersResponse : public OTMessageStrategy
@@ -1040,7 +1037,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetNymMarketOffersResponse::reg(
-    "getNymMarketOffersResponse",
+    GET_NYM_MARKET_OFFERS_RESPONSE,
     new StrategyGetNymMarketOffersResponse());
 
 class StrategyPingNotary : public OTMessageStrategy
@@ -1172,9 +1169,7 @@ public:
     }
     static RegisterStrategy reg;
 };
-RegisterStrategy StrategyPingNotary::reg(
-    "pingNotary",
-    new StrategyPingNotary());
+RegisterStrategy StrategyPingNotary::reg(PING_NOTARY, new StrategyPingNotary());
 
 class StrategyPingNotaryResponse : public OTMessageStrategy
 {
@@ -1211,7 +1206,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyPingNotaryResponse::reg(
-    "pingNotaryResponse",
+    PING_NOTARY_RESPONSE,
     new StrategyPingNotaryResponse());
 
 class StrategyRegisterContract : public OTMessageStrategy
@@ -1226,6 +1221,7 @@ public:
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
         pTag->add_attribute("contract", m.m_ascPayload->Get());
         pTag->add_attribute("type", std::to_string(m.enum_));
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         parent.add_tag(pTag);
     }
@@ -1238,12 +1234,12 @@ public:
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
         m.m_ascPayload->Set(xml->getAttributeValue("contract"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         try {
             m.enum_ = std::stoi(xml->getAttributeValue("type"));
-        } catch (const std::invalid_argument&) {
-            m.enum_ = 0;
-        } catch (const std::out_of_range&) {
+        } catch (...) {
             m.enum_ = 0;
         }
 
@@ -1256,7 +1252,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRegisterContract::reg(
-    "registerContract",
+    REGISTER_CONTRACT,
     new StrategyRegisterContract());
 
 class StrategyRegisterContractResponse : public OTMessageStrategy
@@ -1270,6 +1266,7 @@ public:
         pTag->add_attribute("requestNum", m.m_strRequestNum->Get());
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         if (m.m_ascInReferenceTo->GetLength() > 2) {
             pTag->add_tag("inReferenceTo", m.m_ascInReferenceTo->Get());
@@ -1287,6 +1284,8 @@ public:
             String::Factory(xml->getAttributeValue("requestNum"));
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         const char* pElementExpected = "inReferenceTo";
         Armored& ascTextExpected = m.m_ascInReferenceTo;
@@ -1310,7 +1309,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRegisterContractResponse::reg(
-    "registerContractResponse",
+    REGISTER_CONTRACT_RESPONSE,
     new StrategyRegisterContractResponse());
 
 class StrategyRegisterNym : public OTMessageStrategy
@@ -1324,6 +1323,7 @@ public:
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
         pTag->add_attribute("publicnym", m.m_ascPayload->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         parent.add_tag(pTag);
     }
@@ -1336,6 +1336,8 @@ public:
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
         m.m_ascPayload->Set(xml->getAttributeValue("publicnym"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             " NymID:    ")(m.m_strNymID)(" NotaryID: ")(m.m_strNotaryID)
@@ -1346,7 +1348,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRegisterNym::reg(
-    "registerNym",
+    REGISTER_NYM,
     new StrategyRegisterNym());
 
 class StrategyRegisterNymResponse : public OTMessageStrategy
@@ -1360,6 +1362,7 @@ public:
         pTag->add_attribute("requestNum", m.m_strRequestNum->Get());
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         if (m.m_bSuccess && (m.m_ascPayload->GetLength() > 2)) {
             pTag->add_tag("nymfile", m.m_ascPayload->Get());
@@ -1381,6 +1384,8 @@ public:
             String::Factory(xml->getAttributeValue("requestNum"));
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         if (m.m_bSuccess) {
             const char* pElementExpected = "nymfile";
@@ -1418,7 +1423,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRegisterNymResponse::reg(
-    "registerNymResponse",
+    REGISTER_NYM_RESPONSE,
     new StrategyRegisterNymResponse());
 
 class StrategyUnregisterNym : public OTMessageStrategy
@@ -1452,7 +1457,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyUnregisterNym::reg(
-    "unregisterNym",
+    UNREGISTER_NYM,
     new StrategyUnregisterNym());
 
 class StrategyUnregisterNymResponse : public OTMessageStrategy
@@ -1506,7 +1511,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyUnregisterNymResponse::reg(
-    "unregisterNymResponse",
+    UNREGISTER_NYM_RESPONSE,
     new StrategyUnregisterNymResponse());
 
 class StrategyCheckNym : public OTMessageStrategy
@@ -1520,6 +1525,7 @@ public:
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("nymID2", m.m_strNymID2->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         parent.add_tag(pTag);
     }
@@ -1532,6 +1538,8 @@ public:
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
         m.m_strRequestNum =
             String::Factory(xml->getAttributeValue("requestNum"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             " NymID:    ")(m.m_strNymID)(" NymID2:    ")(m.m_strNymID2)(
@@ -1542,7 +1550,7 @@ public:
     }
     static RegisterStrategy reg;
 };
-RegisterStrategy StrategyCheckNym::reg("checkNym", new StrategyCheckNym());
+RegisterStrategy StrategyCheckNym::reg(CHECK_NYM, new StrategyCheckNym());
 
 class StrategyCheckNymResponse : public OTMessageStrategy
 {
@@ -1552,7 +1560,7 @@ public:
         // This means new-style credentials are being sent, not just the public
         // key as before.
         const bool bCredentials = (m.m_ascPayload->Exists());
-        OT_ASSERT(!m.m_bSuccess || bCredentials);
+        OT_ASSERT(!m.m_bBool || bCredentials);
 
         TagPtr pTag(new Tag(m.m_strCommand->Get()));
 
@@ -1561,10 +1569,14 @@ public:
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("nymID2", m.m_strNymID2->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
+        pTag->add_attribute("found", formatBool(m.m_bBool));
 
-        if (m.m_bSuccess && bCredentials) {
+        if (m.m_bBool && bCredentials) {
             pTag->add_tag("publicnym", m.m_ascPayload->Get());
-        } else {
+        }
+
+        if (false == m.m_bSuccess) {
             pTag->add_tag("inReferenceTo", m.m_ascInReferenceTo->Get());
         }
 
@@ -1581,6 +1593,10 @@ public:
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNymID2 = String::Factory(xml->getAttributeValue("nymID2"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
+        const auto found = String::Factory(xml->getAttributeValue("found"));
+        m.m_bBool = found->Compare("true");
 
         auto ascTextExpected = Armored::Factory();
         const char* pElementExpected = nullptr;
@@ -1596,7 +1612,7 @@ public:
                     .Flush();
                 return (-1);  // error condition
             }
-        } else {  // Success.
+        } else if (m.m_bBool) {  // Success.
             pElementExpected = "publicnym";
             ascTextExpected->Release();
 
@@ -1611,7 +1627,7 @@ public:
             m.m_ascPayload = ascTextExpected;
         }
 
-        if (m.m_bSuccess)
+        if (m.m_bBool)
             LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
                 "   ")(m.m_bSuccess ? "SUCCESS" : "FAILURE")(" NymID:    ")(
                 m.m_strNymID)(" NymID2:    ")(m.m_strNymID2)(" NotaryID: ")(
@@ -1630,7 +1646,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyCheckNymResponse::reg(
-    "checkNymResponse",
+    CHECK_NYM_RESPONSE,
     new StrategyCheckNymResponse());
 
 class StrategyUsageCredits : public OTMessageStrategy
@@ -1675,7 +1691,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyUsageCredits::reg(
-    "usageCredits",
+    USAGE_CREDITS,
     new StrategyUsageCredits());
 
 class StrategyUsageCreditsResponse : public OTMessageStrategy
@@ -1722,7 +1738,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyUsageCreditsResponse::reg(
-    "usageCreditsResponse",
+    USAGE_CREDITS_RESPONSE,
     new StrategyUsageCreditsResponse());
 
 // This one isn't part of the message protocol, but is used for
@@ -1785,7 +1801,7 @@ RegisterStrategy StrategyOutpaymentsMessageOrOutmailMessage::reg(
     "outpaymentsMessage",
     new StrategyOutpaymentsMessageOrOutmailMessage());
 RegisterStrategy StrategyOutpaymentsMessageOrOutmailMessage::reg2(
-    "outmailMessage",
+    OUTMAIL,
     new StrategyOutpaymentsMessageOrOutmailMessage());
 
 class StrategySendNymMessage : public OTMessageStrategy
@@ -1799,6 +1815,7 @@ public:
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("nymID2", m.m_strNymID2->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         if (m.m_ascPayload->GetLength() > 2) {
             pTag->add_tag("messagePayload", m.m_ascPayload->Get());
@@ -1815,6 +1832,8 @@ public:
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
         m.m_strRequestNum =
             String::Factory(xml->getAttributeValue("requestNum"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         const char* pElementExpected = "messagePayload";
         Armored& ascTextExpected = m.m_ascPayload;
@@ -1838,7 +1857,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategySendNymMessage::reg(
-    "sendNymMessage",
+    SEND_NYM_MESSAGE,
     new StrategySendNymMessage());
 
 class StrategySendNymMessageResponse : public OTMessageStrategy
@@ -1853,6 +1872,7 @@ public:
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("nymID2", m.m_strNymID2->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         parent.add_tag(pTag);
     }
@@ -1867,6 +1887,8 @@ public:
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNymID2 = String::Factory(xml->getAttributeValue("nymID2"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             "   ")(m.m_bSuccess ? "SUCCESS" : "FAILURE")(" NymID:    ")(
@@ -1879,7 +1901,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategySendNymMessageResponse::reg(
-    "sendNymMessageResponse",
+    SEND_NYM_MESSAGE_RESPONSE,
     new StrategySendNymMessageResponse());
 
 // sendNymInstrument is sent from one user
@@ -1950,7 +1972,7 @@ public:
     static RegisterStrategy reg2;
 };
 RegisterStrategy StrategySendNymInstrumentOrPayDividend::reg(
-    "sendNymInstrument",
+    SEND_NYM_INSTRUMENT,
     new StrategySendNymInstrumentOrPayDividend());
 RegisterStrategy StrategySendNymInstrumentOrPayDividend::reg2(
     "payDividend",
@@ -1987,7 +2009,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetRequestNumber::reg(
-    "getRequestNumber",
+    GET_REQUEST_NUMBER,
     new StrategyGetRequestNumber());
 
 // This is the ONE command where you see a request number coming
@@ -2040,7 +2062,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetRequestResponse::reg(
-    "getRequestNumberResponse",
+    GET_REQUEST_NUMBER_RESPONSE,
     new StrategyGetRequestResponse());
 
 class StrategyRegisterInstrumentDefinition : public OTMessageStrategy
@@ -2096,7 +2118,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRegisterInstrumentDefinition::reg(
-    "registerInstrumentDefinition",
+    REGISTER_INSTRUMENT_DEFINITION,
     new StrategyRegisterInstrumentDefinition());
 
 class StrategyRegisterInstrumentDefinitionResponse : public OTMessageStrategy
@@ -2205,7 +2227,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRegisterInstrumentDefinitionResponse::reg(
-    "registerInstrumentDefinitionResponse",
+    REGISTER_INSTRUMENT_DEFINITION_RESPONSE,
     new StrategyRegisterInstrumentDefinitionResponse());
 
 class StrategyQueryInstrumentDefinitions : public OTMessageStrategy
@@ -2256,7 +2278,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyQueryInstrumentDefinitions::reg(
-    "queryInstrumentDefinitions",
+    QUERY_INSTRUMENT_DEFINITION,
     new StrategyQueryInstrumentDefinitions());
 
 class StrategyQueryInstrumentDefinitionsResponse : public OTMessageStrategy
@@ -2348,7 +2370,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyQueryInstrumentDefinitionsResponse::reg(
-    "queryInstrumentDefinitionsResponse",
+    QUERY_INSTRUMENT_DEFINITION_RESPONSE,
     new StrategyQueryInstrumentDefinitionsResponse());
 
 class StrategyIssueBasket : public OTMessageStrategy
@@ -2411,7 +2433,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyIssueBasket::reg(
-    "issueBasket",
+    ISSUE_BASKET,
     new StrategyIssueBasket());
 
 class StrategyIssueBasketResponse : public OTMessageStrategy
@@ -2486,7 +2508,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyIssueBasketResponse::reg(
-    "issueBasketResponse",
+    ISSUE_BASKET_RESPONSE,
     new StrategyIssueBasketResponse());
 
 class StrategyRegisterAccount : public OTMessageStrategy
@@ -2526,7 +2548,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRegisterAccount::reg(
-    "registerAccount",
+    REGISTER_ACCOUNT,
     new StrategyRegisterAccount());
 
 class StrategyRegisterAccountResponse : public OTMessageStrategy
@@ -2626,7 +2648,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRegisterAccountResponse::reg(
-    "registerAccountResponse",
+    REGISTER_ACCOUNT_RESPONSE,
     new StrategyRegisterAccountResponse());
 
 class StrategyGetBoxReceipt : public OTMessageStrategy
@@ -2696,7 +2718,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetBoxReceipt::reg(
-    "getBoxReceipt",
+    GET_BOX_RECEIPT,
     new StrategyGetBoxReceipt());
 
 class StrategyGetBoxReceiptResponse : public OTMessageStrategy
@@ -2820,7 +2842,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetBoxReceiptResponse::reg(
-    "getBoxReceiptResponse",
+    GET_BOX_RECEIPT_RESPONSE,
     new StrategyGetBoxReceiptResponse());
 
 class StrategyUnregisterAccount : public OTMessageStrategy
@@ -2857,7 +2879,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyUnregisterAccount::reg(
-    "unregisterAccount",
+    UNREGISTER_ACCOUNT,
     new StrategyUnregisterAccount());
 
 class StrategyUnregisterAccountResponse : public OTMessageStrategy
@@ -2932,7 +2954,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyUnregisterAccountResponse::reg(
-    "unregisterAccountResponse",
+    UNREGISTER_ACCOUNT_RESPONSE,
     new StrategyUnregisterAccountResponse());
 
 class StrategyNotarizeTransaction : public OTMessageStrategy
@@ -2990,7 +3012,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyNotarizeTransaction::reg(
-    "notarizeTransaction",
+    NOTARIZE_TRANSACTION,
     new StrategyNotarizeTransaction());
 
 class StrategyNotarizeTransactionResponse : public OTMessageStrategy
@@ -3090,7 +3112,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyNotarizeTransactionResponse::reg(
-    "notarizeTransactionResponse",
+    NOTARIZE_TRANSACTION_RESPONSE,
     new StrategyNotarizeTransactionResponse());
 
 class StrategyGetTransactionNumbers : public OTMessageStrategy
@@ -3128,7 +3150,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetTransactionNumbers::reg(
-    "getTransactionNumbers",
+    GET_TRANSACTION_NUMBER,
     new StrategyGetTransactionNumbers());
 
 class StrategyGetTransactionNumbersResponse : public OTMessageStrategy
@@ -3169,7 +3191,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetTransactionNumbersResponse::reg(
-    "getTransactionNumbersResponse",
+    GET_TRANSACTION_NUMBER_RESPONSE,
     new StrategyGetTransactionNumbersResponse());
 
 class StrategyGetNymbox : public OTMessageStrategy
@@ -3182,6 +3204,7 @@ public:
         pTag->add_attribute("requestNum", m.m_strRequestNum->Get());
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         parent.add_tag(pTag);
     }
@@ -3193,6 +3216,8 @@ public:
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
         m.m_strRequestNum =
             String::Factory(xml->getAttributeValue("requestNum"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             " NymID:    ")(m.m_strNymID)(" NotaryID: ")(m.m_strNotaryID)(
@@ -3203,7 +3228,7 @@ public:
     }
     static RegisterStrategy reg;
 };
-RegisterStrategy StrategyGetNymbox::reg("getNymbox", new StrategyGetNymbox());
+RegisterStrategy StrategyGetNymbox::reg(GET_NYMBOX, new StrategyGetNymbox());
 
 class StrategyGetNymboxResponse : public OTMessageStrategy
 {
@@ -3273,7 +3298,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetNymboxResponse::reg(
-    "getNymboxResponse",
+    GET_NYMBOX_RESPONSE,
     new StrategyGetNymboxResponse());
 
 class StrategyGetAccountData : public OTMessageStrategy
@@ -3310,7 +3335,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetAccountData::reg(
-    "getAccountData",
+    GET_ACCOUNT_DATA,
     new StrategyGetAccountData());
 
 class StrategyGetAccountDataResponse : public OTMessageStrategy
@@ -3411,7 +3436,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetAccountDataResponse::reg(
-    "getAccountDataResponse",
+    GET_ACCOUNT_DATA_RESPONSE,
     new StrategyGetAccountDataResponse());
 
 class StrategyGetInstrumentDefinition : public OTMessageStrategy
@@ -3426,6 +3451,8 @@ public:
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
         pTag->add_attribute(
             "instrumentDefinitionID", m.m_strInstrumentDefinitionID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
+        pTag->add_attribute("type", std::to_string(m.enum_));
 
         parent.add_tag(pTag);
     }
@@ -3439,6 +3466,14 @@ public:
             String::Factory(xml->getAttributeValue("instrumentDefinitionID"));
         m.m_strRequestNum =
             String::Factory(xml->getAttributeValue("requestNum"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
+
+        try {
+            m.enum_ = std::stoi(xml->getAttributeValue("type"));
+        } catch (...) {
+            m.enum_ = 0;
+        }
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             " NymID:    ")(m.m_strNymID)(" NotaryID: ")(m.m_strNotaryID)(
@@ -3451,7 +3486,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetInstrumentDefinition::reg(
-    "getInstrumentDefinition",
+    GET_INSTRUMENT_DEFINITION,
     new StrategyGetInstrumentDefinition());
 
 class StrategyGetInstrumentDefinitionResponse : public OTMessageStrategy
@@ -3467,6 +3502,9 @@ public:
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
         pTag->add_attribute(
             "instrumentDefinitionID", m.m_strInstrumentDefinitionID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
+        pTag->add_attribute("found", formatBool(m.m_bBool));
+        pTag->add_attribute("type", std::to_string(m.enum_));
 
         if (m.m_ascInReferenceTo->GetLength()) {
             pTag->add_tag("inReferenceTo", m.m_ascInReferenceTo->Get());
@@ -3490,28 +3528,48 @@ public:
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
         m.m_strInstrumentDefinitionID =
             String::Factory(xml->getAttributeValue("instrumentDefinitionID"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
+        const auto found = String::Factory(xml->getAttributeValue("found"));
+        m.m_bBool = found->Compare("true");
 
-        const char* pElementExpected;
-        if (m.m_bSuccess)
-            pElementExpected = "instrumentDefinition";
-        else
-            pElementExpected = "inReferenceTo";
+        try {
+            m.enum_ = std::stoi(xml->getAttributeValue("type"));
+        } catch (...) {
+            m.enum_ = 0;
+        }
 
         auto ascTextExpected = Armored::Factory();
 
-        if (!Contract::LoadEncodedTextFieldByName(
-                xml, ascTextExpected, pElementExpected)) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Error: Expected ")(
-                pElementExpected)(" element with text field, for ")(
-                m.m_strCommand)(".")
-                .Flush();
-            return (-1);  // error condition
+        if (false == m.m_bSuccess) {
+            const char* pElementExpected = "inReferenceTo";
+
+            if (!Contract::LoadEncodedTextFieldByName(
+                    xml, ascTextExpected, pElementExpected)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Error: Expected ")(
+                    pElementExpected)(" element with text field, for ")(
+                    m.m_strCommand)(".")
+                    .Flush();
+                return (-1);  // error condition
+            }
         }
 
-        if (m.m_bSuccess)
-            m.m_ascPayload = ascTextExpected;
-        else
-            m.m_ascInReferenceTo = ascTextExpected;
+        if (m.m_bBool) {
+            const char* pElementExpected = "instrumentDefinition";
+
+            if (!Contract::LoadEncodedTextFieldByName(
+                    xml, ascTextExpected, pElementExpected)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Error: Expected ")(
+                    pElementExpected)(" element with text field, for ")(
+                    m.m_strCommand)(".")
+                    .Flush();
+                return (-1);  // error condition
+            }
+        }
+
+        if (m.m_bBool) { m.m_ascPayload = ascTextExpected; }
+
+        if (false == m.m_bSuccess) { m.m_ascInReferenceTo = ascTextExpected; }
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             "   ")(m.m_bSuccess ? "SUCCESS" : "FAILURE")(" NymID:    ")(
@@ -3524,7 +3582,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetInstrumentDefinitionResponse::reg(
-    "getInstrumentDefinitionResponse",
+    GET_INSTRUMENT_DEFINITION_RESPONSE,
     new StrategyGetInstrumentDefinitionResponse());
 
 class StrategyGetMint : public OTMessageStrategy
@@ -3539,6 +3597,7 @@ public:
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
         pTag->add_attribute(
             "instrumentDefinitionID", m.m_strInstrumentDefinitionID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         parent.add_tag(pTag);
     }
@@ -3552,6 +3611,8 @@ public:
             String::Factory(xml->getAttributeValue("instrumentDefinitionID"));
         m.m_strRequestNum =
             String::Factory(xml->getAttributeValue("requestNum"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             " NymID:    ")(m.m_strNymID)(" NotaryID: ")(m.m_strNotaryID)(
@@ -3563,7 +3624,7 @@ public:
     }
     static RegisterStrategy reg;
 };
-RegisterStrategy StrategyGetMint::reg("getMint", new StrategyGetMint());
+RegisterStrategy StrategyGetMint::reg(GET_MINT, new StrategyGetMint());
 
 class StrategyGetMintResponse : public OTMessageStrategy
 {
@@ -3578,6 +3639,8 @@ public:
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
         pTag->add_attribute(
             "instrumentDefinitionID", m.m_strInstrumentDefinitionID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
+        pTag->add_attribute("found", formatBool(m.m_bBool));
 
         if (m.m_ascInReferenceTo->GetLength()) {
             pTag->add_tag("inReferenceTo", m.m_ascInReferenceTo->Get());
@@ -3601,28 +3664,48 @@ public:
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
         m.m_strInstrumentDefinitionID =
             String::Factory(xml->getAttributeValue("instrumentDefinitionID"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
+        const auto found = String::Factory(xml->getAttributeValue("found"));
+        m.m_bBool = found->Compare("true");
 
-        const char* pElementExpected;
-        if (m.m_bSuccess)
-            pElementExpected = "mint";
-        else
-            pElementExpected = "inReferenceTo";
+        try {
+            m.enum_ = std::stoi(xml->getAttributeValue("type"));
+        } catch (...) {
+            m.enum_ = 0;
+        }
 
         auto ascTextExpected = Armored::Factory();
 
-        if (!Contract::LoadEncodedTextFieldByName(
-                xml, ascTextExpected, pElementExpected)) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Error: Expected ")(
-                pElementExpected)(" element with text field, for ")(
-                m.m_strCommand)(".")
-                .Flush();
-            return (-1);  // error condition
+        if (false == m.m_bSuccess) {
+            const char* pElementExpected = "inReferenceTo";
+
+            if (!Contract::LoadEncodedTextFieldByName(
+                    xml, ascTextExpected, pElementExpected)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Error: Expected ")(
+                    pElementExpected)(" element with text field, for ")(
+                    m.m_strCommand)(".")
+                    .Flush();
+                return (-1);  // error condition
+            }
+
+            m.m_ascInReferenceTo = ascTextExpected;
         }
 
-        if (m.m_bSuccess)
+        if (m.m_bBool) {
+            const char* pElementExpected = "mint";
+
+            if (!Contract::LoadEncodedTextFieldByName(
+                    xml, ascTextExpected, pElementExpected)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Error: Expected ")(
+                    pElementExpected)(" element with text field, for ")(
+                    m.m_strCommand)(".")
+                    .Flush();
+                return (-1);  // error condition
+            }
+
             m.m_ascPayload = ascTextExpected;
-        else
-            m.m_ascInReferenceTo = ascTextExpected;
+        }
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             "   ")(m.m_bSuccess ? "SUCCESS" : "FAILURE")(" NymID:    ")(
@@ -3635,7 +3718,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetMintResponse::reg(
-    "getMintResponse",
+    GET_MINT_RESPONSE,
     new StrategyGetMintResponse());
 
 class StrategyProcessInbox : public OTMessageStrategy
@@ -3693,7 +3776,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyProcessInbox::reg(
-    "processInbox",
+    PROCESS_INBOX,
     new StrategyProcessInbox());
 
 class StrategyProcessInboxResponse : public OTMessageStrategy
@@ -3790,7 +3873,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyProcessInboxResponse::reg(
-    "processInboxResponse",
+    PROCESS_INBOX_RESPONSE,
     new StrategyProcessInboxResponse());
 
 class StrategyProcessNymbox : public OTMessageStrategy
@@ -3846,7 +3929,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyProcessNymbox::reg(
-    "processNymbox",
+    PROCESS_NYMBOX,
     new StrategyProcessNymbox());
 
 class StrategyProcessNymboxResponse : public OTMessageStrategy
@@ -3940,7 +4023,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyProcessNymboxResponse::reg(
-    "processNymboxResponse",
+    PROCESS_NYMBOX_RESPONSE,
     new StrategyProcessNymboxResponse());
 
 class StrategyTriggerClause : public OTMessageStrategy
@@ -4009,7 +4092,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyTriggerClause::reg(
-    "triggerClause",
+    TRIGGER_CLAUSE,
     new StrategyTriggerClause());
 
 class StrategyTriggerClauseResponse : public OTMessageStrategy
@@ -4066,7 +4149,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyTriggerClauseResponse::reg(
-    "triggerClauseResponse",
+    TRIGGER_CLAUSE_RESPONSE,
     new StrategyTriggerClauseResponse());
 
 class StrategyGetMarketList : public OTMessageStrategy
@@ -4101,7 +4184,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetMarketList::reg(
-    "getMarketList",
+    GET_MARKET_LIST,
     new StrategyGetMarketList());
 
 class StrategyGetMarketListResponse : public OTMessageStrategy
@@ -4182,7 +4265,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyGetMarketListResponse::reg(
-    "getMarketListResponse",
+    GET_MARKET_LIST_RESPONSE,
     new StrategyGetMarketListResponse());
 
 class StrategyRequestAdmin : public OTMessageStrategy
@@ -4196,6 +4279,7 @@ public:
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
         pTag->add_attribute("password", m.m_strAcctID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         parent.add_tag(pTag);
     }
@@ -4208,6 +4292,8 @@ public:
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
         m.m_strAcctID->Set(xml->getAttributeValue("password"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)(
             " NymID:    ")(m.m_strNymID)(" NotaryID: ")(m.m_strNotaryID)
@@ -4219,7 +4305,7 @@ public:
 };
 
 RegisterStrategy StrategyRequestAdmin::reg(
-    "requestAdmin",
+    REQUEST_ADMIN,
     new StrategyRequestAdmin());
 
 class StrategyRequestAdminResponse : public OTMessageStrategy
@@ -4233,6 +4319,8 @@ public:
         pTag->add_attribute("requestNum", m.m_strRequestNum->Get());
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("admin", formatBool(m.m_bBool));
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
 
         if (m.m_ascInReferenceTo->GetLength() > 2) {
             pTag->add_tag("inReferenceTo", m.m_ascInReferenceTo->Get());
@@ -4250,6 +4338,10 @@ public:
             String::Factory(xml->getAttributeValue("requestNum"));
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
+        const auto admin = String::Factory(xml->getAttributeValue("admin"));
+        m.m_bBool = admin->Compare("true");
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
 
         const char* pElementExpected = "inReferenceTo";
         Armored& ascTextExpected = m.m_ascInReferenceTo;
@@ -4273,7 +4365,7 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyRequestAdminResponse::reg(
-    "requestAdminResponse",
+    REQUEST_ADMIN_RESPONSE,
     new StrategyRequestAdminResponse());
 
 class StrategyAddClaim : public OTMessageStrategy
@@ -4316,7 +4408,7 @@ public:
     static RegisterStrategy reg;
 };
 
-RegisterStrategy StrategyAddClaim::reg("addClaim", new StrategyAddClaim());
+RegisterStrategy StrategyAddClaim::reg(ADD_CLAIM, new StrategyAddClaim());
 
 class StrategyAddClaimResponse : public OTMessageStrategy
 {
@@ -4329,9 +4421,13 @@ public:
         pTag->add_attribute("requestNum", m.m_strRequestNum->Get());
         pTag->add_attribute("nymID", m.m_strNymID->Get());
         pTag->add_attribute("notaryID", m.m_strNotaryID->Get());
+        pTag->add_attribute("nymboxHash", m.m_strNymboxHash->Get());
+        pTag->add_attribute("added", formatBool(m.m_bBool));
 
-        if (m.m_ascInReferenceTo->GetLength() > 2) {
-            pTag->add_tag("inReferenceTo", m.m_ascInReferenceTo->Get());
+        if (false == m.m_bSuccess) {
+            if (m.m_ascInReferenceTo->GetLength() > 2) {
+                pTag->add_tag("inReferenceTo", m.m_ascInReferenceTo->Get());
+            }
         }
 
         parent.add_tag(pTag);
@@ -4346,17 +4442,23 @@ public:
             String::Factory(xml->getAttributeValue("requestNum"));
         m.m_strNymID = String::Factory(xml->getAttributeValue("nymID"));
         m.m_strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
+        m.m_strNymboxHash =
+            String::Factory(xml->getAttributeValue("nymboxHash"));
+        const auto added = String::Factory(xml->getAttributeValue("added"));
+        m.m_bBool = added->Compare("true");
 
         const char* pElementExpected = "inReferenceTo";
         Armored& ascTextExpected = m.m_ascInReferenceTo;
 
-        if (!Contract::LoadEncodedTextFieldByName(
-                xml, ascTextExpected, pElementExpected)) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Error: Expected ")(
-                pElementExpected)(" element with text field, for ")(
-                m.m_strCommand)(".")
-                .Flush();
-            return (-1);  // error condition
+        if (false == m.m_bSuccess) {
+            if (!Contract::LoadEncodedTextFieldByName(
+                    xml, ascTextExpected, pElementExpected)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Error: Expected ")(
+                    pElementExpected)(" element with text field, for ")(
+                    m.m_strCommand)(".")
+                    .Flush();
+                return (-1);  // error condition
+            }
         }
 
         LogDetail(OT_METHOD)(__FUNCTION__)(": Command: ")(m.m_strCommand)("  ")(
@@ -4369,6 +4471,6 @@ public:
     static RegisterStrategy reg;
 };
 RegisterStrategy StrategyAddClaimResponse::reg(
-    "addClaimResponse",
+    ADD_CLAIM_RESPONSE,
     new StrategyAddClaimResponse());
 }  // namespace opentxs

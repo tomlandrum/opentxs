@@ -47,7 +47,7 @@ public:
 protected:
     const opentxs::api::Native& ot_;
 
-    static std::string unit_definition_id_;
+    static OTUnitID unit_definition_id_;
     static std::string issuer_account_id_;
     static proto::ServerContract server_contract_;
     static proto::ServerContract server2_contract_;
@@ -68,18 +68,8 @@ protected:
     static std::string workflow_id_;
     static std::string claim_id_;
 
-    static void accept_transfer_1(
-        const api::client::Manager& client,
-        const Identifier& serverID,
-        const Identifier& nymID,
-        const Identifier& accountID);
     static std::size_t get_index(const std::int32_t instance);
     static const api::Core& get_session(const std::int32_t instance);
-    static void process_receipt_1(
-        const api::client::Manager& client,
-        const Identifier& serverID,
-        const Identifier& nymID,
-        const Identifier& accountID);
 
     proto::RPCCommand init(proto::RPCCommandType commandtype)
     {
@@ -166,9 +156,52 @@ protected:
         ASSERT_EQ(1, response.status_size());
         ASSERT_EQ(proto::RPCRESPONSE_NONE, response.status(0).code());
     }
+
+    void wait_for_state_machine(
+        const opentxs::api::client::Manager& api,
+        const Identifier& nymID,
+        const Identifier& serverID)
+    {
+        auto task = api.OTX().DownloadNym(nymID, serverID, nymID);
+        ThreadStatus status{ThreadStatus::RUNNING};
+
+        while (0 == std::get<0>(task)) {
+            Log::Sleep(std::chrono::milliseconds(100));
+            task = api.OTX().DownloadNym(nymID, serverID, nymID);
+        }
+
+        while (ThreadStatus::RUNNING == status) {
+            Log::Sleep(std::chrono::milliseconds(10));
+            status = api.OTX().Status(std::get<0>(task));
+        }
+
+        EXPECT_TRUE(ThreadStatus::FINISHED_SUCCESS == status);
+    }
+
+    void receive_payment(
+        const opentxs::api::client::Manager& api,
+        const Identifier& nymID,
+        const Identifier& serverID,
+        const Identifier& accountID)
+    {
+        auto task = api.OTX().ProcessInbox(nymID, serverID, accountID);
+        ThreadStatus status{ThreadStatus::RUNNING};
+
+        while (0 == std::get<0>(task)) {
+            Log::Sleep(std::chrono::milliseconds(100));
+            task = api.OTX().ProcessInbox(nymID, serverID, accountID);
+        }
+
+        while (ThreadStatus::RUNNING == status) {
+            Log::Sleep(std::chrono::milliseconds(10));
+            status = api.OTX().Status(std::get<0>(task));
+        }
+
+        EXPECT_TRUE(ThreadStatus::FINISHED_SUCCESS == status);
+    }
 };
 
-std::string Test_Rpc::unit_definition_id_{};
+OTUnitID Test_Rpc::unit_definition_id_{identifier::UnitDefinition::Factory()};
 std::string Test_Rpc::issuer_account_id_{};
 proto::ServerContract Test_Rpc::server_contract_;
 proto::ServerContract Test_Rpc::server2_contract_;
@@ -189,33 +222,6 @@ std::mutex Test_Rpc::widget_update_lock_{};
 std::string Test_Rpc::workflow_id_{};
 std::string Test_Rpc::claim_id_{};
 
-void Test_Rpc::accept_transfer_1(
-    const api::client::Manager& client,
-    const Identifier& serverID,
-    const Identifier& nymID,
-    const Identifier& accountID)
-{
-    auto nymbox = client.ServerAction().DownloadNymbox(nymID, serverID);
-
-    ASSERT_TRUE(nymbox);
-
-    auto account =
-        client.ServerAction().DownloadAccount(nymID, serverID, accountID, true);
-
-    ASSERT_TRUE(account);
-
-    nymbox = client.ServerAction().DownloadNymbox(nymID, serverID);
-
-    ASSERT_TRUE(nymbox);
-
-    const auto numbers =
-        client.ServerAction().GetTransactionNumbers(nymID, serverID, 1);
-
-    ASSERT_TRUE(numbers);
-
-    process_receipt_1(client, serverID, nymID, accountID);
-}
-
 std::size_t Test_Rpc::get_index(const std::int32_t instance)
 {
     return (instance - (instance % 2)) / 2;
@@ -231,27 +237,6 @@ const api::Core& Test_Rpc::get_session(const std::int32_t instance)
         return opentxs::OT::App().Client(get_index(instance));
     }
 };
-
-void Test_Rpc::process_receipt_1(
-    const api::client::Manager& client,
-    const Identifier& serverID,
-    const Identifier& nymID,
-    const Identifier& accountID)
-{
-    auto nymbox = client.ServerAction().DownloadNymbox(nymID, serverID);
-
-    ASSERT_TRUE(nymbox);
-
-    auto account =
-        client.ServerAction().DownloadAccount(nymID, serverID, accountID, true);
-
-    ASSERT_TRUE(account);
-
-    const auto accepted =
-        client.Sync().AcceptIncoming(nymID, accountID, serverID);
-
-    ASSERT_TRUE(accepted);
-}
 
 TEST_F(Test_Rpc, List_Client_Sessions_None)
 {
@@ -332,7 +317,7 @@ TEST_F(Test_Rpc, Add_Server_Session)
         clientmanager.Wallet().Server(servercontract->PublicContract());
 
     // Make the server the introduction server.
-    clientmanager.Sync().SetIntroductionServer(*clientservercontract);
+    clientmanager.OTX().SetIntroductionServer(*clientservercontract);
 }
 
 TEST_F(Test_Rpc, Get_Server_Password)
@@ -535,11 +520,9 @@ TEST_F(Test_Rpc, Import_Server_Contracts)
     server = server2_contract_;
     auto& server2 = *command.add_server();
     server2 = server3_contract_;
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(2, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(1).code());
@@ -554,15 +537,12 @@ TEST_F(Test_Rpc, Import_Server_Contract_Partial)
     command.set_session(3);
     auto& server = *command.add_server();
     server = server_contract_;
-
     auto& invalid_server = *command.add_server();
     invalid_server = server_contract_;
     invalid_server.set_nymid("invalid nym identifier");
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(2, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
     ASSERT_EQ(proto::RPCRESPONSE_NONE, response.status(1).code());
@@ -758,9 +738,7 @@ TEST_F(Test_Rpc, Create_Unit_Definition)
 {
     auto command = init(proto::RPCCOMMAND_CREATEUNITDEFINITION);
     command.set_session(0);
-
     command.set_owner(nym1_id_);
-
     auto def = command.mutable_createunit();
 
     ASSERT_NE(nullptr, def);
@@ -774,11 +752,9 @@ TEST_F(Test_Rpc, Create_Unit_Definition)
     def->set_power(2);
     def->set_terms("Google Test Dollars");
     def->set_unitofaccount(proto::CITEMTYPE_USD);
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(1, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
     ASSERT_EQ(RESPONSE_VERSION, response.version());
@@ -786,28 +762,33 @@ TEST_F(Test_Rpc, Create_Unit_Definition)
     ASSERT_EQ(command.type(), response.type());
     ASSERT_EQ(1, response.identifier_size());
 
-    unit_definition_id_ = response.identifier(0);
+    const auto& unitID = response.identifier(0);
 
-    ASSERT_TRUE(Identifier::Validate(unit_definition_id_));
+    ASSERT_TRUE(Identifier::Validate(unitID));
+
+    unit_definition_id_->SetString(unitID);
+
+    ASSERT_FALSE(unit_definition_id_->empty());
 }
 
 TEST_F(Test_Rpc, List_Unit_Definitions)
 {
     auto command = init(proto::RPCCOMMAND_LISTUNITDEFINITIONS);
     command.set_session(0);
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(1, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
     ASSERT_EQ(RESPONSE_VERSION, response.version());
     ASSERT_STREQ(command.cookie().c_str(), response.cookie().c_str());
     ASSERT_EQ(command.type(), response.type());
-
     ASSERT_EQ(1, response.identifier_size());
-    EXPECT_EQ(unit_definition_id_, response.identifier(0));
+
+    const auto unitID =
+        identifier::UnitDefinition::Factory(response.identifier(0));
+
+    EXPECT_EQ(unit_definition_id_, unitID);
 }
 
 TEST_F(Test_Rpc, Add_Claim)
@@ -830,11 +811,9 @@ TEST_F(Test_Rpc, Add_Claim)
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(RESPONSE_VERSION, response.version());
     ASSERT_STREQ(command.cookie().c_str(), response.cookie().c_str());
     ASSERT_EQ(command.type(), response.type());
-
     ASSERT_EQ(1, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
 }
@@ -845,7 +824,7 @@ TEST_F(Test_Rpc, Add_Claim_No_Nym)
     command.set_session(0);
 
     // Use an id that isn't a nym.
-    command.set_owner(unit_definition_id_);
+    command.set_owner(unit_definition_id_->str());
 
     auto& addclaim = *command.add_claim();
     addclaim.set_version(ADDCLAIM_VERSION);
@@ -874,7 +853,7 @@ TEST_F(Test_Rpc, Delete_Claim_No_Nym)
     auto command = init(proto::RPCCOMMAND_DELETECLAIM);
     command.set_session(0);
 
-    command.set_owner(unit_definition_id_);
+    command.set_owner(unit_definition_id_->str());
 
     auto& client = ot_.Client(0);
     auto nym = client.Wallet().Nym(opentxs::Identifier::Factory(nym1_id_));
@@ -884,7 +863,6 @@ TEST_F(Test_Rpc, Delete_Claim_No_Nym)
     const auto claim = group->Best();
     claim_id_ = claim->ID().str();
     command.add_identifier(claim_id_);
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
@@ -901,11 +879,8 @@ TEST_F(Test_Rpc, Delete_Claim)
 {
     auto command = init(proto::RPCCOMMAND_DELETECLAIM);
     command.set_session(0);
-
     command.set_owner(nym1_id_);
-
     command.add_identifier(claim_id_);
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
@@ -922,14 +897,9 @@ TEST_F(Test_Rpc, RegisterNym)
 {
     auto command = init(proto::RPCCOMMAND_REGISTERNYM);
     command.set_session(0);
-
-    auto& manager = ot_.Client(0);
-
     command.set_owner(nym1_id_);
-
     auto& server = ot_.Server(0);
     command.set_notary(server.ID().str());
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
@@ -943,10 +913,8 @@ TEST_F(Test_Rpc, RegisterNym)
     // Register the other nyms.
     command = init(proto::RPCCOMMAND_REGISTERNYM);
     command.set_session(0);
-
     command.set_owner(nym2_id_);
     command.set_notary(server.ID().str());
-
     response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
@@ -959,10 +927,8 @@ TEST_F(Test_Rpc, RegisterNym)
 
     command = init(proto::RPCCOMMAND_REGISTERNYM);
     command.set_session(0);
-
     command.set_owner(nym3_id_);
     command.set_notary(server.ID().str());
-
     response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
@@ -978,19 +944,13 @@ TEST_F(Test_Rpc, RegisterNym_No_Nym)
 {
     auto command = init(proto::RPCCOMMAND_REGISTERNYM);
     command.set_session(0);
-
-    auto& manager = ot_.Client(0);
-
     // Use an id that isn't a nym.
-    command.set_owner(unit_definition_id_);
-
+    command.set_owner(unit_definition_id_->str());
     auto& server = ot_.Server(0);
     command.set_notary(server.ID().str());
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(1, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_NYM_NOT_FOUND, response.status(0).code());
     ASSERT_EQ(RESPONSE_VERSION, response.version());
@@ -1011,9 +971,9 @@ TEST_F(Test_Rpc, Create_Issuer_Account)
     auto& server = ot_.Server(0);
     command.set_notary(server.ID().str());
 
-    ASSERT_FALSE(unit_definition_id_.empty());
+    ASSERT_FALSE(unit_definition_id_->empty());
 
-    command.set_unit(unit_definition_id_);
+    command.set_unit(unit_definition_id_->str());
     command.add_identifier(ISSUER_ACCOUNT_LABEL);
     auto response = ot_.RPC(command);
 
@@ -1051,7 +1011,7 @@ TEST_F(Test_Rpc, Get_Unit_Definition)
 {
     auto command = init(proto::RPCCOMMAND_GETUNITDEFINITION);
     command.set_session(0);
-    command.add_identifier(unit_definition_id_);
+    command.add_identifier(unit_definition_id_->str());
 
     auto response = ot_.RPC(command);
 
@@ -1110,21 +1070,14 @@ TEST_F(Test_Rpc, Create_Issuer_Account_Unnecessary)
 {
     auto command = init(proto::RPCCOMMAND_ISSUEUNITDEFINITION);
     command.set_session(0);
-
-    auto& manager = ot_.Client(0);
-
     command.set_owner(nym1_id_);
-
     auto& server = ot_.Server(0);
     command.set_notary(server.ID().str());
 
-    const auto unitdefinitionlist = manager.Wallet().UnitDefinitionList();
-    ASSERT_TRUE(!unitdefinitionlist.empty());
+    ASSERT_FALSE(unit_definition_id_->empty());
 
-    auto& unitid = unitdefinitionlist.front().first;
-    command.set_unit(unitid);
+    command.set_unit(unit_definition_id_->str());
     command.add_identifier(ISSUER_ACCOUNT_LABEL);
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
@@ -1141,22 +1094,17 @@ TEST_F(Test_Rpc, Create_Account)
 {
     auto command = init(proto::RPCCOMMAND_CREATEACCOUNT);
     command.set_session(0);
-    auto& manager = ot_.Client(0);
-
     command.set_owner(nym2_id_);
     auto& server = ot_.Server(0);
     command.set_notary(server.ID().str());
-    const auto unitdefinitionlist = manager.Wallet().UnitDefinitionList();
 
-    ASSERT_TRUE(!unitdefinitionlist.empty());
+    ASSERT_FALSE(unit_definition_id_->empty());
 
-    auto& unitid = unitdefinitionlist.front().first;
-    command.set_unit(unitid);
+    command.set_unit(unit_definition_id_->str());
     command.add_identifier(USER_ACCOUNT_LABEL);
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(1, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
     ASSERT_EQ(RESPONSE_VERSION, response.version());
@@ -1177,7 +1125,7 @@ TEST_F(Test_Rpc, Create_Account)
     command.set_session(0);
     command.set_owner(nym3_id_);
     command.set_notary(server.ID().str());
-    command.set_unit(unitid);
+    command.set_unit(unit_definition_id_->str());
     command.add_identifier(USER_ACCOUNT_LABEL);
     response = ot_.RPC(command);
 
@@ -1203,7 +1151,7 @@ TEST_F(Test_Rpc, Create_Account)
     command.set_session(0);
     command.set_owner(nym3_id_);
     command.set_notary(server.ID().str());
-    command.set_unit(unitid);
+    command.set_unit(unit_definition_id_->str());
     command.add_identifier(USER_ACCOUNT_LABEL);
     response = ot_.RPC(command);
 
@@ -1230,28 +1178,15 @@ TEST_F(Test_Rpc, Send_Payment_Transfer)
 {
     auto command = init(proto::RPCCOMMAND_SENDPAYMENT);
     command.set_session(0);
-
-    auto& server = ot_.Server(0);
     auto& client = ot_.Client(0);
-
-    auto nym1id = Identifier::Factory(nym1_id_);
-
-    auto nymbox = client.ServerAction().DownloadNymbox(nym1id, server.ID());
-
-    ASSERT_TRUE(nymbox);
-
-    const auto numbers =
-        client.ServerAction().GetTransactionNumbers(nym1id, server.ID(), 1);
-
-    ASSERT_TRUE(numbers);
-
+    auto nym1id = identifier::Nym::Factory(nym1_id_);
+    auto nym3id = identifier::Nym::Factory(nym3_id_);
     auto sendpayment = command.mutable_sendpayment();
 
     ASSERT_NE(nullptr, sendpayment);
 
     sendpayment->set_version(SENDPAYMENT_VERSION);
     sendpayment->set_type(proto::RPCPAYMENTTYPE_TRANSFER);
-
     auto& contacts = client.Contacts();
     const auto contactid = contacts.ContactID(Identifier::Factory(nym3_id_));
     sendpayment->set_contact(contactid->str());
@@ -1259,36 +1194,16 @@ TEST_F(Test_Rpc, Send_Payment_Transfer)
     sendpayment->set_destinationaccount(nym3_account1_id_);
     sendpayment->set_memo("Send_Payment_Transfer test");
     sendpayment->set_amount(75);
-
     auto response = ot_.RPC(command);
 
-    ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
+    EXPECT_TRUE(proto::Validate(response, VERBOSE));
     ASSERT_EQ(1, response.status_size());
-    ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
-    ASSERT_EQ(RESPONSE_VERSION, response.version());
-    ASSERT_STREQ(command.cookie().c_str(), response.cookie().c_str());
-    ASSERT_EQ(command.type(), response.type());
+    EXPECT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
+    EXPECT_EQ(RESPONSE_VERSION, response.version());
+    EXPECT_STREQ(command.cookie().c_str(), response.cookie().c_str());
+    EXPECT_EQ(command.type(), response.type());
 
-    accept_transfer_1(
-        client,
-        Identifier::Factory(server_id_),
-        Identifier::Factory(nym3_id_),
-        Identifier::Factory(nym3_account1_id_));
-    process_receipt_1(
-        client,
-        Identifier::Factory(server_id_),
-        nym1id,
-        Identifier::Factory(issuer_account_id_));
-
-    {
-        const auto account =
-            client.Wallet().Account(Identifier::Factory(nym3_account1_id_));
-
-        ASSERT_TRUE(account);
-
-        ASSERT_EQ(75, account.get().GetBalance());
-    }
+    wait_for_state_machine(client, nym1id, Identifier::Factory(server_id_));
 
     {
         const auto account =
@@ -1296,21 +1211,33 @@ TEST_F(Test_Rpc, Send_Payment_Transfer)
 
         ASSERT_TRUE(account);
 
-        ASSERT_EQ(-75, account.get().GetBalance());
+        EXPECT_EQ(-75, account.get().GetBalance());
+    }
+
+    receive_payment(
+        client,
+        nym3id,
+        Identifier::Factory(server_id_),
+        Identifier::Factory(nym3_account1_id_));
+
+    {
+        const auto account =
+            client.Wallet().Account(Identifier::Factory(nym3_account1_id_));
+
+        ASSERT_TRUE(account);
+
+        EXPECT_EQ(75, account.get().GetBalance());
     }
 }
 
 // TODO: tests for RPCPAYMENTTYPE_VOUCHER, RPCPAYMENTTYPE_INVOICE,
 // RPCPAYMENTTYPE_BLIND
-
 TEST_F(Test_Rpc, Move_Funds)
 {
     auto command = init(proto::RPCCOMMAND_MOVEFUNDS);
     command.set_session(0);
-
     auto& manager = ot_.Client(0);
-    auto nym3id = Identifier::Factory(nym3_id_);
-
+    auto nym3id = identifier::Nym::Factory(nym3_id_);
     auto movefunds = command.mutable_movefunds();
 
     ASSERT_NE(nullptr, movefunds);
@@ -1321,44 +1248,37 @@ TEST_F(Test_Rpc, Move_Funds)
     movefunds->set_destinationaccount(nym3_account2_id_);
     movefunds->set_memo("Move_Funds test");
     movefunds->set_amount(25);
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(1, response.status_size());
-    ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
-    ASSERT_EQ(RESPONSE_VERSION, response.version());
-    ASSERT_STREQ(command.cookie().c_str(), response.cookie().c_str());
-    ASSERT_EQ(command.type(), response.type());
+    EXPECT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
+    EXPECT_EQ(RESPONSE_VERSION, response.version());
+    EXPECT_STREQ(command.cookie().c_str(), response.cookie().c_str());
+    EXPECT_EQ(command.type(), response.type());
 
-    process_receipt_1(
-        manager,
-        Identifier::Factory(server_id_),
-        nym3id,
-        Identifier::Factory(nym3_account2_id_));
-    process_receipt_1(
-        manager,
-        Identifier::Factory(server_id_),
-        nym3id,
-        Identifier::Factory(nym3_account1_id_));
+    wait_for_state_machine(manager, nym3id, Identifier::Factory(server_id_));
 
     {
         const auto account =
             manager.Wallet().Account(Identifier::Factory(nym3_account1_id_));
 
         ASSERT_TRUE(account);
-
-        ASSERT_EQ(50, account.get().GetBalance());
+        EXPECT_EQ(50, account.get().GetBalance());
     }
+
+    receive_payment(
+        manager,
+        nym3id,
+        Identifier::Factory(server_id_),
+        Identifier::Factory(nym3_account2_id_));
 
     {
         const auto account =
             manager.Wallet().Account(Identifier::Factory(nym3_account2_id_));
 
         ASSERT_TRUE(account);
-
-        ASSERT_EQ(25, account.get().GetBalance());
+        EXPECT_EQ(25, account.get().GetBalance());
     }
 }
 
@@ -1367,7 +1287,7 @@ TEST_F(Test_Rpc, Get_Workflow)
     auto& client = ot_.Client(0);
 
     // Make sure the workflows on the client are up-to-date.
-    client.Sync().Refresh();
+    client.OTX().Refresh();
 
     auto nym3id = Identifier::Factory(nym3_id_);
 
@@ -1401,7 +1321,7 @@ TEST_F(Test_Rpc, Get_Workflow)
     EXPECT_STREQ(command.cookie().c_str(), response.cookie().c_str());
     EXPECT_EQ(command.type(), response.type());
 
-    EXPECT_EQ(1, response.workflow_size());
+    ASSERT_EQ(1, response.workflow_size());
 
     const auto& paymentworkflow = response.workflow(0);
     EXPECT_STREQ(workflowid->str().c_str(), paymentworkflow.id().c_str());
@@ -1579,7 +1499,7 @@ TEST_F(Test_Rpc, Rename_Account_Not_Found)
     auto& modify = *command.add_modifyaccount();
     modify.set_version(MODIFYACCOUNT_VERSION);
     // Use an id that isn't an account.
-    modify.set_accountid(unit_definition_id_);
+    modify.set_accountid(unit_definition_id_->str());
     modify.set_label(RENAMED_ACCOUNT_LABEL);
 
     auto response = ot_.RPC(command);
@@ -1804,20 +1724,18 @@ TEST_F(Test_Rpc, Get_Seed)
     auto command = init(proto::RPCCOMMAND_GETHDSEED);
     command.set_session(0);
     command.add_identifier(seed_id_);
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(1, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
     ASSERT_EQ(RESPONSE_VERSION, response.version());
     ASSERT_STREQ(command.cookie().c_str(), response.cookie().c_str());
     ASSERT_EQ(command.type(), response.type());
-
     ASSERT_EQ(1, response.seed_size());
 
     auto seed = response.seed(0);
+
     ASSERT_STREQ(seed_id_.c_str(), seed.id().c_str());
     ASSERT_STREQ(TEST_SEED, seed.words().c_str());
     ASSERT_STREQ(TEST_SEED_PASSPHRASE, seed.passphrase().c_str());
@@ -1829,21 +1747,19 @@ TEST_F(Test_Rpc, Get_Seeds)
     command.set_session(0);
     command.add_identifier(seed_id_);
     command.add_identifier(seed2_id_);
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(2, response.status_size());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(0).code());
     ASSERT_EQ(proto::RPCRESPONSE_SUCCESS, response.status(1).code());
     ASSERT_EQ(RESPONSE_VERSION, response.version());
     ASSERT_STREQ(command.cookie().c_str(), response.cookie().c_str());
     ASSERT_EQ(command.type(), response.type());
-
     ASSERT_EQ(2, response.seed_size());
 
     auto seed = response.seed(0);
+
     if (seed.id() != seed_id_) { seed = response.seed(1); }
 
     ASSERT_STREQ(seed_id_.c_str(), seed.id().c_str());
@@ -1856,11 +1772,9 @@ TEST_F(Test_Rpc, Get_Transaction_Data)
     auto command = init(proto::RPCCOMMAND_GETTRANSACTIONDATA);
     command.set_session(0);
     command.add_identifier(seed_id_);  // Not a real uuid
-
     auto response = ot_.RPC(command);
 
     ASSERT_TRUE(proto::Validate(response, VERBOSE));
-
     ASSERT_EQ(1, response.status_size());
     EXPECT_EQ(proto::RPCRESPONSE_UNIMPLEMENTED, response.status(0).code());
 }

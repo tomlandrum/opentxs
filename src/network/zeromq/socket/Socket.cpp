@@ -78,6 +78,8 @@ bool Socket::apply_timeouts(const Lock& lock) const
     if (0 != set) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to set ZMQ_LINGER.")
             .Flush();
+        LogOutput(OT_METHOD)(__FUNCTION__)(": ")(zmq_strerror(zmq_errno()))
+            .Flush();
 
         return false;
     }
@@ -87,6 +89,8 @@ bool Socket::apply_timeouts(const Lock& lock) const
 
     if (0 != set) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to set ZMQ_SNDTIMEO.")
+            .Flush();
+        LogOutput(OT_METHOD)(__FUNCTION__)(": ")(zmq_strerror(zmq_errno()))
             .Flush();
 
         return false;
@@ -98,6 +102,8 @@ bool Socket::apply_timeouts(const Lock& lock) const
     if (0 != set) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to set ZMQ_RCVTIMEO.")
             .Flush();
+        LogOutput(OT_METHOD)(__FUNCTION__)(": ")(zmq_strerror(zmq_errno()))
+            .Flush();
 
         return false;
     }
@@ -107,12 +113,14 @@ bool Socket::apply_timeouts(const Lock& lock) const
 
 bool Socket::bind(const Lock& lock, const std::string& endpoint) const
 {
-    apply_timeouts(lock);
+    if (false == apply_timeouts(lock)) { return false; }
+
     const auto output = (0 == zmq_bind(socket_, endpoint.c_str()));
 
     if (output) {
         add_endpoint(endpoint);
     } else {
+        socket_ = nullptr;
         std::cerr << OT_METHOD << __FUNCTION__ << ": "
                   << zmq_strerror(zmq_errno()) << std::endl;
     }
@@ -122,12 +130,14 @@ bool Socket::bind(const Lock& lock, const std::string& endpoint) const
 
 bool Socket::connect(const Lock& lock, const std::string& endpoint) const
 {
-    apply_timeouts(lock);
+    if (false == apply_timeouts(lock)) { return false; }
+
     const auto output = (0 == zmq_connect(socket_, endpoint.c_str()));
 
     if (output) {
         add_endpoint(endpoint);
     } else {
+        socket_ = nullptr;
         std::cerr << OT_METHOD << __FUNCTION__ << ": "
                   << zmq_strerror(zmq_errno()) << std::endl;
     }
@@ -137,6 +147,7 @@ bool Socket::connect(const Lock& lock, const std::string& endpoint) const
 
 bool Socket::Close() const
 {
+    running_->Off();
     Lock lock(lock_);
 
     if (nullptr == socket_) { return false; }
@@ -257,6 +268,8 @@ bool Socket::SetTimeouts(
     const std::chrono::milliseconds& send,
     const std::chrono::milliseconds& receive) const
 {
+    OT_ASSERT(nullptr != socket_);
+
     linger_.store(linger.count());
     send_timeout_.store(send.count());
     receive_timeout_.store(receive.count());
@@ -268,6 +281,8 @@ bool Socket::SetTimeouts(
 
 void Socket::shutdown(const Lock& lock)
 {
+    if (nullptr == socket_) { return; }
+
     for (const auto& endpoint : endpoints_) {
         if (Socket::Direction::Connect == direction_) {
             zmq_disconnect(socket_, endpoint.c_str());
@@ -277,8 +292,7 @@ void Socket::shutdown(const Lock& lock)
     }
 
     endpoints_.clear();
-
-    if (nullptr != socket_) { zmq_close(socket_); }
+    zmq_close(socket_);
 }
 
 bool Socket::Start(const std::string& endpoint) const

@@ -202,7 +202,7 @@ public:
     // it.
     EXPORT void InitLedger();
 
-    EXPORT[[deprecated]] bool GenerateLedger(
+    EXPORT [[deprecated]] bool GenerateLedger(
         const Identifier& theAcctID,
         const Identifier& theNotaryID,
         ledgerType theType,
@@ -220,7 +220,9 @@ public:
     EXPORT virtual ~Ledger();
 
 protected:
-    bool LoadGeneric(ledgerType theType, const String& pString = String::Factory());
+    bool LoadGeneric(
+        ledgerType theType,
+        const String& pString = String::Factory());
     // return -1 if error, 0 if nothing, and 1 if the node was processed.
     std::int32_t ProcessXMLNode(irr::io::IrrXMLReader*& xml) override;
     bool SaveGeneric(ledgerType theType);

@@ -162,11 +162,11 @@ public:
         const std::shared_ptr<blind::Purse> purse) const = 0;
 #endif
     EXPORT virtual std::unique_ptr<opentxs::PeerObject> PeerObject(
-        const std::shared_ptr<PeerRequest> request,
-        const std::shared_ptr<PeerReply> reply,
+        const std::shared_ptr<const PeerRequest> request,
+        const std::shared_ptr<const PeerReply> reply,
         const std::uint32_t& version) const = 0;
     EXPORT virtual std::unique_ptr<opentxs::PeerObject> PeerObject(
-        const std::shared_ptr<PeerRequest> request,
+        const std::shared_ptr<const PeerRequest> request,
         const std::uint32_t& version) const = 0;
     EXPORT virtual std::unique_ptr<opentxs::PeerObject> PeerObject(
         const ConstNym& signerNym,

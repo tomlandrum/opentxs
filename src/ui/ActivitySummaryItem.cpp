@@ -24,6 +24,7 @@
 #include "InternalUI.hpp"
 #include "Row.hpp"
 
+#include <atomic>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -78,6 +79,7 @@ ActivitySummaryItem::ActivitySummaryItem(
     , time_()
     , newest_item_thread_(nullptr)
     , newest_item_()
+    , next_task_id_(0)
 {
     startup(custom, newest_item_);
     newest_item_thread_.reset(
@@ -138,10 +140,11 @@ std::string ActivitySummaryItem::find_text(const ItemLocator& locator) const
 void ActivitySummaryItem::get_text()
 {
     sLock lock(shared_lock_, std::defer_lock);
-    auto taskID = Identifier::Factory();
     ItemLocator locator{};
 
     while (running_) {
+        int taskID{0};
+
         if (newest_item_.Pop(taskID, locator)) {
             const auto text = find_text(locator);
             lock.lock();
@@ -179,7 +182,7 @@ void ActivitySummaryItem::startup(
     const auto box = extract_custom<StorageBox>(custom, 1);
     const auto account = extract_custom<std::string>(custom, 2);
     ItemLocator locator{id, box, account};
-    queue.Push(Identifier::Random(), locator);
+    queue.Push(++next_task_id_, locator);
 }
 
 std::string ActivitySummaryItem::Text() const

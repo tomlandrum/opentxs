@@ -1057,7 +1057,7 @@ bool Contract::LoadContractRawFile()
     if (!m_strFoldername->Exists() || !m_strFilename->Exists()) return false;
 
     if (!OTDB::Exists(api_.DataFolder(), szFoldername, szFilename, "", "")) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": File does not exist: ")(
+        LogVerbose(OT_METHOD)(__FUNCTION__)(": File does not exist: ")(
             szFoldername)(Log::PathSeparator())(szFilename)(".")
             .Flush();
         return false;
@@ -1107,7 +1107,7 @@ bool Contract::LoadContract(const char* szFoldername, const char* szFilename)
         return ParseRawFile();  // Parses m_strRawFile into the various member
                                 // variables.
     else {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Failed loading raw contract file: ")(m_strFoldername)(
             Log::PathSeparator())(m_strFilename)(".")
             .Flush();
@@ -1169,8 +1169,7 @@ bool Contract::LoadContractFromString(const String& theStr)
 bool Contract::ParseRawFile()
 {
     char buffer1[2100];  // a bit bigger than 2048, just for safety reasons.
-    auto sig = Signature::Factory();
-    auto* pSig = &sig.get();
+    Signature* pSig{nullptr};
     std::string line;
     bool bSignatureMode = false;           // "currently in signature mode"
     bool bContentMode = false;             // "currently in content mode"
@@ -1245,7 +1244,8 @@ bool Contract::ParseRawFile()
                 line.at(1) == '-' && line.at(2) == '-' && line.at(3) == '-') {
                 bSignatureMode = true;
                 bContentMode = false;
-                m_listSignatures.emplace_back(std::move(sig));
+                m_listSignatures.emplace_back(Signature::Factory());
+                pSig = &(m_listSignatures.rbegin()->get());
 
                 continue;
             }
@@ -1340,7 +1340,17 @@ bool Contract::ParseRawFile()
                             return false;
                         }
 
-                        if (false == pSig->getMetaData().SetMetadata(
+                        if (nullptr == pSig) {
+                            LogNormal(OT_METHOD)(__FUNCTION__)(
+                                ": Corrupted signature")
+                                .Flush();
+
+                            return false;
+                        }
+
+                        auto& sig = *pSig;
+
+                        if (false == sig.getMetaData().SetMetadata(
                                          line.at(9),
                                          line.at(10),
                                          line.at(11),
@@ -1397,7 +1407,15 @@ bool Contract::ParseRawFile()
         }
 
         if (bSignatureMode) {
-            pSig->Concatenate("%s\n", pBuf);
+            if (nullptr == pSig) {
+                LogNormal(OT_METHOD)(__FUNCTION__)(": Corrupted signature")
+                    .Flush();
+
+                return false;
+            }
+
+            auto& sig = *pSig;
+            sig.Concatenate("%s\n", pBuf);
         } else if (bContentMode)
             m_xmlUnsigned->Concatenate("%s\n", pBuf);
     } while (!bIsEOF);

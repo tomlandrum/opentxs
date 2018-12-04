@@ -222,7 +222,7 @@ bool Mint::LoadMint(const char* szAppend)  // todo: server should
 
     if (!OTDB::Exists(
             api_.DataFolder(), szFolder1name, szFolder2name, szFilename, "")) {
-        LogNormal(OT_METHOD)(__FUNCTION__)(": File does not exist: ")(
+        LogDetail(OT_METHOD)(__FUNCTION__)(": File does not exist: ")(
             szFolder1name)(Log::PathSeparator())(szFolder2name)(
             Log::PathSeparator())(szFilename)
             .Flush();
@@ -404,6 +404,9 @@ bool Mint::GetPrivate(Armored& theArmor, std::int64_t lDenomination) const
 
         return true;
     } catch (...) {
+        LogTrace(OT_METHOD)(__FUNCTION__)(": Denomination ")(lDenomination)(
+            " not found")
+            .Flush();
 
         return false;
     }
@@ -418,6 +421,9 @@ bool Mint::GetPublic(Armored& theArmor, std::int64_t lDenomination) const
 
         return true;
     } catch (...) {
+        LogTrace(OT_METHOD)(__FUNCTION__)(": Denomination ")(lDenomination)(
+            " not found")
+            .Flush();
 
         return false;
     }
@@ -584,6 +590,9 @@ std::int32_t Mint::ProcessXMLNode(irr::io::IrrXMLReader*& xml)
 
             return (-1);  // error condition
         } else {
+            LogTrace(OT_METHOD)(__FUNCTION__)(
+                ": Loading private key for denomination ")(lDenomination)
+                .Flush();
             m_mapPrivate.emplace(lDenomination, std::move(pArmor));
         }
 
@@ -601,6 +610,9 @@ std::int32_t Mint::ProcessXMLNode(irr::io::IrrXMLReader*& xml)
 
             return (-1);  // error condition
         } else {
+            LogTrace(OT_METHOD)(__FUNCTION__)(
+                ": Loading public key for denomination ")(lDenomination)
+                .Flush();
             m_mapPublic.emplace(lDenomination, std::move(pArmor));
             // Whether client or server, both sides have public. Each public
             // denomination should increment this count.
@@ -668,13 +680,10 @@ void Mint::GenerateNewMint(
     const std::size_t keySize)
 {
     Release();
-
     m_InstrumentDefinitionID = theInstrumentDefinitionID;
     m_NotaryID = theNotaryID;
-
     auto NOTARY_NYM_ID = Identifier::Factory(theNotary);
     m_ServerNymID = NOTARY_NYM_ID;
-
     m_nSeries = nSeries;
     m_VALID_FROM = VALID_FROM;
     m_VALID_TO = VALID_TO;
@@ -689,7 +698,7 @@ void Mint::GenerateNewMint(
 
     if (account) {
         account.get().GetIdentifier(m_CashAccountID);
-        LogNormal(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Successfully created cash reserve account for new mint.")
             .Flush();
     } else {

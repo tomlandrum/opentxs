@@ -57,7 +57,7 @@ void Widget::setup_listeners(const ListenerDefinitions& definitions)
 void Widget::UpdateNotify() const
 {
     publisher_.Publish(widget_id_->str());
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Widget ")(widget_id_)(" updated.")
+    LogTrace(OT_METHOD)(__FUNCTION__)(": Widget ")(widget_id_)(" updated.")
         .Flush();
 }
 

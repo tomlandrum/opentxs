@@ -298,10 +298,11 @@ void UserCommandProcessor::check_acknowledgements(ReplyMessage& reply) const
         }
 
         if (bIsDirtyNymbox) {
+            auto nymboxHash = Identifier::Factory();
             nymbox->ReleaseSignatures();
             nymbox->SignContract(server_.GetServerNym());
             nymbox->SaveContract();
-            nymbox->SaveNymbox(Identifier::Factory());
+            nymbox->SaveNymbox(nymboxHash);
         }
     }
 
@@ -468,6 +469,7 @@ bool UserCommandProcessor::cmd_add_claim(ReplyMessage& reply) const
 
     OT_ENFORCE_PERMISSION_MSG(ServerSettings::__cmd_request_admin);
 
+    reply.SetSuccess(true);
     const auto& context = reply.Context();
     const auto& nymID = context.RemoteNym().ID();
     const auto requestingNym = String::Factory(nymID);
@@ -496,13 +498,7 @@ bool UserCommandProcessor::cmd_add_claim(ReplyMessage& reply) const
     if (isAdmin) {
         auto nym =
             server_.API().Wallet().mutable_Nym(server_.GetServerNym().ID());
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Before: ")(
-            std::string(nym.Claims()))(".")
-            .Flush();
-        reply.SetSuccess(nym.AddClaim(claim));
-        LogOutput(OT_METHOD)(__FUNCTION__)(": After: ")(
-            std::string(nym.Claims()))(".")
-            .Flush();
+        reply.SetBool(nym.AddClaim(claim));
     }
 
     return true;
@@ -516,11 +512,17 @@ bool UserCommandProcessor::cmd_check_nym(ReplyMessage& reply) const
 
     OT_ENFORCE_PERMISSION_MSG(ServerSettings::__cmd_check_nym);
 
+    reply.SetSuccess(true);
     auto nym = server_.API().Wallet().Nym(Identifier::Factory(targetNym));
 
     if (nym) {
         reply.SetPayload(proto::ProtoAsData(nym->asPublicNym()));
-        reply.SetSuccess(true);
+        reply.SetBool(true);
+    } else {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Nym ")(targetNym)(
+            " does not exist.")
+            .Flush();
+        reply.SetBool(false);
     }
 
     return true;
@@ -731,7 +733,13 @@ bool UserCommandProcessor::cmd_get_account_data(ReplyMessage& reply) const
         return false;
     }
 
-    OT_ASSERT(account.get().GetNymID() == nymID);
+    if (account.get().GetNymID() != nymID) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Nym ")(nymID)(
+            " does not own account ")(accountID)
+            .Flush();
+
+        return false;
+    }
 
     const auto inbox = load_inbox(nymID, accountID, serverID, serverNym, false);
 
@@ -874,23 +882,58 @@ bool UserCommandProcessor::cmd_get_instrument_definition(
 
     OT_ENFORCE_PERMISSION_MSG(ServerSettings::__cmd_get_contract);
 
+    reply.SetSuccess(true);
+    reply.SetBool(false);
+    reply.SetEnum(msgIn.enum_);
     const auto contractID =
         Identifier::Factory(msgIn.m_strInstrumentDefinitionID);
-
     auto serialized = Data::Factory();
-    auto unitDefiniton = server_.API().Wallet().UnitDefinition(contractID);
-    // Perhaps the provided ID is actually a server contract, not an
-    // instrument definition?
-    auto server = server_.API().Wallet().Server(contractID);
 
-    if (unitDefiniton) {
-        reply.SetSuccess(true);
-        serialized = proto::ProtoAsData(unitDefiniton->PublicContract());
-        reply.SetPayload(serialized);
-    } else if (server) {
-        reply.SetSuccess(true);
-        serialized = proto::ProtoAsData(server->PublicContract());
-        reply.SetPayload(serialized);
+    if (0 == msgIn.enum_) {
+        // try everything
+        auto unitDefiniton = server_.API().Wallet().UnitDefinition(contractID);
+        // Perhaps the provided ID is actually a server contract, not an
+        // instrument definition?
+        auto server = server_.API().Wallet().Server(contractID);
+
+        if (unitDefiniton) {
+            serialized = proto::ProtoAsData(unitDefiniton->PublicContract());
+            reply.SetPayload(serialized);
+            reply.SetBool(true);
+        } else if (server) {
+            serialized = proto::ProtoAsData(server->PublicContract());
+            reply.SetPayload(serialized);
+            reply.SetBool(true);
+        }
+    } else if (ContractType::NYM == static_cast<ContractType>(msgIn.enum_)) {
+        auto contract = server_.API().Wallet().Nym(contractID);
+
+        if (contract) {
+            serialized = proto::ProtoAsData(contract->asPublicNym());
+            reply.SetPayload(serialized);
+            reply.SetBool(true);
+        }
+    } else if (ContractType::SERVER == static_cast<ContractType>(msgIn.enum_)) {
+        auto contract = server_.API().Wallet().Server(contractID);
+
+        if (contract) {
+            serialized = proto::ProtoAsData(contract->PublicContract());
+            reply.SetPayload(serialized);
+            reply.SetBool(true);
+        }
+    } else if (ContractType::UNIT == static_cast<ContractType>(msgIn.enum_)) {
+        auto contract = server_.API().Wallet().UnitDefinition(contractID);
+
+        if (contract) {
+            serialized = proto::ProtoAsData(contract->PublicContract());
+            reply.SetPayload(serialized);
+            reply.SetBool(true);
+        }
+    } else {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid type: ")(msgIn.enum_)
+            .Flush();
+        reply.SetSuccess(false);
+        reply.SetBool(false);
     }
 
     return true;
@@ -990,11 +1033,13 @@ bool UserCommandProcessor::cmd_get_mint(ReplyMessage& reply) const
 
     OT_ENFORCE_PERMISSION_MSG(ServerSettings::__cmd_get_mint);
 
+    reply.SetSuccess(true);
+    reply.SetBool(false);
     const auto& unitID = msgIn.m_strInstrumentDefinitionID;
     auto mint = manager_.GetPublicMint(Identifier::Factory(unitID));
 
     if (mint) {
-        reply.SetSuccess(true);
+        reply.SetBool(true);
         reply.SetPayload(String::Factory(*mint));
     }
 
@@ -1037,28 +1082,20 @@ bool UserCommandProcessor::cmd_get_nymbox(ReplyMessage& reply) const
     const auto& nymID = context.RemoteNym().ID();
     const auto& serverID = context.Server();
     const auto& serverNym = *context.Nym();
-    const auto originalNymboxHash = context.LocalNymboxHash();
     auto newNymboxHash = Identifier::Factory();
-    bool bSavedNymbox{false};
     auto nymbox = load_nymbox(nymID, serverID, serverNym, false);
 
     if (false == bool(nymbox)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load nymbox.").Flush();
-        reply.SetNymboxHash(originalNymboxHash);
+        reply.SetNymboxHash(context.LocalNymboxHash());
 
         return false;
     }
 
+    nymbox->CalculateNymboxHash(newNymboxHash);
+    context.SetLocalNymboxHash(newNymboxHash);
     reply.SetSuccess(true);
     reply.SetPayload(String::Factory(*nymbox));
-
-    if (bSavedNymbox) {
-        context.SetLocalNymboxHash(newNymboxHash);
-    } else {
-        nymbox->CalculateNymboxHash(newNymboxHash);
-        context.SetLocalNymboxHash(newNymboxHash);
-    }
-
     reply.SetNymboxHash(newNymboxHash);
 
     return true;
@@ -1448,7 +1485,7 @@ bool UserCommandProcessor::cmd_notarize_transaction(ReplyMessage& reply) const
                 .Flush();
         } else {
             if (success) {
-                LogOutput(OT_METHOD)(__FUNCTION__)(
+                LogDetail(OT_METHOD)(__FUNCTION__)(
                     ": Success processing transaction ")(inputNumber)(
                     " for nym ")(nymID)(".")
                     .Flush();
@@ -1531,7 +1568,7 @@ bool UserCommandProcessor::cmd_process_inbox(ReplyMessage& reply) const
 
     if (false == context.VerifyIssuedNumber(inputNumber)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Transaction number ")(
-            inputNumber)(" is not issued to ")(nymID)(".")
+            inputNumber)(" is not issued to ")(nymID)
             .Flush();
 
         return false;
@@ -1555,9 +1592,13 @@ bool UserCommandProcessor::cmd_process_inbox(ReplyMessage& reply) const
     // that number and must continue signing for it. All this means here is that
     // the user no longer has the number on his AVAILABLE list. Removal from
     // issued list happens separately.)
-    if (false == context.ConsumeAvailable(inputNumber)) {
+    if (context.ConsumeAvailable(inputNumber)) {
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Consumed available number ")(
+            inputNumber)
+            .Flush();
+    } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Error removing available number ")(inputNumber)(".")
+            ": Error removing available number ")(inputNumber)
             .Flush();
 
         return false;
@@ -1590,23 +1631,27 @@ bool UserCommandProcessor::cmd_process_inbox(ReplyMessage& reply) const
         transactionSuccess);
     const auto consumed = context.ConsumeIssued(inputNumber);
 
-    if (false == consumed) {
+    if (consumed) {
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Consumed issued number ")(
+            inputNumber)
+            .Flush();
+    } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Error removing issued number ")(
-            inputNumber)(".")
+            inputNumber)
             .Flush();
 
         OT_FAIL;
     }
 
     if (transactionSuccess) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
+        LogDetail(OT_METHOD)(__FUNCTION__)(
             ": Success processing process inbox ")(inputNumber)(" for nym ")(
-            nymID)(".")
+            nymID)
             .Flush();
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Failure processing process inbox ")(inputNumber)(" for nym ")(
-            nymID)(".")
+            nymID)
             .Flush();
     }
 
@@ -1655,7 +1700,7 @@ bool UserCommandProcessor::cmd_process_nymbox(ReplyMessage& reply) const
     // m_bSuccess = false, and no reply ledger
     FinalizeResponse response(manager_, serverNym, reply, *responseLedger);
     reply.SetSuccess(true);
-    reply.DropToNymbox(true);
+    bool nymboxUpdated{false};
     // Returning after this point will result in the reply message
     // m_bSuccess = true, and a signed reply ledger containing at least one
     // transaction
@@ -1680,13 +1725,12 @@ bool UserCommandProcessor::cmd_process_nymbox(ReplyMessage& reply) const
                         originType::not_applicable,
                         transaction->GetTransactionNum())
                     .release()));
-
         bool success{false};
-        server_.GetNotary().NotarizeProcessNymbox(
+        nymboxUpdated = server_.GetNotary().NotarizeProcessNymbox(
             context, *transaction, *responseTrans, success);
 
         if (success) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
+            LogDetail(OT_METHOD)(__FUNCTION__)(
                 ": Success processing process nymbox ")(inputNumber)(
                 " for nym ")(nymID)(".")
                 .Flush();
@@ -1702,6 +1746,8 @@ bool UserCommandProcessor::cmd_process_nymbox(ReplyMessage& reply) const
             "Transaction number and response number should "
             "always be the same. (But this time, they weren't.)");
     }
+
+    reply.DropToNymbox(nymboxUpdated);
 
     return true;
 }
@@ -2063,14 +2109,14 @@ bool UserCommandProcessor::cmd_register_nym(ReplyMessage& reply) const
         return false;
     }
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(
+    LogDetail(OT_METHOD)(__FUNCTION__)(
         ": Success saving new user account verification file.")
         .Flush();
 
     context.InitializeNymbox();
     context.SetRemoteNymboxHash(context.LocalNymboxHash());
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": Success registering Nym credentials.")
+    LogDetail(OT_METHOD)(__FUNCTION__)(": Success registering Nym credentials.")
         .Flush();
     auto strNymContents = String::Factory();
     // This will save the nymfile.
@@ -2113,27 +2159,30 @@ bool UserCommandProcessor::cmd_request_admin(ReplyMessage& reply) const
     const bool correctPassword = (providedPassword == password);
     const bool returningAdmin = (candidate == overrideNym);
     const bool duplicateRequest = (!noAdminYet && returningAdmin);
+    reply.SetSuccess(true);
+    reply.SetBool(false);
 
     if (false == correctPassword) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect password.").Flush();
 
-        return false;
+        return true;
     }
 
     if (readyForAdmin) {
-        reply.SetSuccess(server_.API().Config().Set_str(
+        const auto set = server_.API().Config().Set_str(
             String::Factory("permissions"),
             String::Factory("override_nym_id"),
             requestingNym,
-            notUsed));
+            notUsed);
 
-        if (reply.Success()) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": override nym set.").Flush();
+        if (set) {
+            LogNormal("    Override nym set to ")(requestingNym).Flush();
             server_.API().Config().Save();
+            reply.SetBool(true);
         }
     } else {
         if (duplicateRequest) {
-            reply.SetSuccess(true);
+            reply.SetBool(true);
         } else {
             LogOutput(OT_METHOD)(__FUNCTION__)(
                 ": Admin password empty or admin nym "
@@ -2696,10 +2745,14 @@ bool UserCommandProcessor::ProcessUserCommand(
         type,
         msgOut);
 
-    if (false == reply.Init()) { return false; }
+    if (false == reply.Init()) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to instantiate reply")
+            .Flush();
 
-    LogOutput(OT_METHOD)(__FUNCTION__)(": ==> Received a ")(command)(
-        " message. Nym: ")(msgIn.m_strNymID)(".")
+        return false;
+    }
+
+    LogNormal("*** Received a ")(command)(" message. Nym: ")(msgIn.m_strNymID)
         .Flush();
 
     switch (type) {
@@ -2713,7 +2766,11 @@ bool UserCommandProcessor::ProcessUserCommand(
         }
     }
 
-    if (false == reply.LoadContext()) { return false; }
+    if (false == reply.LoadContext()) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load context").Flush();
+
+        return false;
+    }
 
     if (false == check_client_nym(reply)) { return false; }
 

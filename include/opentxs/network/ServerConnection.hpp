@@ -20,6 +20,11 @@ namespace network
 class ServerConnection
 {
 public:
+    enum class Push : bool {
+        Enable = true,
+        Disable = false,
+    };
+
     EXPORT static OTServerConnection Factory(
         const api::Core& api,
         const api::network::ZMQ& zmq,
@@ -31,7 +36,8 @@ public:
     EXPORT virtual bool EnableProxy() = 0;
     EXPORT virtual NetworkReplyMessage Send(
         const ServerContext& context,
-        const Message& message) = 0;
+        const Message& message,
+        const Push push = Push::Enable) = 0;
     EXPORT virtual bool Status() const = 0;
 
     virtual ~ServerConnection() = default;

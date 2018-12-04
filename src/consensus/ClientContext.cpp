@@ -280,7 +280,13 @@ bool ClientContext::VerifyIssuedNumber(
 {
     const bool excluded = (1 == exclude.count(number));
 
-    if (excluded) { return false; }
+    if (excluded) {
+        LogVerbose(OT_METHOD)(__FUNCTION__)(": Transaction number ")(number)(
+            " appears on the list of numbers which are being removed")
+            .Flush();
+
+        return false;
+    }
 
     return VerifyIssuedNumber(number);
 }

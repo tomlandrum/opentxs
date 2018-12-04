@@ -10,7 +10,10 @@
 #include "opentxs/api/client/Manager.hpp"
 #include "opentxs/api/network/ZMQ.hpp"
 #include "opentxs/api/Core.hpp"
+#include "opentxs/api/Endpoints.hpp"
 #include "opentxs/consensus/ServerContext.hpp"
+#include "opentxs/network/zeromq/Context.hpp"
+#include "opentxs/network/zeromq/PublishSocket.hpp"
 
 #include "api/Wallet.hpp"
 
@@ -31,7 +34,13 @@ namespace opentxs::api::client::implementation
 Wallet::Wallet(const api::client::Manager& client)
     : ot_super(client)
     , client_(client)
+    , request_sent_(client.ZeroMQ().PublishSocket())
+    , reply_received_(client.ZeroMQ().PublishSocket())
 {
+    auto bound = request_sent_->Start(api_.Endpoints().ServerRequestSent());
+    bound &= reply_received_->Start(api_.Endpoints().ServerReplyReceived());
+
+    OT_ASSERT(bound);
 }
 
 std::shared_ptr<const opentxs::Context> Wallet::Context(
@@ -53,7 +62,13 @@ void Wallet::instantiate_server_context(
     const auto& server = serialized.servercontext().serverid();
     auto& connection = zmq.Server(server);
     output.reset(opentxs::Factory::ServerContext(
-        api_, serialized, localNym, remoteNym, connection));
+        client_,
+        request_sent_,
+        reply_received_,
+        serialized,
+        localNym,
+        remoteNym,
+        connection));
 }
 
 Editor<opentxs::Context> Wallet::mutable_Context(
@@ -106,7 +121,13 @@ Editor<opentxs::ServerContext> Wallet::mutable_ServerContext(
         auto& zmq = client_.ZMQ();
         auto& connection = zmq.Server(serverID->str());
         entry.reset(opentxs::Factory::ServerContext(
-            api_, localNym, remoteNym, serverID, connection));
+            client_,
+            request_sent_,
+            reply_received_,
+            localNym,
+            remoteNym,
+            serverID,
+            connection));
         base = entry;
     }
 

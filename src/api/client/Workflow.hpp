@@ -280,7 +280,7 @@ private:
         const std::string& nymID,
         const std::string& accountID,
         const proto::PaymentWorkflow& workflow) const;
-    void update_activity(
+    bool update_activity(
         const Identifier& localNymID,
         const Identifier& remoteNymID,
         const Identifier& sourceID,

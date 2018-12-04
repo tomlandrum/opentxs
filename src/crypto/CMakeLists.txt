@@ -1,9 +1,11 @@
+#[[
+// clang-format off
+]]#
 # Copyright (c) 2018 The Open-Transactions developers
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#// clang-format off
 add_subdirectory(key)
 add_subdirectory(library)
 
@@ -55,4 +57,6 @@ install(FILES ${cxx-install-headers}
 
 set_property(TARGET ${MODULE_NAME} PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_lib_property(${MODULE_NAME})
-#// clang-format on
+#[[
+// clang-format on
+]]#
