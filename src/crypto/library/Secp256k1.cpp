@@ -21,7 +21,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
 #include "opentxs/crypto/library/Bitcoin.hpp"
 #endif
 #include "opentxs/crypto/key/Secp256k1.hpp"
@@ -250,7 +250,7 @@ bool Secp256k1::ECDH(
     const OTPassword& privateKey,
     OTPassword& secret) const
 {
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
     return dynamic_cast<const Bitcoin&>(ecdsa_).ECDH(
         publicKey, privateKey, secret);
 #elif OT_CRYPTO_USING_TREZOR

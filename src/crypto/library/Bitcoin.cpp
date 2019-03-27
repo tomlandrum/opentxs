@@ -39,7 +39,7 @@
 
 #include "Internal.hpp"
 
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
 #include "opentxs/api/crypto/Crypto.hpp"
 #include "opentxs/api/crypto/Hash.hpp"
 #include "opentxs/api/crypto/Util.hpp"
@@ -247,4 +247,4 @@ bool Bitcoin::Verify(
     return {};
 }
 }  // namespace opentxs::crypto::implementation
-#endif  // OT_CRYPTO_USING_LIBBITCOIN
+#endif  // OT_WITH_BLOCKCHAIN

@@ -38,7 +38,7 @@
 
 #pragma once
 
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
 namespace opentxs::crypto::implementation
 {
 class Bitcoin final : virtual public crypto::Bitcoin,
@@ -129,4 +129,4 @@ private:
     Bitcoin& operator=(Bitcoin&&) = delete;
 };
 }  // namespace opentxs::crypto::implementation
-#endif  // OT_CRYPTO_USING_LIBBITCOIN
+#endif  // OT_WITH_BLOCKCHAIN

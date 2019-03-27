@@ -41,7 +41,7 @@
 
 #include "Internal.hpp"
 
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
 #include "opentxs/crypto/library/EncodingProvider.hpp"
 #include "opentxs/crypto/library/EcdsaProvider.hpp"
@@ -91,5 +91,5 @@ private:
     Bitcoin& operator=(Bitcoin&&) = delete;
 };
 }  // namespace opentxs::crypto
-#endif  // OT_CRYPTO_USING_LIBBITCOIN
+#endif  // OT_WITH_BLOCKCHAIN
 #endif

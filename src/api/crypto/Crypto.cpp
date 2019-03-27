@@ -11,7 +11,7 @@
 #include "opentxs/api/crypto/Encode.hpp"
 #include "opentxs/api/crypto/Hash.hpp"
 #include "opentxs/api/crypto/Symmetric.hpp"
-#if OT_CRYPTO_USING_TREZOR || OT_CRYPTO_USING_LIBBITCOIN
+#if OT_CRYPTO_USING_TREZOR || OT_WITH_BLOCKCHAIN
 #include "opentxs/core/crypto/OTCachedKey.hpp"
 #endif
 #include "opentxs/core/crypto/OTPasswordData.hpp"
@@ -20,7 +20,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
 #include "opentxs/crypto/library/Bitcoin.hpp"
 #endif
 #if OT_CRYPTO_USING_OPENSSL
@@ -72,7 +72,7 @@ Crypto::Crypto(const api::Settings& settings)
     , primary_key_(nullptr)
     , cached_keys_()
     , config_(opentxs::Factory::CryptoConfig(settings))
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
     , bitcoin_(opentxs::Factory::Bitcoin(*this))
 #endif
 #if OT_CRYPTO_USING_TREZOR
@@ -83,7 +83,7 @@ Crypto::Crypto(const api::Settings& settings)
     , ssl_(opentxs::Factory::OpenSSL(*this))
 #endif
     , util_(*sodium_)
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
     , secp256k1_helper_(*bitcoin_)
     , base58_(*bitcoin_)
     , ripemd160_(*bitcoin_)
@@ -99,7 +99,7 @@ Crypto::Crypto(const api::Settings& settings)
 #if OT_CRYPTO_USING_LIBSECP256K1
     , secp256k1_(opentxs::Factory::Secp256k1(*this, util_, secp256k1_helper_))
     , secp256k1_provider_(*secp256k1_)
-#elif OT_CRYPTO_USING_LIBBITCOIN
+#elif OT_WITH_BLOCKCHAIN
     , secp256k1_provider_(*bitcoin_)
 #elif OT_CRYPTO_USING_TREZOR
     , secp256k1_provider_(*trezor_)
@@ -109,14 +109,14 @@ Crypto::Crypto(const api::Settings& settings)
           *encode_,
           *ssl_,
           *sodium_
-#if OT_CRYPTO_USING_TREZOR || OT_CRYPTO_USING_LIBBITCOIN
+#if OT_CRYPTO_USING_TREZOR || OT_WITH_BLOCKCHAIN
           ,
           ripemd160_
 #endif  // OT_CRYPTO_USING_TREZOR
           ))
     , symmetric_(opentxs::Factory::Symmetric(*sodium_))
 {
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
     OT_ASSERT(bitcoin_)
 #endif
 #if OT_CRYPTO_USING_TREZOR
@@ -205,7 +205,7 @@ void Crypto::Cleanup()
 #if OT_CRYPTO_USING_TREZOR
     trezor_.reset();
 #endif
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
     bitcoin_.reset();
 #endif
     config_.reset();

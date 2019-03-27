@@ -25,7 +25,7 @@ public:
     const std::unique_ptr<ot::crypto::Trezor> trezor_{
         ot::Factory::Trezor(crypto_)};
 #endif
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
     const std::unique_ptr<ot::crypto::Bitcoin> bitcoin_{
         ot::Factory::Bitcoin(crypto_)};
 #endif
@@ -156,7 +156,7 @@ TEST_F(Test_Bitcoin_Providers, Trezor)
 }
 #endif  // OT_CRYPTO_USING_TREZOR
 
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
 TEST_F(Test_Bitcoin_Providers, Libbitcoin)
 {
     EXPECT_TRUE(test_base58_encode(*bitcoin_));
@@ -169,5 +169,5 @@ TEST_F(Test_Bitcoin_Providers, Libbitcoin)
     EXPECT_TRUE(test_bip39_words(*bitcoin_));
     EXPECT_TRUE(test_bip39_seeds(*bitcoin_));
 }
-#endif  // OT_CRYPTO_USING_LIBBITCOIN
+#endif  // OT_WITH_BLOCKCHAIN
 }  // namespace

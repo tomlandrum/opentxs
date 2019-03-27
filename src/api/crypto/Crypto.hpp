@@ -75,9 +75,9 @@ private:
     mutable std::unique_ptr<OTCachedKey> primary_key_;
     mutable std::map<OTIdentifier, std::unique_ptr<OTCachedKey>> cached_keys_;
     std::unique_ptr<api::crypto::Config> config_;
-#if OT_CRYPTO_USING_LIBBITCOIN
+#if OT_WITH_BLOCKCHAIN
     std::unique_ptr<opentxs::crypto::Bitcoin> bitcoin_;
-#endif  // OT_CRYPTO_USING_LIBBITCOIN
+#endif  // OT_WITH_BLOCKCHAIN
 #if OT_CRYPTO_USING_TREZOR
     std::unique_ptr<opentxs::crypto::Trezor> trezor_;
 #endif  // OT_CRYPTO_USING_TREZOR

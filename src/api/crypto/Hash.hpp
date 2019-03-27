@@ -44,7 +44,7 @@ private:
     const api::crypto::Encode& encode_;
     const opentxs::crypto::HashingProvider& ssl_;
     const opentxs::crypto::HashingProvider& sodium_;
-#if OT_CRYPTO_USING_TREZOR || OT_CRYPTO_USING_LIBBITCOIN
+#if OT_CRYPTO_USING_TREZOR || OT_WITH_BLOCKCHAIN
     const opentxs::crypto::Ripemd160& bitcoin_;
 #endif
 
@@ -60,7 +60,7 @@ private:
         const api::crypto::Encode& encode,
         const opentxs::crypto::HashingProvider& ssl,
         const opentxs::crypto::HashingProvider& sodium
-#if OT_CRYPTO_USING_TREZOR || OT_CRYPTO_USING_LIBBITCOIN
+#if OT_CRYPTO_USING_TREZOR || OT_WITH_BLOCKCHAIN
         ,
         const opentxs::crypto::Ripemd160& bitcoin
 #endif

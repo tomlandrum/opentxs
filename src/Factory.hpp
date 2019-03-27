@@ -235,7 +235,7 @@ public:
         const api::crypto::Encode& encode,
         const crypto::HashingProvider& ssl,
         const crypto::HashingProvider& sodium
-#if OT_CRYPTO_USING_TREZOR || OT_CRYPTO_USING_LIBBITCOIN
+#if OT_CRYPTO_USING_TREZOR || OT_WITH_BLOCKCHAIN
         ,
         const crypto::Ripemd160& bitcoin
 #endif
