@@ -388,6 +388,22 @@ using ProfileSubsectionSortKey = int;
 }  // namespace implementation
 }  // namespace ui
 
+namespace blockchain 
+{
+namespace internal
+{
+struct BalanceTree;
+}  // namespace internal
+namespace implementation
+{
+class BalanceList;
+class BalanceTree;
+class HDChain;
+class Imported;
+class PaymentCodeChain;
+}  // namespace implementation
+}  // namespace blockchain
+
 class DhtConfig;
 #if OT_CRYPTO_USING_LIBSECP256K1
 class Libsecp256k1;

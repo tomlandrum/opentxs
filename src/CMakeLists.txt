@@ -51,6 +51,10 @@ else()
   set(blind "")
 endif()
 
+if(BLOCKCHAIN_EXPORT)
+  add_subdirectory(blockchain)
+endif()
+
 if(OT_BUNDLED_OPENTXS_PROTO)
   set(bundled-opentxs-proto
     $<TARGET_OBJECTS:opentxs-proto-objects>

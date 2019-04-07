@@ -106,6 +106,16 @@ public:
         const ui::implementation::CustomData& custom,
         const identifier::Nym& nymID,
         const Identifier& accountID);
+#if OT_WITH_BLOCKCHAIN
+    static blockchain::implementation::BalanceList* BalanceList(
+        const api::client::Manager& client,
+        const proto::ContactItemType type);
+    static blockchain::implementation::BalanceTree* BalanceTree(
+        const api::client::Blockchain& blockchain,
+        const identifier::Nym& nymid,
+        const proto::ContactItemType type,
+        const std::set<OTIdentifier>& accountids);
+#endif
     static crypto::Bitcoin* Bitcoin(const api::Crypto& crypto);
 #if OT_CRYPTO_SUPPORTED_KEY_HD
     static api::client::Blockchain* Blockchain(
@@ -240,6 +250,12 @@ public:
         const crypto::Ripemd160& bitcoin
 #endif
     );
+#if OT_WITH_BLOCKCHAIN
+    static blockchain::implementation::HDChain* HDChain(
+        const api::client::Blockchain& blockchain,
+        const blockchain::implementation::BalanceTree& parent,
+		const Identifier& accountid);
+#endif
 #if OT_CRYPTO_WITH_BIP39
     static api::HDSeed* HDSeed(
         const api::crypto::Symmetric& symmetric,
