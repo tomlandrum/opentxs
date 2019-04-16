@@ -5,7 +5,8 @@
 
 #include "stdafx.hpp"
 
-#include "opentxs/core/Identifier.hpp"
+#include "opentxs/api/client/Blockchain.hpp"
+#include "opentxs/core/identifier/Nym.hpp"
 
 #include "BalanceNode.hpp"
 
@@ -14,10 +15,10 @@ namespace opentxs::blockchain::implementation
 BalanceNode::BalanceNode(
     const api::client::Blockchain& blockchain,
     const BalanceTree& parent,
-	const Identifier& accountid)
+    const Identifier& accountid)
     : blockchain_(blockchain)
     , parent_(parent)
-	, accountid_(accountid)
+    , accountid_(accountid)
 {
 }
 
@@ -26,22 +27,22 @@ bool BalanceNode::AssociateIncomingTransaction(
     const Subchain chain,
     const HDIndex index) const
 {
-	// TODO
+    // TODO
     return false;
 }
 
 Data BalanceNode::GetLastBlockHash() const
 {
-    // TODO: return blockchain_.GetLastBlockHash();
-    return {};
+    return blockchain_.GetLastBlockHash(
+        identifier::Nym::Factory(parent_.NymID()), accountid_);
 }
 
 const BalanceTree& BalanceNode::Parent() const { return parent_; }
 
 bool BalanceNode::SetLastBlockHash(const Data& hash) const
 {
-    // TODO: return blockchain_.SetLastBlockHash(hash);
-    return false;
+    return blockchain_.SetLastBlockHash(
+        identifier::Nym::Factory(parent_.NymID()), accountid_, hash);
 }
 
 }  // namespace opentxs::blockchain::implementation

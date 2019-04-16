@@ -29,16 +29,16 @@ public:
     virtual ~BalanceNode() = default;
 
 protected:
+    const api::client::Blockchain& blockchain_;
+    const blockchain::BalanceTree& parent_;
+    OTIdentifier accountid_;
+
     BalanceNode(
         const api::client::Blockchain&,
-        const BalanceTree&,
+        const blockchain::BalanceTree&,
         const Identifier&);
 
 private:
-    const api::client::Blockchain& blockchain_;
-    const BalanceTree& parent_;
-    OTIdentifier accountid_;
-
     BalanceNode(const BalanceNode&) = delete;
     BalanceNode(BalanceNode&&) = delete;
     BalanceNode& operator=(const BalanceNode&) = delete;

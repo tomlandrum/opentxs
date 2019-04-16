@@ -107,10 +107,10 @@ public:
         const identifier::Nym& nymID,
         const Identifier& accountID);
 #if OT_WITH_BLOCKCHAIN
-    static blockchain::implementation::BalanceList* BalanceList(
+    static blockchain::BalanceList* BalanceList(
         const api::client::Manager& client,
         const proto::ContactItemType type);
-    static blockchain::implementation::BalanceTree* BalanceTree(
+    static blockchain::BalanceTree* BalanceTree(
         const api::client::Blockchain& blockchain,
         const identifier::Nym& nymid,
         const proto::ContactItemType type,
@@ -251,9 +251,9 @@ public:
 #endif
     );
 #if OT_WITH_BLOCKCHAIN
-    static blockchain::implementation::HDChain* HDChain(
+    static blockchain::HDChain* HDChain(
         const api::client::Blockchain& blockchain,
-        const blockchain::implementation::BalanceTree& parent,
+        const blockchain::BalanceTree& parent,
 		const Identifier& accountid);
 #endif
 #if OT_CRYPTO_WITH_BIP39

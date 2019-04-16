@@ -28,6 +28,9 @@ public:
         const std::uint32_t index,
         const Identifier& contactID,
         const BIP44Chain chain = EXTERNAL_CHAIN) const override;
+    blockchain::Data GetLastBlockHash(
+        const identifier::Nym& nymID,
+        const Identifier& accountID) const override;
     std::unique_ptr<proto::Bip44Address> LoadAddress(
         const identifier::Nym& nymID,
         const Identifier& accountID,
@@ -37,6 +40,10 @@ public:
         const identifier::Nym& nymID,
         const BlockchainAccountType standard,
         const proto::ContactItemType type) const override;
+    bool SetLastBlockHash(
+        const identifier::Nym& nymID,
+        const Identifier& accountID,
+        const blockchain::Data& hash) const override;
     bool StoreIncoming(
         const identifier::Nym& nymID,
         const Identifier& accountID,

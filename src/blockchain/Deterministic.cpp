@@ -13,7 +13,7 @@ namespace opentxs::blockchain::implementation
 {
 Deterministic::Deterministic(
     const api::client::Blockchain& blockchain,
-    const BalanceTree& parent,
+    const blockchain::BalanceTree& parent,
 	const Identifier& accountid)
     : implementation::BalanceNode(blockchain, parent, accountid)
 	, callback_()
@@ -30,8 +30,8 @@ bool Deterministic::SetIndexUpdatedCallback(
     IndexUpdatedCallback&& callback) const
 {
     callback_ = callback;
-    // TODO
-    return (callback_) ? true : false;
+
+    return bool(callback_);
 }
 
 Data Deterministic::Xpriv() const { return {}; }

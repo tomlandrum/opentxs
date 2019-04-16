@@ -12,6 +12,10 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 
+#if OT_WITH_BLOCKCHAIN
+#include <opentxs/blockchain/Interface.hpp>
+#endif
+
 #include <cstdint>
 #include <memory>
 
@@ -41,6 +45,11 @@ public:
         const std::uint32_t index,
         const Identifier& contactID,
         const BIP44Chain chain = EXTERNAL_CHAIN) const = 0;
+#if OT_WITH_BLOCKCHAIN
+    virtual blockchain::Data GetLastBlockHash(
+        const identifier::Nym& nymID,
+        const Identifier& accountID) const = 0;
+#endif
     virtual std::unique_ptr<proto::Bip44Address> LoadAddress(
         const identifier::Nym& nymID,
         const Identifier& accountID,
@@ -50,6 +59,12 @@ public:
         const identifier::Nym& nymID,
         const BlockchainAccountType standard,
         const proto::ContactItemType type) const = 0;
+#if OT_WITH_BLOCKCHAIN
+    virtual bool SetLastBlockHash(
+        const identifier::Nym& nymID,
+        const Identifier& accountID,
+        const blockchain::Data& hash) const = 0;
+#endif
     virtual bool StoreIncoming(
         const identifier::Nym& nymID,
         const Identifier& accountID,

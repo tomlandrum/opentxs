@@ -35,6 +35,7 @@ public:
     const blockchain::HDChain& HDChain(const std::size_t index) const override;
     const blockchain::Imported& Imported(
         const std::size_t index) const override;
+    const std::string& NymID() const override;
     const blockchain::PaymentCodeChain& PaymentCodeChain(
         const std::size_t index) const override;
 
@@ -57,7 +58,7 @@ protected:
 
 private:
     const api::client::Blockchain& blockchain_;
-    const OTNymID nymid_;
+    const std::string nymid_;
     const proto::ContactItemType type_;
     std::vector<OTIdentifier> hdchain_ids_{};
     std::vector<OTIdentifier> imported_ids_{};

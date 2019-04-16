@@ -47,7 +47,7 @@
 
 #define MAX_INDEX 2147483648
 #define BLOCKCHAIN_VERSION 1
-#define ACCOUNT_VERSION 1
+#define ACCOUNT_VERSION 2
 #define PATH_VERSION 1
 #define COMPRESSED_PUBKEY_SIZE 33
 #define BITCOIN_PUBKEY_HASH 0x0
@@ -460,6 +460,30 @@ proto::Bip44Address& Blockchain::find_address(
     OT_FAIL;
 }
 
+blockchain::Data Blockchain::GetLastBlockHash(
+    const identifier::Nym& nymID,
+    const Identifier& accountID) const
+{
+    LOCK_ACCOUNT()
+
+    const std::string sNymID = nymID.str();
+    const std::string sAccountID = accountID.str();
+    auto account = load_account(accountLock, sNymID, sAccountID);
+
+    if (false == bool(account)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Account does not exist.").Flush();
+
+        return {};
+    }
+
+    auto data = blockchain::Data();
+    for (const auto it : account->lastposition()) {
+        data.emplace_back(std::byte{static_cast<unsigned char>(it)});
+    }
+
+    return data;
+}
+
 void Blockchain::init_path(
     const std::string& root,
     const proto::ContactItemType chain,
@@ -626,6 +650,28 @@ OTIdentifier Blockchain::NewAccount(
     LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to save account.").Flush();
 
     return Identifier::Factory();
+}
+
+bool Blockchain::SetLastBlockHash(
+    const identifier::Nym& nymID,
+    const Identifier& accountID,
+    const blockchain::Data& hash) const
+{
+    LOCK_ACCOUNT()
+
+    const std::string sNymID = nymID.str();
+    const std::string sAccountID = accountID.str();
+    auto account = load_account(accountLock, sNymID, sAccountID);
+
+    if (false == bool(account)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Account does not exist.").Flush();
+
+        return false;
+    }
+    
+    account->set_lastposition(hash.data(), hash.size());
+
+    return true;
 }
 
 bool Blockchain::StoreIncoming(

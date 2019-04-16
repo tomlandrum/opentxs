@@ -28,7 +28,7 @@ protected:
 
     Deterministic(
         const api::client::Blockchain& blockchain,
-        const BalanceTree& parent,
+        const blockchain::BalanceTree& parent,
         const Identifier& accountid);
 
 private:

@@ -15,7 +15,7 @@
 
 namespace opentxs
 {
-blockchain::implementation::BalanceList* Factory::BalanceList(
+blockchain::BalanceList* Factory::BalanceList(
     const api::client::Manager& client,
     const proto::ContactItemType type)
 {
@@ -34,7 +34,7 @@ BalanceList::BalanceList(
     for (const auto& nymid : nymids) {
 
         const auto& accountids = client.Blockchain().AccountList(nymid, type);
-        std::shared_ptr<BalanceTree> balancetree(
+        std::shared_ptr<blockchain::BalanceTree> balancetree(
             Factory::BalanceTree(client.Blockchain(), nymid, type, accountids));
 
         balances_.emplace(nymid, balancetree);
@@ -45,6 +45,6 @@ bool BalanceList::SetNewAccountCallback(AccountAddedCallback&& callback) const
 {
 	callback_ = callback;
 	
-	return (callback_) ? true : false;
+	return bool(callback_);
 }
 }  // namespace opentxs::blockchain::implementation

@@ -80,6 +80,16 @@ class Token;
 }  // namespace blind
 #endif
 
+namespace blockchain 
+{
+using Data = std::vector<std::byte>;
+class BalanceList;
+class BalanceTree;
+class HDChain;
+class Imported;
+class PaymentCodeChain;
+}  // namespace blockchain
+
 namespace client
 {
 class ServerAction;

@@ -23,7 +23,7 @@
 
 #include <functional>
 
-#define CURRENT_VERSION 8
+#define CURRENT_VERSION 9
 #define BLOCKCHAIN_INDEX_VERSION 1
 #define STORAGE_PURSE_VERSION 1
 

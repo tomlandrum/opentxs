@@ -394,14 +394,6 @@ namespace internal
 {
 struct BalanceTree;
 }  // namespace internal
-namespace implementation
-{
-class BalanceList;
-class BalanceTree;
-class HDChain;
-class Imported;
-class PaymentCodeChain;
-}  // namespace implementation
 }  // namespace blockchain
 
 class DhtConfig;

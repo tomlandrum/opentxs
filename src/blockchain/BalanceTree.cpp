@@ -16,7 +16,7 @@
 
 namespace opentxs
 {
-blockchain::implementation::BalanceTree* Factory::BalanceTree(
+blockchain::BalanceTree* Factory::BalanceTree(
     const api::client::Blockchain& blockchain,
     const identifier::Nym& nymid,
     const proto::ContactItemType type,
@@ -35,7 +35,7 @@ BalanceTree::BalanceTree(
     const proto::ContactItemType type,
     const std::set<OTIdentifier>& accountids)
     : blockchain_(blockchain)
-    , nymid_(nymid)
+    , nymid_(nymid.str())
     , type_(type)
     , hdchain_ids_{}
     , imported_ids_{}
@@ -122,9 +122,14 @@ const blockchain::Imported& BalanceTree::Imported(const std::size_t index) const
     auto imported = imported_.at(accountid);
     if (nullptr == imported.get()) {
         // TODO
-        //imported.reset(Factory::Imported(blockchain_, *this, accountid));
+        // imported.reset(Factory::Imported(blockchain_, *this, accountid));
     }
     return *imported;
+}
+
+const std::string& BalanceTree::NymID() const
+{
+    return nymid_;
 }
 
 const blockchain::PaymentCodeChain& BalanceTree::PaymentCodeChain(
@@ -138,7 +143,8 @@ const blockchain::PaymentCodeChain& BalanceTree::PaymentCodeChain(
     auto paymentcode = paymentcodes_.at(accountid);
     if (nullptr == paymentcode.get()) {
         // TODO
-        //paymentcode.reset(Factory::PaymentCodeChain(blockchain_, *this, accountid));
+        // paymentcode.reset(Factory::PaymentCodeChain(blockchain_, *this,
+        // accountid));
     }
     return *paymentcode;
 }
@@ -147,7 +153,7 @@ bool BalanceTree::SetNewSubaccountTypeCallback(
     SubaccountTypeAddedCallback&& callback) const
 {
     callback_ = callback;
-    // TODO
-    return (callback_) ? true : false;
+
+    return bool(callback_);
 }
 }  // namespace opentxs::blockchain::implementation
