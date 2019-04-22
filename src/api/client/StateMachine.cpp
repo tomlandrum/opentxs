@@ -176,19 +176,24 @@ StateMachine::DepositPayment::DepositPayment(
 
 bool StateMachine::DepositPayment::deposit()
 {
+    LogOutput("1").Flush();
     bool error{false};
     bool repeat{true};
     auto& [unitID, accountID, pPayment] = payment_;
 
     if (false == bool(pPayment)) {
+        LogOutput("2").Flush();
         error = true;
         repeat = false;
 
         goto exit;
     }
 
+    LogOutput("3").Flush();
     switch (state_) {
         case Depositability::UNKNOWN: {
+            LogOutput("4").Flush();
+
             if (accountID->empty()) {
                 state_ = Depositability::NO_ACCOUNT;
             } else {
@@ -196,6 +201,7 @@ bool StateMachine::DepositPayment::deposit()
             }
         } break;
         case Depositability::NO_ACCOUNT: {
+            LogOutput("5").Flush();
             auto [taskid, future] =
                 parent_.StartTask<RegisterAccountTask>({"", unitID});
 
@@ -238,6 +244,7 @@ bool StateMachine::DepositPayment::deposit()
             [[fallthrough]];
         }
         case Depositability::READY: {
+            LogOutput("6").Flush();
             auto [taskid, future] =
                 parent_.StartTask<DepositPaymentTask>(task_id_, payment_);
 
@@ -267,6 +274,7 @@ bool StateMachine::DepositPayment::deposit()
         case Depositability::WRONG_RECIPIENT:
         case Depositability::NOT_REGISTERED:
         default: {
+            LogOutput("7").Flush();
             error = true;
             repeat = false;
 
@@ -275,6 +283,7 @@ bool StateMachine::DepositPayment::deposit()
     }
 
 exit:
+    LogOutput("8").Flush();
     parent_.finish_task(task_id_, !error, std::move(result_));
 
     return repeat;
@@ -372,7 +381,12 @@ StateMachine::PaymentTasks::BackgroundTask StateMachine::PaymentTasks::
     const auto id = get_payment_id(*pPayment);
     Lock lock(decision_lock_);
 
-    if (0 < tasks_.count(id)) { return error_task(); }
+    if (0 < tasks_.count(id)) {
+        // FIXME
+        LogOutput("Payment ")(id)(" already queued").Flush();
+
+        return error_task();
+    }
 
     const auto taskID = parent_.next_task_id();
     tasks_.emplace(
