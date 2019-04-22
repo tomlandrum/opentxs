@@ -58,9 +58,9 @@ struct less<opentxs::OT_GetTransactionNumbersType> {
 namespace opentxs::api::client
 {
 using CheckNymTask = OTNymID;
-/** DepositPaymentTask: accountID, payment */
+/** DepositPaymentTask: unit id, accountID, payment */
 using DepositPaymentTask =
-    std::pair<OTIdentifier, std::shared_ptr<const OTPayment>>;
+    std::tuple<OTUnitID, OTIdentifier, std::shared_ptr<const OTPayment>>;
 using DownloadContractTask = OTServerID;
 #if OT_CASH
 using DownloadMintTask = std::pair<OTUnitID, int>;
@@ -111,7 +111,9 @@ template <>
 struct make_blank<api::client::DepositPaymentTask> {
     static api::client::DepositPaymentTask value()
     {
-        return {make_blank<OTIdentifier>::value(), nullptr};
+        return {make_blank<OTUnitID>::value(),
+                make_blank<OTIdentifier>::value(),
+                nullptr};
     }
 };
 #if OT_CASH
@@ -348,6 +350,7 @@ struct OTX : virtual public api::client::OTX {
         const identifier::Nym& recipient,
         const Identifier& accountIDHint,
         identifier::Server& depositServer,
+        identifier::UnitDefinition& unitID,
         Identifier& depositAccount) const = 0;
     virtual bool finish_task(
         const TaskID taskID,

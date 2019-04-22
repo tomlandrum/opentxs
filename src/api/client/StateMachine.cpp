@@ -14,6 +14,7 @@
 #include "opentxs/core/crypto/OTPassword.hpp"
 #include "opentxs/core/Cheque.hpp"
 #include "opentxs/core/Flag.hpp"
+#include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/ext/OTPayment.hpp"
 
@@ -109,6 +110,7 @@ StateMachine::StateMachine(
     const UniqueQueue<OTUnitID>& missingUnitDefinitions)
     : opentxs::internal::StateMachine(
           std::bind(&implementation::StateMachine::state_machine, this))
+    , payment_tasks_(*this)
     , client_(client)
     , parent_(parent)
     , next_task_id_(nextTaskID)
@@ -157,6 +159,230 @@ StateMachine::StateMachine(
     , unknown_units_()
 {
     OT_ASSERT(pOp_);
+}
+
+StateMachine::DepositPayment::DepositPayment(
+    client::implementation::StateMachine& parent,
+    const TaskID taskID,
+    const DepositPaymentTask& payment)
+    : StateMachine(std::bind(&DepositPayment::deposit, this))
+    , parent_(parent)
+    , task_id_(taskID)
+    , payment_(payment)
+    , state_(Depositability::UNKNOWN)
+    , result_(parent.error_result())
+{
+}
+
+bool StateMachine::DepositPayment::deposit()
+{
+    bool error{false};
+    bool repeat{true};
+    auto& [unitID, accountID, pPayment] = payment_;
+
+    if (false == bool(pPayment)) {
+        error = true;
+        repeat = false;
+
+        goto exit;
+    }
+
+    switch (state_) {
+        case Depositability::UNKNOWN: {
+            if (accountID->empty()) {
+                state_ = Depositability::NO_ACCOUNT;
+            } else {
+                state_ = Depositability::READY;
+            }
+        } break;
+        case Depositability::NO_ACCOUNT: {
+            auto [taskid, future] =
+                parent_.StartTask<RegisterAccountTask>({"", unitID});
+
+            if (0 == taskid) {
+                error = true;
+                repeat = false;
+
+                goto exit;
+            }
+
+            result_ = future.get();
+            const auto [result, pMessage] = result_;
+
+            if (proto::LASTREPLYSTATUS_MESSAGESUCCESS != result) {
+                error = true;
+                repeat = false;
+
+                goto exit;
+            }
+
+            if (false == bool(pMessage)) {
+                error = true;
+                repeat = false;
+
+                goto exit;
+            }
+
+            const auto& message = *pMessage;
+            accountID->SetString(message.m_strAcctID);
+
+            if (accountID->empty()) {
+                error = true;
+                repeat = false;
+
+                goto exit;
+            } else {
+                state_ = Depositability::READY;
+            }
+
+            [[fallthrough]];
+        }
+        case Depositability::READY: {
+            auto [taskid, future] =
+                parent_.StartTask<DepositPaymentTask>(task_id_, payment_);
+
+            if (0 == taskid) {
+                error = true;
+                repeat = false;
+
+                goto exit;
+            }
+
+            result_ = future.get();
+            const auto [result, pMessage] = result_;
+
+            if (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result) {
+                error = false;
+                repeat = false;
+
+                goto exit;
+            } else {
+                error = true;
+                repeat = false;
+            }
+        } break;
+        case Depositability::ACCOUNT_NOT_SPECIFIED:
+        case Depositability::WRONG_ACCOUNT:
+        case Depositability::INVALID_INSTRUMENT:
+        case Depositability::WRONG_RECIPIENT:
+        case Depositability::NOT_REGISTERED:
+        default: {
+            error = true;
+            repeat = false;
+
+            goto exit;
+        }
+    }
+
+exit:
+    parent_.finish_task(task_id_, !error, std::move(result_));
+
+    return repeat;
+}
+
+StateMachine::DepositPayment::~DepositPayment() { Stop(); }
+
+StateMachine::PaymentTasks::PaymentTasks(
+    client::implementation::StateMachine& parent)
+    : StateMachine(std::bind(&PaymentTasks::cleanup, this))
+    , parent_(parent)
+
+{
+}
+
+bool StateMachine::PaymentTasks::cleanup()
+{
+    std::vector<TaskMap::iterator> finished;
+
+    Lock lock(decision_lock_);
+
+    for (auto i = tasks_.begin(); i != tasks_.end(); ++i) {
+        auto& task = i->second;
+        auto future = task.Wait();
+        auto status = future.wait_for(std::chrono::nanoseconds(10));
+
+        if (std::future_status::ready == status) { finished.emplace_back(i); }
+    }
+
+    lock.unlock();
+
+    for (auto i = finished.begin(); i != finished.end(); ++i) {
+        lock.lock();
+        tasks_.erase(*i);
+        lock.unlock();
+    }
+
+    lock.lock();
+
+    if (0 == tasks_.size()) { return false; }
+
+    return true;
+}
+
+StateMachine::PaymentTasks::BackgroundTask StateMachine::PaymentTasks::
+    error_task()
+{
+    BackgroundTask output{0, Future{}};
+
+    return output;
+}
+
+OTIdentifier StateMachine::PaymentTasks::get_payment_id(
+    const OTPayment& payment) const
+{
+    auto output = Identifier::Factory();
+
+    switch (payment.GetType()) {
+        case OTPayment::CHEQUE: {
+            auto pCheque = parent_.client_.Factory().Cheque();
+
+            OT_ASSERT(pCheque);
+
+            auto& cheque = *pCheque;
+            const auto loaded =
+                cheque.LoadContractFromString(payment.Payment());
+
+            if (false == loaded) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid cheque.").Flush();
+
+                return output;
+            }
+
+            output = Identifier::Factory(cheque);
+
+            return output;
+        } break;
+        default: {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Unknown payment type ")(
+                OTPayment::_GetTypeString(payment.GetType()))
+                .Flush();
+
+            return output;
+        }
+    }
+}
+
+StateMachine::PaymentTasks::BackgroundTask StateMachine::PaymentTasks::
+    PaymentTasks::Queue(const DepositPaymentTask& task)
+{
+    const auto& pPayment = std::get<2>(task);
+
+    if (false == bool(pPayment)) { return error_task(); }
+
+    const auto id = get_payment_id(*pPayment);
+    Lock lock(decision_lock_);
+
+    if (0 < tasks_.count(id)) { return error_task(); }
+
+    const auto taskID = parent_.next_task_id();
+    tasks_.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(id),
+        std::forward_as_tuple(parent_, taskID, task));
+    auto output = parent_.start_task(taskID, true);
+    trigger(lock);
+
+    return std::move(output);
 }
 
 std::future<void> StateMachine::add_task(const Lock& lock)
@@ -355,7 +581,7 @@ bool StateMachine::deposit_cheque(
     const TaskID taskID,
     const DepositPaymentTask& task) const
 {
-    const auto& [accountID, payment] = task;
+    const auto& [unitID, accountID, payment] = task;
 
     OT_ASSERT(false == accountID->empty());
     OT_ASSERT(payment);
@@ -391,40 +617,18 @@ bool StateMachine::deposit_cheque_wrapper(
     UniqueQueue<DepositPaymentTask>& retry) const
 {
     bool output{false};
-    const auto& [accountIDHint, payment] = param;
+    const auto& [unitID, accountIDHint, payment] = param;
 
     OT_ASSERT(payment);
 
     auto depositServer = identifier::Server::Factory();
+    auto depositUnitID = identifier::UnitDefinition::Factory();
     auto depositAccount = Identifier::Factory();
+    output = deposit_cheque(task, param);
 
-    const auto status = can_deposit(
-        *payment, op_.NymID(), accountIDHint, depositServer, depositAccount);
-
-    switch (status) {
-        case Depositability::READY: {
-            auto revised{param};
-            revised.first = depositAccount;
-            output = deposit_cheque(task, revised);
-
-            if (false == output) {
-                retry.Push(task, revised);
-                bump_task(
-                    get_task<RegisterNymTask>().Push(next_task_id(), false));
-            }
-        } break;
-        case Depositability::NOT_REGISTERED:
-        case Depositability::NO_ACCOUNT: {
-            LogDetail(OT_METHOD)(__FUNCTION__)(
-                ": Temporary failure trying to deposit payment")
-                .Flush();
-            retry.Push(task, param);
-        } break;
-        default: {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Permanent failure trying to deposit payment.")
-                .Flush();
-        }
+    if (false == output) {
+        retry.Push(task, param);
+        bump_task(get_task<RegisterNymTask>().Push(next_task_id(), false));
     }
 
     return output;
@@ -1035,11 +1239,18 @@ bool StateMachine::send_transfer(
 template <typename T>
 StateMachine::BackgroundTask StateMachine::StartTask(const T& params) const
 {
+    return StartTask<T>(next_task_id(), params);
+}
+
+template <typename T>
+StateMachine::BackgroundTask StateMachine::StartTask(
+    const TaskID taskID,
+    const T& params) const
+{
     Lock lock(decision_lock_);
 
     if (shutdown().load()) { return BackgroundTask{0, Future{}}; }
 
-    const auto taskID{next_task_id()};
     auto output =
         start_task(taskID, bump_task(get_task<T>().Push(taskID, params)));
     trigger(lock);

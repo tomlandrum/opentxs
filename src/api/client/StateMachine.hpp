@@ -115,10 +115,62 @@ public:
         ~Params() {}
     };
 
+    class DepositPayment final : public opentxs::internal::StateMachine
+    {
+    public:
+        using TaskID = client::implementation::StateMachine::TaskID;
+
+        DepositPayment(
+            client::implementation::StateMachine& parent,
+            const TaskID taskID,
+            const DepositPaymentTask& payment);
+        ~DepositPayment();
+
+    private:
+        client::implementation::StateMachine& parent_;
+        const TaskID task_id_;
+        DepositPaymentTask payment_;
+        Depositability state_;
+        api::client::OTX::Result result_;
+
+        bool deposit();
+
+        DepositPayment() = delete;
+    };
+
+    class PaymentTasks final : public opentxs::internal::StateMachine
+    {
+    public:
+        using BackgroundTask =
+            client::implementation::StateMachine::BackgroundTask;
+
+        BackgroundTask Queue(const DepositPaymentTask& task);
+
+        PaymentTasks(client::implementation::StateMachine& parent);
+        ~PaymentTasks() = default;
+
+    private:
+        using TaskMap = std::map<OTIdentifier, DepositPayment>;
+
+        client::implementation::StateMachine& parent_;
+        TaskMap tasks_;
+
+        static BackgroundTask error_task();
+
+        bool cleanup();
+        OTIdentifier get_payment_id(const OTPayment& payment) const;
+
+        PaymentTasks() = delete;
+    };
+
+    PaymentTasks payment_tasks_;
+
     static Result error_result();
 
     template <typename T>
     BackgroundTask StartTask(const T& params) const;
+    template <typename T>
+    BackgroundTask StartTask(const TaskID taskID, const T& params) const;
 
     void Shutdown() { op_.Shutdown(); }
 
@@ -135,6 +187,9 @@ public:
         const UniqueQueue<OTUnitID>& missingUnitDefinitions);
 
 private:
+    friend DepositPayment;
+    friend PaymentTasks;
+
     enum class TaskDone : int { no, yes, retry };
     enum class State : int { needServerContract, needRegistration, ready };
 
@@ -195,16 +250,6 @@ private:
         return parent_.associate_message_id(messageID, taskID);
     }
     bool bump_task(const bool bump) const;
-    Depositability can_deposit(
-        const OTPayment& payment,
-        const identifier::Nym& recipient,
-        const Identifier& accountIDHint,
-        identifier::Server& depositServer,
-        Identifier& depositAccount) const
-    {
-        return parent_.can_deposit(
-            payment, recipient, accountIDHint, depositServer, depositAccount);
-    }
     bool check_admin(const ServerContext& context) const;
     template <typename T, typename C, typename M, typename U>
     bool check_missing_contract(M& missing, U& unknown, bool skip = true) const;
@@ -223,6 +268,7 @@ private:
         const TaskID taskID,
         const DepositPaymentTask& task,
         UniqueQueue<DepositPaymentTask>& retry) const;
+
 #if OT_CASH
     bool download_mint(const TaskID taskID, const DownloadMintTask& task) const;
 #endif

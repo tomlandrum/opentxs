@@ -573,9 +573,9 @@ Depositability OTX::can_deposit(
     const identifier::Nym& recipient,
     const Identifier& accountIDHint,
     identifier::Server& depositServer,
+    identifier::UnitDefinition& unitID,
     Identifier& depositAccount) const
 {
-    auto unitID = identifier::UnitDefinition::Factory();
     auto nymID = identifier::Nym::Factory();
 
     if (false == extract_payment_data(payment, nymID, depositServer, unitID)) {
@@ -585,13 +585,12 @@ Depositability OTX::can_deposit(
 
     auto output = valid_recipient(payment, nymID, recipient);
 
-    if (Depositability::READY != output) { return output; }
+    if (Depositability::WRONG_RECIPIENT == output) { return output; }
 
     const bool registered = client_.Exec().IsNym_RegisteredAtServer(
         recipient.str(), depositServer.str());
 
     if (false == registered) {
-        schedule_download_nymbox(recipient, depositServer);
         LogDetail(OT_METHOD)(__FUNCTION__)(": Recipient nym ")(recipient)(
             " not registered on server ")(depositServer)(".")
             .Flush();
@@ -625,8 +624,6 @@ Depositability OTX::can_deposit(
                 " needs an account for ")(unitID)(" on server ")(depositServer)(
                 ".")
                 .Flush();
-            schedule_register_account(recipient, depositServer, unitID, "");
-
         } break;
         case Depositability::READY: {
             LogDetail(OT_METHOD)(__FUNCTION__)(": Payment can be deposited.")
@@ -755,10 +752,11 @@ Depositability OTX::CanDeposit(
     const OTPayment& payment) const
 {
     auto serverID = identifier::Server::Factory();
+    auto unitID = identifier::UnitDefinition::Factory();
     auto accountID = Identifier::Factory();
 
     return can_deposit(
-        payment, recipientNymID, accountIDHint, serverID, accountID);
+        payment, recipientNymID, accountIDHint, serverID, unitID, accountID);
 }
 
 Messagability OTX::CanMessage(
@@ -914,9 +912,10 @@ OTX::BackgroundTask OTX::DepositPayment(
     }
 
     auto serverID = identifier::Server::Factory();
+    auto unitID = identifier::UnitDefinition::Factory();
     auto accountID = Identifier::Factory();
     const auto status = can_deposit(
-        *payment, recipientNymID, accountIDHint, serverID, accountID);
+        *payment, recipientNymID, accountIDHint, serverID, unitID, accountID);
 
     try {
         switch (status) {
@@ -926,21 +925,20 @@ OTX::BackgroundTask OTX::DepositPayment(
                 start_introduction_server(recipientNymID);
                 auto& queue = get_operations({recipientNymID, serverID});
 
-                return queue.StartTask<DepositPaymentTask>(
-                    {accountIDHint, payment});
+                return queue.payment_tasks_.Queue(
+                    {unitID, accountIDHint, payment});
             } break;
             default: {
                 LogOutput(OT_METHOD)(__FUNCTION__)(
                     ": Unable to queue payment for download.")
                     .Flush();
+
+                return error_task();
             }
         }
     } catch (...) {
-
         return error_task();
     }
-
-    return error_task();
 }
 
 void OTX::DisableAutoaccept() const { auto_process_inbox_->Off(); }

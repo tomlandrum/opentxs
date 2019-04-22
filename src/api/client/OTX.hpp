@@ -282,6 +282,7 @@ private:
         const identifier::Nym& recipient,
         const Identifier& accountIDHint,
         identifier::Server& depositServer,
+        identifier::UnitDefinition& unitID,
         Identifier& depositAccount) const override;
     Messagability can_message(
         const identifier::Nym& senderNymID,

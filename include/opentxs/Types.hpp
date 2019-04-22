@@ -674,6 +674,7 @@ enum class Depositability : std::int8_t {
     READY = 0,
     NOT_REGISTERED = 1,
     NO_ACCOUNT = 2,
+    UNKNOWN = 127,
 };
 
 enum class BlockchainAccountType : std::uint8_t {

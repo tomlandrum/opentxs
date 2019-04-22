@@ -1999,6 +1999,24 @@ TEST_F(Test_Basic, account_activity_alice)
     EXPECT_TRUE(accountActivityDone.get());
 }
 
+TEST_F(Test_Basic, process_inbox_issuer)
+{
+    auto task = issuer_client_.OTX().ProcessInbox(
+        issuer_nym_id_, server_1_id_, issuer_account_id_);
+    auto& [id, future] = task;
+
+    ASSERT_NE(0, id);
+
+    const auto [status, message] = future.get();
+
+    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    ASSERT_TRUE(message);
+
+    const auto account = issuer_client_.Wallet().Account(issuer_account_id_);
+
+    EXPECT_EQ(-1 * CHEQUE_AMOUNT_1, account.get().GetBalance());
+}
+
 TEST_F(Test_Basic, pay_bob)
 {
     auto aliceActivityThreadDone = set_callback_alice(
