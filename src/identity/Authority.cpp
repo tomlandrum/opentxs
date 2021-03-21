@@ -34,6 +34,7 @@
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
@@ -1058,28 +1059,28 @@ auto Authority::Serialize(const CredentialIndexModeFlag mode) const
 
 auto Authority::Sign(
     const GetPreimage input,
-    const proto::SignatureRole role,
+    const crypto::SignatureRole role,
     proto::Signature& signature,
     const opentxs::PasswordPrompt& reason,
     proto::KeyRole key,
     const proto::HashType hash) const -> bool
 {
     switch (role) {
-        case (proto::SIGROLE_PUBCREDENTIAL): {
+        case (crypto::SignatureRole::PublicCredential): {
             if (master_->hasCapability(NymCapability::SIGN_CHILDCRED)) {
                 return master_->Sign(input, role, signature, reason, key, hash);
             }
 
             break;
         }
-        case (proto::SIGROLE_NYMIDSOURCE): {
+        case (crypto::SignatureRole::NymIDSource): {
             LogOutput(": Credentials to be signed with a nym source can not "
                       "use this method.")
                 .Flush();
 
             return false;
         }
-        case (proto::SIGROLE_PRIVCREDENTIAL): {
+        case (crypto::SignatureRole::PrivateCredential): {
             LogOutput(": Private credential can not use this method.").Flush();
 
             return false;

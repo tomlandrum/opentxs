@@ -130,7 +130,7 @@ public:
     }
     auto Sign(
         const GetPreimage,
-        const proto::SignatureRole,
+        const crypto::SignatureRole,
         proto::Signature&,
         const Identifier&,
         const PasswordPrompt&,

@@ -100,7 +100,7 @@ public:
     }
     auto NewSignature(
         const Identifier& credentialID,
-        const proto::SignatureRole role,
+        const crypto::SignatureRole role,
         const proto::HashType hash) const -> proto::Signature;
     auto Params() const noexcept -> ReadView override { return {}; }
     auto Path() const noexcept -> const std::string override;
@@ -117,7 +117,7 @@ public:
     }
     auto Sign(
         const GetPreimage input,
-        const proto::SignatureRole role,
+        const crypto::SignatureRole role,
         proto::Signature& signature,
         const Identifier& credential,
         const PasswordPrompt& reason,
@@ -238,7 +238,11 @@ protected:
         OTSecret&& newSecretKey) noexcept;
 
 private:
-    static const std::map<proto::SignatureRole, VersionNumber> sig_version_;
+    using SignatureRoleMap =
+        std::map<crypto::SignatureRole, proto::SignatureRole>;
+
+    static const std::map<crypto::SignatureRole, VersionNumber> sig_version_;
+    static const SignatureRoleMap signaturerole_map_;
 
     auto SerializeKeyToData(const proto::AsymmetricKey& rhs) const -> OTData;
 

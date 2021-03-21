@@ -21,10 +21,10 @@
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/otx/Reply.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/OTXPush.pb.h"
 #include "opentxs/protobuf/ServerReply.pb.h"
@@ -224,8 +224,8 @@ auto Reply::update_signature(const Lock& lock, const PasswordPrompt& reason)
     signatures_.clear();
     auto serialized = signature_version(lock);
     auto& signature = *serialized.mutable_signature();
-    success =
-        nym_->Sign(serialized, proto::SIGROLE_SERVERREPLY, signature, reason);
+    success = nym_->Sign(
+        serialized, crypto::SignatureRole::ServerReply, signature, reason);
 
     if (success) {
         signatures_.emplace_front(new proto::Signature(signature));

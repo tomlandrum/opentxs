@@ -22,9 +22,9 @@
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/identifier/Server.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
@@ -193,8 +193,8 @@ auto Request::update_signature(const Lock& lock, const PasswordPrompt& reason)
     signatures_.clear();
     auto serialized = SigVersion(lock);
     auto& signature = *serialized.mutable_signature();
-    success =
-        nym_->Sign(serialized, proto::SIGROLE_PEERREQUEST, signature, reason);
+    success = nym_->Sign(
+        serialized, crypto::SignatureRole::PeerRequest, signature, reason);
 
     if (success) {
         signatures_.emplace_front(new proto::Signature(signature));

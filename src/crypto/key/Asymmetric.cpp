@@ -29,6 +29,7 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/crypto/OTSignatureMetadata.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
@@ -57,19 +58,33 @@ auto Asymmetric::Factory() noexcept -> OTAsymmetricKey
 
 namespace opentxs::crypto::key::implementation
 {
-const std::map<proto::SignatureRole, VersionNumber> Asymmetric::sig_version_{
-    {proto::SIGROLE_PUBCREDENTIAL, 1},
-    {proto::SIGROLE_PRIVCREDENTIAL, 1},
-    {proto::SIGROLE_NYMIDSOURCE, 1},
-    {proto::SIGROLE_CLAIM, 1},
-    {proto::SIGROLE_SERVERCONTRACT, 1},
-    {proto::SIGROLE_UNITDEFINITION, 1},
-    {proto::SIGROLE_PEERREQUEST, 1},
-    {proto::SIGROLE_PEERREPLY, 1},
-    {proto::SIGROLE_CONTEXT, 2},
-    {proto::SIGROLE_ACCOUNT, 2},
-    {proto::SIGROLE_SERVERREQUEST, 3},
-    {proto::SIGROLE_SERVERREPLY, 3},
+const std::map<crypto::SignatureRole, VersionNumber> Asymmetric::sig_version_{
+    {SignatureRole::PublicCredential, 1},
+    {SignatureRole::PrivateCredential, 1},
+    {SignatureRole::NymIDSource, 1},
+    {SignatureRole::Claim, 1},
+    {SignatureRole::ServerContract, 1},
+    {SignatureRole::UnitDefinition, 1},
+    {SignatureRole::PeerRequest, 1},
+    {SignatureRole::PeerReply, 1},
+    {SignatureRole::Context, 2},
+    {SignatureRole::Account, 2},
+    {SignatureRole::ServerRequest, 3},
+    {SignatureRole::ServerReply, 3},
+};
+const Asymmetric::SignatureRoleMap Asymmetric::signaturerole_map_{
+    {SignatureRole::PublicCredential, proto::SIGROLE_PUBCREDENTIAL},
+    {SignatureRole::PrivateCredential, proto::SIGROLE_PRIVCREDENTIAL},
+    {SignatureRole::NymIDSource, proto::SIGROLE_NYMIDSOURCE},
+    {SignatureRole::Claim, proto::SIGROLE_CLAIM},
+    {SignatureRole::ServerContract, proto::SIGROLE_SERVERCONTRACT},
+    {SignatureRole::UnitDefinition, proto::SIGROLE_UNITDEFINITION},
+    {SignatureRole::PeerRequest, proto::SIGROLE_PEERREQUEST},
+    {SignatureRole::PeerReply, proto::SIGROLE_PEERREPLY},
+    {SignatureRole::Context, proto::SIGROLE_CONTEXT},
+    {SignatureRole::Account, proto::SIGROLE_ACCOUNT},
+    {SignatureRole::ServerRequest, proto::SIGROLE_SERVERREQUEST},
+    {SignatureRole::ServerReply, proto::SIGROLE_SERVERREPLY},
 };
 
 Asymmetric::Asymmetric(
@@ -510,13 +525,13 @@ auto Asymmetric::hasCapability(const NymCapability& capability) const noexcept
 
 auto Asymmetric::NewSignature(
     const Identifier& credentialID,
-    const proto::SignatureRole role,
+    const crypto::SignatureRole role,
     const proto::HashType hash) const -> proto::Signature
 {
     proto::Signature output{};
     output.set_version(sig_version_.at(role));
     output.set_credentialid(credentialID.str());
-    output.set_role(role);
+    output.set_role(signaturerole_map_.at(role));
     output.set_hashtype((proto::HASHTYPE_ERROR == hash) ? SigHashType() : hash);
     output.clear_signature();
 
@@ -584,7 +599,7 @@ auto Asymmetric::SerializeKeyToData(
 
 auto Asymmetric::Sign(
     const GetPreimage input,
-    const proto::SignatureRole role,
+    const crypto::SignatureRole role,
     proto::Signature& signature,
     const Identifier& credential,
     const PasswordPrompt& reason,

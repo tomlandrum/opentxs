@@ -18,8 +18,8 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/Verification.pb.h"
 
@@ -193,7 +193,7 @@ auto Item::get_sig(
 
     if (false == signer.Sign(
                      serialized,
-                     proto::SIGROLE_CLAIM,
+                     crypto::SignatureRole::Claim,
                      *serialized.mutable_sig(),
                      reason)) {
         throw std::runtime_error("Unable to obtain signature");

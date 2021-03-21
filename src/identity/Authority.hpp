@@ -147,7 +147,7 @@ public:
         -> std::shared_ptr<Serialized> final;
     auto Sign(
         const GetPreimage input,
-        const proto::SignatureRole role,
+        const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
         proto::KeyRole key,

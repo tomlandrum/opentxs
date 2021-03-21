@@ -28,11 +28,11 @@
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/credential/Primary.hpp"
 #include "opentxs/protobuf/ChildCredentialParameters.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 
 #define OT_METHOD "opentxs::identity::credential::implementation::Base::"
@@ -98,7 +98,7 @@ void Base::add_master_signature(
 
     bool havePublicSig = master.Sign(
         [&serialized]() -> std::string { return proto::ToString(*serialized); },
-        proto::SIGROLE_PUBCREDENTIAL,
+        crypto::SignatureRole::PublicCredential,
         signature,
         reason);
 

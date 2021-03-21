@@ -15,6 +15,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/identity/credential/Base.hpp"
 
@@ -38,7 +39,7 @@ public:
         char cKeyType = '0') const = 0;
     OPENTXS_EXPORT virtual bool Sign(
         const GetPreimage input,
-        const proto::SignatureRole role,
+        const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
         proto::KeyRole key = proto::KEYROLE_SIGN,

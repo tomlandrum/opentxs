@@ -103,7 +103,7 @@ public:
     OPENTXS_EXPORT virtual proto::HashType SigHashType() const noexcept = 0;
     OPENTXS_EXPORT virtual bool Sign(
         const GetPreimage input,
-        const proto::SignatureRole role,
+        const crypto::SignatureRole role,
         proto::Signature& signature,
         const Identifier& credential,
         const PasswordPrompt& reason,

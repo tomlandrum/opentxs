@@ -26,10 +26,10 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/identifier/Server.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ContractEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/ListenAddress.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
@@ -398,7 +398,7 @@ auto Server::update_signature(const Lock& lock, const PasswordPrompt& reason)
     auto serialized = SigVersion(lock);
     auto& signature = *serialized.mutable_signature();
     success = nym_->Sign(
-        serialized, proto::SIGROLE_SERVERCONTRACT, signature, reason);
+        serialized, crypto::SignatureRole::ServerContract, signature, reason);
 
     if (success) {
         signatures_.emplace_front(new proto::Signature(signature));

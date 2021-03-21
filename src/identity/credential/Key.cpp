@@ -24,12 +24,12 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/crypto/OTSignatureMetadata.hpp"
 #include "opentxs/core/crypto/Signature.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/KeyCredential.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 
@@ -405,7 +405,7 @@ auto Key::SelfSign(
         auto& signature = *publicVersion->add_signature();
         havePublicSig = Sign(
             [&]() -> std::string { return proto::ToString(*publicVersion); },
-            proto::SIGROLE_PUBCREDENTIAL,
+            crypto::SignatureRole::PublicCredential,
             signature,
             reason,
             proto::KEYROLE_SIGN,
@@ -423,7 +423,7 @@ auto Key::SelfSign(
     auto& signature = *privateVersion->add_signature();
     const bool havePrivateSig = Sign(
         [&]() -> std::string { return proto::ToString(*privateVersion); },
-        proto::SIGROLE_PRIVCREDENTIAL,
+        crypto::SignatureRole::PrivateCredential,
         signature,
         reason,
         proto::KEYROLE_SIGN,
@@ -458,7 +458,7 @@ auto Key::serialize(
 
 auto Key::Sign(
     const GetPreimage input,
-    const proto::SignatureRole role,
+    const crypto::SignatureRole role,
     proto::Signature& signature,
     const PasswordPrompt& reason,
     proto::KeyRole key,

@@ -39,6 +39,7 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"  // IWYU pragma: keep
@@ -50,7 +51,6 @@
 #include "opentxs/identity/credential/Base.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Credential.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "opentxs/protobuf/MasterCredentialParameters.pb.h"
 #include "opentxs/protobuf/NymIDSource.pb.h"
@@ -1010,7 +1010,7 @@ auto PaymentCode::Sign(
     auto& signature = *serialized->add_signature();
     const bool output = key_->Sign(
         [&]() -> std::string { return proto::ToString(*serialized); },
-        proto::SIGROLE_NYMIDSOURCE,
+        crypto::SignatureRole::NymIDSource,
         signature,
         ID(),
         reason);

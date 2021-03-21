@@ -23,6 +23,7 @@
 #include "opentxs/core/NymFile.hpp"  // IWYU pragma: keep
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/Context.pb.h"
@@ -638,7 +639,8 @@ auto Base::update_signature(const Lock& lock, const PasswordPrompt& reason)
     bool success = false;
     auto serialized = SigVersion(lock);
     auto& signature = *serialized.mutable_signature();
-    success = nym_->Sign(serialized, proto::SIGROLE_CONTEXT, signature, reason);
+    success = nym_->Sign(
+        serialized, crypto::SignatureRole::Context, signature, reason);
 
     if (success) {
         signatures_.emplace_front(new proto::Signature(signature));

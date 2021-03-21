@@ -16,6 +16,7 @@
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -102,7 +103,7 @@ public:
         const CredentialIndexModeFlag mode) const = 0;
     OPENTXS_EXPORT virtual bool Sign(
         const GetPreimage input,
-        const proto::SignatureRole role,
+        const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
         proto::KeyRole key = proto::KEYROLE_SIGN,

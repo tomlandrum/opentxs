@@ -21,6 +21,7 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/iterator/Bidirectional.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -149,7 +150,7 @@ public:
     OPENTXS_EXPORT virtual void SerializeNymIDSource(Tag& parent) const = 0;
     OPENTXS_EXPORT virtual bool Sign(
         const ProtobufType& input,
-        const proto::SignatureRole role,
+        const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
         const proto::HashType hash = proto::HASHTYPE_ERROR) const = 0;

@@ -36,11 +36,11 @@
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
+#include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Contact.hpp"
 #include "opentxs/protobuf/ContractEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
@@ -822,7 +822,7 @@ auto Unit::update_signature(const Lock& lock, const PasswordPrompt& reason)
     auto serialized = SigVersion(lock);
     auto& signature = *serialized.mutable_signature();
     success = nym_->Sign(
-        serialized, proto::SIGROLE_UNITDEFINITION, signature, reason);
+        serialized, crypto::SignatureRole::UnitDefinition, signature, reason);
 
     if (success) {
         signatures_.emplace_front(new proto::Signature(signature));
