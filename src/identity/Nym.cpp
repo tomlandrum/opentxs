@@ -70,7 +70,7 @@ auto Factory::Nym(
 {
     using ReturnType = identity::implementation::Nym;
 
-    if ((proto::CREDTYPE_LEGACY == params.credentialType()) &&
+    if ((identity::CredentialType::Legacy == params.credentialType()) &&
         (proto::SOURCETYPE_BIP47 == params.SourceType())) {
         LogOutput("opentxs::Factory::")(__FUNCTION__)(": Invalid parameters")
             .Flush();
@@ -969,7 +969,7 @@ auto Nym::normalize(
 {
     auto output{in};
 
-    if (proto::CREDTYPE_HD == in.credentialType()) {
+    if (identity::CredentialType::HD == in.credentialType()) {
 #if OT_CRYPTO_WITH_BIP32
         const auto& seeds = api.Seeds();
         output.SetCredset(0);

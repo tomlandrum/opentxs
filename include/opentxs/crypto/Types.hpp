@@ -19,7 +19,7 @@ enum class Language : std::uint8_t;
 enum class SeedStrength : std::size_t;
 enum class SeedStyle : std::uint8_t;
 enum class SecretStyle : std::uint8_t;
-enum class SignatureRole : std::uint8_t;
+enum class SignatureRole : std::uint16_t;
 }  // namespace crypto
 
 using Bip32Network = std::uint32_t;

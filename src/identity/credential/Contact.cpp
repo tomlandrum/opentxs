@@ -24,6 +24,7 @@
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/identity/credential/Contact.hpp"
+#include "opentxs/identity/CredentialRole.hpp"
 #include "opentxs/protobuf/Claim.pb.h"
 #include "opentxs/protobuf/ContactData.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -174,7 +175,7 @@ Contact::Contact(
           source,
           params,
           version,
-          proto::CREDROLE_CONTACT,
+          identity::CredentialRole::Contact,
           proto::KEYMODE_NULL,
           get_master_id(master))
     , data_(params.ContactData() ? *params.ContactData() : proto::ContactData{})

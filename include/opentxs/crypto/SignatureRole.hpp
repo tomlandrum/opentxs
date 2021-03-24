@@ -14,7 +14,7 @@ namespace opentxs
 {
 namespace crypto
 {
-enum class SignatureRole : std::uint8_t {
+enum class SignatureRole : std::uint16_t {
     PublicCredential = 0,
     PrivateCredential = 1,
     NymIDSource = 2,

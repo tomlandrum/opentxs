@@ -77,7 +77,7 @@ public:
     }
     auto MasterSignature() const -> Signature final;
     auto Mode() const -> proto::KeyMode final { return mode_; }
-    auto Role() const -> proto::CredentialRole final { return role_; }
+    auto Role() const -> identity::CredentialRole final { return role_; }
     auto Private() const -> bool final
     {
         return (proto::KEYMODE_PRIVATE == mode_);
@@ -95,7 +95,7 @@ public:
         Data& publicKey,
         Secret& privateKey,
         const PasswordPrompt& reason) const -> bool override;
-    auto Type() const -> proto::CredentialType final { return type_; }
+    auto Type() const -> identity::CredentialType final { return type_; }
     auto Validate() const -> bool final;
     auto Verify(
         const Data& plaintext,
@@ -106,7 +106,7 @@ public:
     }
     auto Verify(
         const proto::Credential& credential,
-        const proto::CredentialRole& role,
+        const identity::CredentialRole& role,
         const Identifier& masterID,
         const proto::Signature& masterSig) const -> bool override
     {
@@ -122,8 +122,8 @@ protected:
     const identity::Source& source_;
     const std::string nym_id_;
     const std::string master_id_;
-    const proto::CredentialType type_;
-    const proto::CredentialRole role_;
+    const identity::CredentialType type_;
+    const identity::CredentialRole role_;
     const proto::KeyMode mode_;
 
     static auto get_master_id(const internal::Primary& master) noexcept
@@ -153,7 +153,7 @@ protected:
         const identity::Source& source,
         const NymParameters& nymParameters,
         const VersionNumber version,
-        const proto::CredentialRole role,
+        const identity::CredentialRole role,
         const proto::KeyMode mode,
         const std::string& masterID) noexcept;
     Base(

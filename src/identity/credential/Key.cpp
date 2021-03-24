@@ -56,7 +56,7 @@ Key::Key(
     const identity::Source& source,
     const NymParameters& params,
     const VersionNumber version,
-    const proto::CredentialRole role,
+    const identity::CredentialRole role,
     const PasswordPrompt& reason,
     const std::string& masterID,
     const bool useProvided) noexcept(false)
@@ -354,7 +354,7 @@ auto Key::new_key(
     const ReadView dh) noexcept(false) -> OTKeypair
 {
     switch (params.credentialType()) {
-        case proto::CREDTYPE_LEGACY: {
+        case identity::CredentialType::Legacy: {
             auto revised{params};
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
             revised.SetDHParams(dh);
@@ -362,7 +362,7 @@ auto Key::new_key(
 
             return api.Factory().Keypair(revised, version, role, reason);
         }
-        case proto::CREDTYPE_HD:
+        case identity::CredentialType::HD:
 #if OT_CRYPTO_WITH_BIP32
         {
             const auto curve = crypto::AsymmetricProvider::KeyTypeToCurve(
@@ -382,7 +382,6 @@ auto Key::new_key(
                 reason);
         }
 #endif  // OT_CRYPTO_WITH_BIP32
-        case proto::CREDTYPE_ERROR:
         default: {
             throw std::runtime_error("Unsupported credential type");
         }

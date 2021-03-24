@@ -26,8 +26,8 @@
 #endif  // OT_CRYPTO_WITH_BIP32
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
+#include "opentxs/identity/CredentialType.hpp"
 #include "opentxs/identity/credential/Base.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -50,7 +50,7 @@ public:
     ChangeType(const NymParameterType type) const noexcept;
     OPENTXS_EXPORT std::shared_ptr<proto::ContactData> ContactData()
         const noexcept;
-    OPENTXS_EXPORT proto::CredentialType credentialType() const noexcept;
+    OPENTXS_EXPORT identity::CredentialType credentialType() const noexcept;
 #if OT_CRYPTO_WITH_BIP32
     OPENTXS_EXPORT Bip32Index CredIndex() const noexcept;
     OPENTXS_EXPORT Bip32Index Credset() const noexcept;
@@ -130,11 +130,11 @@ public:
             NymParameterType::error
 #endif
         ,
-        const proto::CredentialType credential =
+        const identity::CredentialType credential =
 #if OT_CRYPTO_WITH_BIP32
-            proto::CREDTYPE_HD
+            identity::CredentialType::HD
 #else
-            proto::CREDTYPE_LEGACY
+            identity::CredentialType::Legacy
 #endif
         ,
         const proto::SourceType source =
@@ -147,11 +147,11 @@ public:
         const std::uint8_t pcVersion = 0) noexcept;
     OPENTXS_EXPORT NymParameters(
         proto::AsymmetricKeyType key,
-        proto::CredentialType credential =
+        identity::CredentialType credential =
 #if OT_CRYPTO_WITH_BIP32
-            proto::CREDTYPE_HD
+            identity::CredentialType::HD
 #else
-            proto::CREDTYPE_LEGACY
+            identity::CredentialType::Legacy
 #endif
         ,
         const proto::SourceType source =

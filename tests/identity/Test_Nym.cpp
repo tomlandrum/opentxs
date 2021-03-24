@@ -58,7 +58,7 @@ public:
 
     bool test_nym(
         const ot::NymParameterType type,
-        const ot::proto::CredentialType cred,
+        const ot::identity::CredentialType cred,
         const ot::proto::SourceType source,
         const std::string& name = "Nym")
     {
@@ -246,7 +246,7 @@ TEST_F(Test_Nym, secp256k1_hd_bip47)
 {
     EXPECT_TRUE(test_nym(
         ot::NymParameterType::secp256k1,
-        ot::proto::CREDTYPE_HD,
+        ot::identity::CredentialType::HD,
         ot::proto::SOURCETYPE_BIP47));
 }
 
@@ -254,7 +254,7 @@ TEST_F(Test_Nym, secp256k1_hd_self_signed)
 {
     EXPECT_TRUE(test_nym(
         ot::NymParameterType::secp256k1,
-        ot::proto::CREDTYPE_HD,
+        ot::identity::CredentialType::HD,
         ot::proto::SOURCETYPE_PUBKEY));
 }
 
@@ -262,7 +262,7 @@ TEST_F(Test_Nym, secp256k1_legacy_bip47)
 {
     EXPECT_FALSE(test_nym(
         ot::NymParameterType::secp256k1,
-        ot::proto::CREDTYPE_LEGACY,
+        ot::identity::CredentialType::Legacy,
         ot::proto::SOURCETYPE_BIP47));
 }
 #endif  // OT_CRYPTO_WITH_BIP32
@@ -271,7 +271,7 @@ TEST_F(Test_Nym, secp256k1_legacy_self_signed)
 {
     EXPECT_TRUE(test_nym(
         ot::NymParameterType::secp256k1,
-        ot::proto::CREDTYPE_LEGACY,
+        ot::identity::CredentialType::Legacy,
         ot::proto::SOURCETYPE_PUBKEY));
 }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
@@ -283,7 +283,7 @@ TEST_F(Test_Nym, ed25519_hd_bip47)
 {
     EXPECT_TRUE(test_nym(
         ot::NymParameterType::ed25519,
-        ot::proto::CREDTYPE_HD,
+        ot::identity::CredentialType::HD,
         ot::proto::SOURCETYPE_BIP47));
 }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
@@ -292,7 +292,7 @@ TEST_F(Test_Nym, ed25519_hd_self_signed)
 {
     EXPECT_TRUE(test_nym(
         ot::NymParameterType::ed25519,
-        ot::proto::CREDTYPE_HD,
+        ot::identity::CredentialType::HD,
         ot::proto::SOURCETYPE_PUBKEY));
 }
 
@@ -300,7 +300,7 @@ TEST_F(Test_Nym, ed25519_legacy_bip47)
 {
     EXPECT_FALSE(test_nym(
         ot::NymParameterType::ed25519,
-        ot::proto::CREDTYPE_LEGACY,
+        ot::identity::CredentialType::Legacy,
         ot::proto::SOURCETYPE_BIP47));
 }
 #endif  // OT_CRYPTO_WITH_BIP32
@@ -309,7 +309,7 @@ TEST_F(Test_Nym, ed25519_legacy_self_signed)
 {
     EXPECT_TRUE(test_nym(
         ot::NymParameterType::ed25519,
-        ot::proto::CREDTYPE_LEGACY,
+        ot::identity::CredentialType::Legacy,
         ot::proto::SOURCETYPE_PUBKEY));
 }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
@@ -319,7 +319,7 @@ TEST_F(Test_Nym, rsa_legacy_self_signed)
 {
     EXPECT_TRUE(test_nym(
         ot::NymParameterType::rsa,
-        ot::proto::CREDTYPE_LEGACY,
+        ot::identity::CredentialType::Legacy,
         ot::proto::SOURCETYPE_PUBKEY));
 }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_RSA

@@ -22,6 +22,7 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
+#include "opentxs/identity/CredentialRole.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/credential/Base.hpp"
 #include "opentxs/protobuf/Check.hpp"
@@ -105,7 +106,7 @@ Primary::Primary(
           source,
           params,
           version,
-          proto::CREDROLE_MASTERKEY,
+          identity::CredentialRole::MasterKey,
           reason,
           "",
           proto::SOURCETYPE_PUBKEY == params.SourceType())
@@ -175,11 +176,15 @@ auto Primary::serialize(
     OT_ASSERT(output);
 
     auto& serialized = *output;
-    serialized.set_role(proto::CREDROLE_MASTERKEY);
-    auto& masterData = *serialized.mutable_masterdata();
-    masterData.set_version(credential_to_master_params_.at(version_));
-    *masterData.mutable_source() = *(source_.Serialize());
-    *masterData.mutable_sourceproof() = source_proof_;
+    try {
+        serialized.set_role(
+            credentialrole_map_.at(identity::CredentialRole::MasterKey));
+        auto& masterData = *serialized.mutable_masterdata();
+        masterData.set_version(credential_to_master_params_.at(version_));
+        *masterData.mutable_source() = *(source_.Serialize());
+        *masterData.mutable_sourceproof() = source_proof_;
+    } catch (...) {
+    }
 
     return output;
 }
@@ -214,15 +219,24 @@ auto Primary::source_proof(const NymParameters& params) -> proto::SourceProof
 
 auto Primary::Verify(
     const proto::Credential& credential,
-    const proto::CredentialRole& role,
+    const identity::CredentialRole& role,
     const Identifier& masterID,
     const proto::Signature& masterSig) const -> bool
 {
-    if (!proto::Validate<proto::Credential>(
-            credential, VERBOSE, proto::KEYMODE_PUBLIC, role, false)) {
+    auto isValid{false};
+    try {
+        isValid = proto::Validate<proto::Credential>(
+            credential,
+            VERBOSE,
+            proto::KEYMODE_PUBLIC,
+            credentialrole_map_.at(role),
+            false);
+    } catch (...) {
+    }
+
+    if (!isValid) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid credential syntax.")
             .Flush();
-
         return false;
     }
 

@@ -45,7 +45,7 @@ const auto nym_to_key_{reverse_map(key_to_nym_)};
 
 struct NymParameters::Imp {
     const NymParameterType nymType_;
-    const proto::CredentialType credentialType_;
+    const identity::CredentialType credentialType_;
     const proto::SourceType sourceType_;
     const proto::SourceProofType sourceProofType_;
     std::shared_ptr<proto::ContactData> contact_data_;
@@ -70,13 +70,14 @@ struct NymParameters::Imp {
     OTKeypair source_keypair_;
 
     Imp(const NymParameterType type,
-        const proto::CredentialType credential,
+        const identity::CredentialType credential,
         const proto::SourceType source,
         const std::uint8_t pcVersion) noexcept
         : nymType_(type)
         , credentialType_(
-              (NymParameterType::rsa == nymType_) ? proto::CREDTYPE_LEGACY
-                                                  : credential)
+              (NymParameterType::rsa == nymType_)
+                  ? identity::CredentialType::Legacy
+                  : credential)
         , sourceType_(
               (NymParameterType::rsa == nymType_) ? proto::SOURCETYPE_PUBKEY
                                                   : source)
@@ -134,7 +135,7 @@ struct NymParameters::Imp {
 
 NymParameters::NymParameters(
     const NymParameterType type,
-    const proto::CredentialType credential,
+    const identity::CredentialType credential,
     const proto::SourceType source,
     const std::uint8_t pcVersion) noexcept
     : imp_(std::make_unique<Imp>(type, credential, source, pcVersion))
@@ -144,7 +145,7 @@ NymParameters::NymParameters(
 
 NymParameters::NymParameters(
     proto::AsymmetricKeyType key,
-    proto::CredentialType credential,
+    identity::CredentialType credential,
     const proto::SourceType source,
     const std::uint8_t pcVersion) noexcept
     : NymParameters(key_to_nym_.at(key), credential, source, pcVersion)
@@ -153,7 +154,7 @@ NymParameters::NymParameters(
 
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
 NymParameters::NymParameters(const std::int32_t keySize) noexcept
-    : NymParameters(NymParameterType::rsa, proto::CREDTYPE_LEGACY)
+    : NymParameters(NymParameterType::rsa, identity::CredentialType::Legacy)
 {
     imp_->nBits_ = keySize;
 }
@@ -196,8 +197,8 @@ auto NymParameters::ChangeType(const NymParameterType type) const noexcept
     const_cast<NymParameterType&>(output.imp_->nymType_) = type;
 
     if (NymParameterType::rsa == output.imp_->nymType_) {
-        const_cast<proto::CredentialType&>(output.imp_->credentialType_) =
-            proto::CREDTYPE_LEGACY;
+        const_cast<identity::CredentialType&>(output.imp_->credentialType_) =
+            identity::CredentialType::Legacy;
         const_cast<proto::SourceType&>(output.imp_->sourceType_) =
             proto::SOURCETYPE_PUBKEY;
         const_cast<proto::SourceProofType&>(output.imp_->sourceProofType_) =
@@ -213,7 +214,7 @@ auto NymParameters::ContactData() const noexcept
     return imp_->contact_data_;
 }
 
-auto NymParameters::credentialType() const noexcept -> proto::CredentialType
+auto NymParameters::credentialType() const noexcept -> identity::CredentialType
 {
     return imp_->credentialType_;
 }

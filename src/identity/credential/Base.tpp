@@ -227,7 +227,15 @@ auto Factory::Credential(
         return nullptr;
     }
 
-    if (output->Role() != role) { return nullptr; }
+    try {
+        if (output->Role() !=
+            identity::credential::internal::Base::credentialrole_reverse_map_
+                .at(role)) {
+            return nullptr;
+        }
+    } catch (...) {
+        return nullptr;
+    }
 
     return output.release();
 }
@@ -256,7 +264,15 @@ auto Factory::Credential(
 
     if (false == bool(output)) { return nullptr; }
 
-    if (output->Role() != serialized.role()) { return nullptr; }
+    try {
+        if (output->Role() !=
+            identity::credential::internal::Base::credentialrole_reverse_map_
+                .at(serialized.role())) {
+            return nullptr;
+        }
+    } catch (...) {
+        return nullptr;
+    }
 
     if (false == output->Validate()) { return nullptr; }
 

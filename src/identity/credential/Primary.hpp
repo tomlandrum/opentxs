@@ -62,7 +62,7 @@ public:
     using Base::Verify;
     auto Verify(
         const proto::Credential& credential,
-        const proto::CredentialRole& role,
+        const identity::CredentialRole& role,
         const Identifier& masterID,
         const proto::Signature& masterSig) const -> bool final;
 

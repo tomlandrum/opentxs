@@ -22,6 +22,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/identity/credential/Verification.hpp"
+#include "opentxs/identity/CredentialRole.hpp"
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
@@ -117,7 +118,7 @@ Verification::Verification(
           source,
           params,
           version,
-          proto::CREDROLE_VERIFY,
+          identity::CredentialRole::Verify,
           proto::KEYMODE_NULL,
           get_master_id(master))
     , data_(

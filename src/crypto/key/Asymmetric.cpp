@@ -529,11 +529,15 @@ auto Asymmetric::NewSignature(
     const proto::HashType hash) const -> proto::Signature
 {
     proto::Signature output{};
-    output.set_version(sig_version_.at(role));
-    output.set_credentialid(credentialID.str());
-    output.set_role(signaturerole_map_.at(role));
-    output.set_hashtype((proto::HASHTYPE_ERROR == hash) ? SigHashType() : hash);
-    output.clear_signature();
+    try {
+        output.set_version(sig_version_.at(role));
+        output.set_credentialid(credentialID.str());
+        output.set_role(signaturerole_map_.at(role));
+        output.set_hashtype(
+            (proto::HASHTYPE_ERROR == hash) ? SigHashType() : hash);
+        output.clear_signature();
+    } catch (...) {
+    }
 
     return output;
 }

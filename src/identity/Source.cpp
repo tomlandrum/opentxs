@@ -28,6 +28,7 @@
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
 #include "opentxs/identity/credential/Primary.hpp"
+#include "opentxs/identity/CredentialType.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -68,14 +69,14 @@ auto Factory::NymIDSource(
         }
         case proto::SOURCETYPE_PUBKEY:
             switch (params.credentialType()) {
-                case proto::CREDTYPE_LEGACY: {
+                case identity::CredentialType::Legacy: {
                     params.Keypair() = api.Factory().Keypair(
                         params,
                         crypto::key::Asymmetric::DefaultVersion,
                         proto::KEYROLE_SIGN,
                         reason);
                 } break;
-                case proto::CREDTYPE_HD:
+                case identity::CredentialType::HD:
 #if OT_CRYPTO_WITH_BIP32
                 {
                     const auto curve =
@@ -96,7 +97,6 @@ auto Factory::NymIDSource(
                         reason);
                 } break;
 #endif  // OT_CRYPTO_WITH_BIP32
-                case proto::CREDTYPE_ERROR:
                 default: {
                     throw std::runtime_error("Unsupported credential type");
                 }

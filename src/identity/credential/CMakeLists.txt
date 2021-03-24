@@ -10,6 +10,7 @@ add_library(
   "Base.tpp"
   "Contact.cpp"
   "Contact.hpp"
+  "Credential.cpp"
   "Key.cpp"
   "Key.hpp"
   "Primary.cpp"

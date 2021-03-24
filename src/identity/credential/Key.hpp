@@ -118,7 +118,7 @@ protected:
         const identity::Source& source,
         const NymParameters& nymParameters,
         const VersionNumber version,
-        const proto::CredentialRole role,
+        const identity::CredentialRole role,
         const PasswordPrompt& reason,
         const std::string& masterID,
         const bool useProvidedSigningKey = false) noexcept(false);

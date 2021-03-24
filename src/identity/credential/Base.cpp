@@ -29,6 +29,7 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
+#include "opentxs/identity/CredentialRole.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/credential/Primary.hpp"
 #include "opentxs/protobuf/ChildCredentialParameters.pb.h"
@@ -45,7 +46,7 @@ Base::Base(
     const identity::Source& source,
     const NymParameters& nymParameters,
     const VersionNumber version,
-    const proto::CredentialRole role,
+    const identity::CredentialRole role,
     const proto::KeyMode mode,
     const std::string& masterID) noexcept
     : Signable(api, {}, version, {}, {})
@@ -77,8 +78,8 @@ Base::Base(
     , source_(source)
     , nym_id_(source.NymID()->str())
     , master_id_(masterID)
-    , type_(serialized.type())
-    , role_(serialized.role())
+    , type_(credentialtype_reverse_map_.at(serialized.type()))
+    , role_(credentialrole_reverse_map_.at(serialized.role()))
     , mode_(serialized.mode())
 {
     if (serialized.nymid() != nym_id_) {
@@ -197,12 +198,18 @@ auto Base::isValid(
 
     credential = serialize(lock, serializationMode, WITH_SIGNATURES);
 
-    return proto::Validate<proto::Credential>(
-        *credential,
-        VERBOSE,
-        mode_,
-        role_,
-        true);  // with signatures
+    auto isValid{false};
+    try {
+        isValid = proto::Validate<proto::Credential>(
+            *credential,
+            VERBOSE,
+            mode_,
+            credentialrole_map_.at(role_),
+            true);  // with signatures
+    } catch (...) {
+    }
+
+    return isValid;
 }
 
 auto Base::MasterSignature() const -> Base::Signature
@@ -241,8 +248,8 @@ auto Base::Save() const -> bool
 
     if (!isValid(lock, serializedProto)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Unable to save serialized credential. Type (")(role_)(
-            "), version ")(version_)
+            ": Unable to save serialized credential. Type (")(
+            static_cast<int>(role_))("), version ")(version_)
             .Flush();
 
         return false;
@@ -284,54 +291,61 @@ auto Base::serialize(
     -> std::shared_ptr<Base::SerializedType>
 {
     auto serializedCredential = std::make_shared<proto::Credential>();
-    serializedCredential->set_version(version_);
-    serializedCredential->set_type(static_cast<proto::CredentialType>(type_));
-    serializedCredential->set_role(static_cast<proto::CredentialRole>(role_));
+    try {
+        serializedCredential->set_version(version_);
+        serializedCredential->set_type(credentialtype_map_.at((type_)));
+        serializedCredential->set_role(credentialrole_map_.at(role_));
 
-    if (proto::CREDROLE_MASTERKEY != role_) {
-        std::unique_ptr<proto::ChildCredentialParameters> parameters;
-        parameters.reset(new proto::ChildCredentialParameters);
+        if (identity::CredentialRole::MasterKey != role_) {
+            std::unique_ptr<proto::ChildCredentialParameters> parameters;
+            parameters.reset(new proto::ChildCredentialParameters);
 
-        parameters->set_version(1);
-        parameters->set_masterid(master_id_);
-        serializedCredential->set_allocated_childdata(parameters.release());
-    }
-
-    if (asPrivate) {
-        if (proto::KEYMODE_PRIVATE == mode_) {
-            serializedCredential->set_mode(mode_);
-        } else {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Can't serialized a public credential as a private "
-                "credential.")
-                .Flush();
+            parameters->set_version(1);
+            parameters->set_masterid(master_id_);
+            serializedCredential->set_allocated_childdata(parameters.release());
         }
-    } else {
-        serializedCredential->set_mode(proto::KEYMODE_PUBLIC);
-    }
 
-    if (asSigned) {
         if (asPrivate) {
-            auto privateSig = SelfSignature(PRIVATE_VERSION);
-
-            if (privateSig) {
-                *serializedCredential->add_signature() = *privateSig;
+            if (proto::KEYMODE_PRIVATE == mode_) {
+                serializedCredential->set_mode(mode_);
+            } else {
+                LogOutput(OT_METHOD)(__FUNCTION__)(
+                    ": Can't serialized a public credential as a private "
+                    "credential.")
+                    .Flush();
             }
+        } else {
+            serializedCredential->set_mode(proto::KEYMODE_PUBLIC);
         }
 
-        auto publicSig = SelfSignature(PUBLIC_VERSION);
+        if (asSigned) {
+            if (asPrivate) {
+                auto privateSig = SelfSignature(PRIVATE_VERSION);
 
-        if (publicSig) { *serializedCredential->add_signature() = *publicSig; }
+                if (privateSig) {
+                    *serializedCredential->add_signature() = *privateSig;
+                }
+            }
 
-        auto sourceSig = SourceSignature();
+            auto publicSig = SelfSignature(PUBLIC_VERSION);
 
-        if (sourceSig) { *serializedCredential->add_signature() = *sourceSig; }
-    } else {
-        serializedCredential->clear_signature();  // just in case...
+            if (publicSig) {
+                *serializedCredential->add_signature() = *publicSig;
+            }
+
+            auto sourceSig = SourceSignature();
+
+            if (sourceSig) {
+                *serializedCredential->add_signature() = *sourceSig;
+            }
+        } else {
+            serializedCredential->clear_signature();  // just in case...
+        }
+
+        serializedCredential->set_id(id(lock)->str());
+        serializedCredential->set_nymid(nym_id_);
+    } catch (...) {
     }
-
-    serializedCredential->set_id(id(lock)->str());
-    serializedCredential->set_nymid(nym_id_);
 
     return serializedCredential;
 }
@@ -360,7 +374,7 @@ void Base::sign(
 {
     Lock lock(lock_);
 
-    if (proto::CREDROLE_MASTERKEY != role_) {
+    if (identity::CredentialRole::MasterKey != role_) {
         add_master_signature(lock, master, reason);
     }
 }
@@ -420,7 +434,7 @@ auto Base::verify_internally(const Lock& lock) const -> bool
 
     bool GoodMasterSignature = false;
 
-    if (proto::CREDROLE_MASTERKEY == role_) {
+    if (identity::CredentialRole::MasterKey == role_) {
         GoodMasterSignature = true;  // Covered by VerifySignedBySelf()
     } else {
         GoodMasterSignature = verify_master_signature(lock);

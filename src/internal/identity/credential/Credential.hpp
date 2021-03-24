@@ -8,6 +8,7 @@
 #include <optional>
 
 #include "opentxs/core/Secret.hpp"  // IWYU pragma: keep
+#include "opentxs/identity/Types.hpp"
 #include "opentxs/identity/credential/Base.hpp"
 #include "opentxs/identity/credential/Contact.hpp"
 #include "opentxs/identity/credential/Key.hpp"
@@ -18,6 +19,20 @@
 namespace opentxs::identity::credential::internal
 {
 struct Base : virtual public identity::credential::Base {
+    using CredentialRoleMap =
+        std::map<identity::CredentialRole, proto::CredentialRole>;
+    using CredentialRoleReverseMap =
+        std::map<proto::CredentialRole, identity::CredentialRole>;
+    using CredentialTypeMap =
+        std::map<identity::CredentialType, proto::CredentialType>;
+    using CredentialTypeReverseMap =
+        std::map<proto::CredentialType, identity::CredentialType>;
+
+    static const CredentialRoleMap credentialrole_map_;
+    static const CredentialRoleReverseMap credentialrole_reverse_map_;
+    static const CredentialTypeMap credentialtype_map_;
+    static const CredentialTypeReverseMap credentialtype_reverse_map_;
+
     virtual void ReleaseSignatures(const bool onlyPrivate) = 0;
 
 #ifdef _MSC_VER
