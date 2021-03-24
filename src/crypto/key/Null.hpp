@@ -13,6 +13,7 @@
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #include "opentxs/crypto/key/Secp256k1.hpp"
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 
 namespace opentxs::crypto::key::implementation
 {
@@ -69,7 +70,7 @@ public:
     auto CalculateID(Identifier&) const noexcept -> bool final { return false; }
     auto CalculateTag(
         const identity::Authority&,
-        const proto::AsymmetricKeyType,
+        const crypto::AsymmetricKeyType,
         const PasswordPrompt&,
         std::uint32_t&,
         Secret&) const noexcept -> bool final
@@ -106,9 +107,9 @@ public:
     }
     auto HasPrivate() const noexcept -> bool final { return false; }
     auto HasPublic() const noexcept -> bool final { return false; }
-    auto keyType() const noexcept -> proto::AsymmetricKeyType final
+    auto keyType() const noexcept -> crypto::AsymmetricKeyType final
     {
-        return proto::AKEYTYPE_NULL;
+        return crypto::AsymmetricKeyType::Null;
     }
     auto Params() const noexcept -> ReadView final { return {}; }
     auto Path() const noexcept -> const std::string final { return {}; }

@@ -44,10 +44,10 @@ namespace crypto
 class AsymmetricProvider
 {
 public:
-    OPENTXS_EXPORT static proto::AsymmetricKeyType CurveToKeyType(
+    OPENTXS_EXPORT static crypto::AsymmetricKeyType CurveToKeyType(
         const EcdsaCurve& curve);
     OPENTXS_EXPORT static EcdsaCurve KeyTypeToCurve(
-        const proto::AsymmetricKeyType& type);
+        const crypto::AsymmetricKeyType& type);
 
     OPENTXS_EXPORT virtual bool SeedToCurveKey(
         const ReadView seed,

@@ -32,7 +32,7 @@
 #include "opentxs/crypto/Bip32Child.hpp"
 #include "opentxs/crypto/key/HD.hpp"
 #include "opentxs/crypto/library/EcdsaProvider.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "util/HDIndex.hpp"
 
@@ -149,7 +149,7 @@ auto Bip32::DerivePrivateKey(
     const PasswordPrompt& reason) const noexcept(false) -> Key
 {
     const auto curve = [&] {
-        if (proto::AKEYTYPE_ED25519 == key.keyType()) {
+        if (opentxs::crypto::AsymmetricKeyType::ED25519 == key.keyType()) {
 
             return EcdsaCurve::ed25519;
         } else {
@@ -224,7 +224,7 @@ auto Bip32::DerivePublicKey(
     const PasswordPrompt& reason) const noexcept(false) -> Key
 {
     const auto curve = [&] {
-        if (proto::AKEYTYPE_ED25519 == key.keyType()) {
+        if (crypto::AsymmetricKeyType::ED25519 == key.keyType()) {
 
             return EcdsaCurve::ed25519;
         } else {

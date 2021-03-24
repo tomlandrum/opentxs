@@ -30,6 +30,7 @@
 #include "opentxs/core/crypto/OTSignatureMetadata.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
@@ -38,8 +39,8 @@
 #include "opentxs/identity/credential/Key.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Ciphertext.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
+#include "util/Container.hpp"
 
 template class opentxs::Pimpl<opentxs::crypto::key::Asymmetric>;
 
@@ -47,6 +48,16 @@ template class opentxs::Pimpl<opentxs::crypto::key::Asymmetric>;
 
 namespace opentxs::crypto::key
 {
+const Asymmetric::AsymmetricKeyTypeMap Asymmetric::asymmetrickeytype_map_{
+    {AsymmetricKeyType::Null, proto::AKEYTYPE_NULL},
+    {AsymmetricKeyType::Legacy, proto::AKEYTYPE_LEGACY},
+    {AsymmetricKeyType::Secp256k1, proto::AKEYTYPE_SECP256K1},
+    {AsymmetricKeyType::ED25519, proto::AKEYTYPE_ED25519},
+};
+const Asymmetric::AsymmetricKeyTypeReverseMap
+    Asymmetric::asymmetrickeytype_reverse_map_{
+        reverse_map(asymmetrickeytype_map_)};
+
 const VersionNumber Asymmetric::DefaultVersion{2};
 const VersionNumber Asymmetric::MaxVersion{2};
 
@@ -90,7 +101,7 @@ const Asymmetric::SignatureRoleMap Asymmetric::signaturerole_map_{
 Asymmetric::Asymmetric(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& engine,
-    const proto::AsymmetricKeyType keyType,
+    const crypto::AsymmetricKeyType keyType,
     const proto::KeyRole role,
     const bool hasPublic,
     const bool hasPrivate,
@@ -124,7 +135,7 @@ Asymmetric::Asymmetric(
 Asymmetric::Asymmetric(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& engine,
-    const proto::AsymmetricKeyType keyType,
+    const crypto::AsymmetricKeyType keyType,
     const proto::KeyRole role,
     const VersionNumber version,
     EncryptedExtractor getEncrypted) noexcept(false)
@@ -149,7 +160,7 @@ Asymmetric::Asymmetric(
     : Asymmetric(
           api,
           engine,
-          serialized.type(),
+          asymmetrickeytype_reverse_map_.at(serialized.type()),
           serialized.role(),
           true,
           proto::KEYMODE_PRIVATE == serialized.mode(),
@@ -264,7 +275,7 @@ auto Asymmetric::CalculateID(Identifier& output) const noexcept -> bool
 
 auto Asymmetric::CalculateTag(
     const identity::Authority& nym,
-    const proto::AsymmetricKeyType type,
+    const crypto::AsymmetricKeyType type,
     const PasswordPrompt& reason,
     std::uint32_t& tag,
     Secret& password) const noexcept -> bool

@@ -18,6 +18,7 @@
 #if OT_CRYPTO_WITH_BIP32
 #include "opentxs/crypto/Bip32.hpp"
 #endif  // OT_CRYPTO_WITH_BIP32
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 
@@ -48,7 +49,7 @@ public:
         const proto::AsymmetricKey& serialized) const = 0;
 #if OT_CRYPTO_WITH_BIP32
     OPENTXS_EXPORT virtual HDKey InstantiateKey(
-        const proto::AsymmetricKeyType type,
+        const opentxs::crypto::AsymmetricKeyType type,
         const std::string& seedID,
         const opentxs::crypto::Bip32::Key& serialized,
         const PasswordPrompt& reason,

@@ -17,7 +17,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Ed25519.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "util/Sodium.hpp"
 
 namespace opentxs::factory
@@ -110,7 +110,13 @@ Ed25519::Ed25519(
     const proto::KeyRole role,
     const VersionNumber version,
     const PasswordPrompt& reason) noexcept(false)
-    : ot_super(api, ecdsa, proto::AKEYTYPE_ED25519, role, version, reason)
+    : ot_super(
+          api,
+          ecdsa,
+          crypto::AsymmetricKeyType::ED25519,
+          role,
+          version,
+          reason)
 {
 }
 
@@ -130,7 +136,7 @@ Ed25519::Ed25519(
     : ot_super(
           api,
           ecdsa,
-          proto::AKEYTYPE_ED25519,
+          crypto::AsymmetricKeyType::ED25519,
           privateKey,
           chainCode,
           publicKey,

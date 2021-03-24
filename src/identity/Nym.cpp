@@ -40,6 +40,7 @@
 #include "opentxs/crypto/Bip43Purpose.hpp"
 #include "opentxs/crypto/Bip44Type.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/identity/Authority.hpp"
 #include "opentxs/identity/Nym.hpp"
@@ -599,7 +600,7 @@ void Nym::GetIdentifier(String& theIdentifier) const
 }
 
 template <typename T>
-auto Nym::get_private_auth_key(const T& lock, proto::AsymmetricKeyType keytype)
+auto Nym::get_private_auth_key(const T& lock, crypto::AsymmetricKeyType keytype)
     const -> const crypto::key::Asymmetric&
 {
     OT_ASSERT(!active_.empty());
@@ -625,7 +626,7 @@ auto Nym::get_private_auth_key(const T& lock, proto::AsymmetricKeyType keytype)
         keytype, &m_listRevokedIDs);  // success
 }
 
-auto Nym::GetPrivateAuthKey(proto::AsymmetricKeyType keytype) const
+auto Nym::GetPrivateAuthKey(crypto::AsymmetricKeyType keytype) const
     -> const crypto::key::Asymmetric&
 {
     sLock lock(shared_lock_);
@@ -633,7 +634,7 @@ auto Nym::GetPrivateAuthKey(proto::AsymmetricKeyType keytype) const
     return get_private_auth_key(lock, keytype);
 }
 
-auto Nym::GetPrivateEncrKey(proto::AsymmetricKeyType keytype) const
+auto Nym::GetPrivateEncrKey(crypto::AsymmetricKeyType keytype) const
     -> const crypto::key::Asymmetric&
 {
     sLock lock(shared_lock_);
@@ -661,7 +662,7 @@ auto Nym::GetPrivateEncrKey(proto::AsymmetricKeyType keytype) const
         &m_listRevokedIDs);  // success
 }
 
-auto Nym::GetPrivateSignKey(proto::AsymmetricKeyType keytype) const
+auto Nym::GetPrivateSignKey(crypto::AsymmetricKeyType keytype) const
     -> const crypto::key::Asymmetric&
 {
     sLock lock(shared_lock_);
@@ -670,7 +671,7 @@ auto Nym::GetPrivateSignKey(proto::AsymmetricKeyType keytype) const
 }
 
 template <typename T>
-auto Nym::get_private_sign_key(const T& lock, proto::AsymmetricKeyType keytype)
+auto Nym::get_private_sign_key(const T& lock, crypto::AsymmetricKeyType keytype)
     const -> const crypto::key::Asymmetric&
 {
     OT_ASSERT(!active_.empty());
@@ -699,7 +700,7 @@ auto Nym::get_private_sign_key(const T& lock, proto::AsymmetricKeyType keytype)
 }
 
 template <typename T>
-auto Nym::get_public_sign_key(const T& lock, proto::AsymmetricKeyType keytype)
+auto Nym::get_public_sign_key(const T& lock, crypto::AsymmetricKeyType keytype)
     const -> const crypto::key::Asymmetric&
 {
     OT_ASSERT(!active_.empty());
@@ -727,7 +728,7 @@ auto Nym::get_public_sign_key(const T& lock, proto::AsymmetricKeyType keytype)
         &m_listRevokedIDs);  // success
 }
 
-auto Nym::GetPublicAuthKey(proto::AsymmetricKeyType keytype) const
+auto Nym::GetPublicAuthKey(crypto::AsymmetricKeyType keytype) const
     -> const crypto::key::Asymmetric&
 {
     sLock lock(shared_lock_);
@@ -755,7 +756,7 @@ auto Nym::GetPublicAuthKey(proto::AsymmetricKeyType keytype) const
         &m_listRevokedIDs);  // success
 }
 
-auto Nym::GetPublicEncrKey(proto::AsymmetricKeyType keytype) const
+auto Nym::GetPublicEncrKey(crypto::AsymmetricKeyType keytype) const
     -> const crypto::key::Asymmetric&
 {
     sLock lock(shared_lock_);
@@ -816,7 +817,7 @@ auto Nym::GetPublicKeysBySignature(
     return nCount;
 }
 
-auto Nym::GetPublicSignKey(proto::AsymmetricKeyType keytype) const
+auto Nym::GetPublicSignKey(crypto::AsymmetricKeyType keytype) const
     -> const crypto::key::Asymmetric&
 {
     sLock lock(shared_lock_);
@@ -1357,7 +1358,7 @@ auto Nym::TransportKey(Data& pubkey, const opentxs::PasswordPrompt& reason)
 auto Nym::Unlock(
     const crypto::key::Asymmetric& dhKey,
     const std::uint32_t tag,
-    const proto::AsymmetricKeyType type,
+    const crypto::AsymmetricKeyType type,
     const crypto::key::Symmetric& key,
     PasswordPrompt& reason) const noexcept -> bool
 {

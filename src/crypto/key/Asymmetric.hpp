@@ -19,7 +19,7 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/protobuf/Signature.pb.h"
 
 namespace opentxs
@@ -68,7 +68,7 @@ public:
         const PasswordPrompt& password) const noexcept -> OTData final;
     auto CalculateTag(
         const identity::Authority& nym,
-        const proto::AsymmetricKeyType type,
+        const crypto::AsymmetricKeyType type,
         const PasswordPrompt& reason,
         std::uint32_t& tag,
         Secret& password) const noexcept -> bool final;
@@ -94,7 +94,7 @@ public:
         -> bool override;
     auto HasPrivate() const noexcept -> bool final { return has_private_; }
     auto HasPublic() const noexcept -> bool final { return has_public_; }
-    auto keyType() const noexcept -> proto::AsymmetricKeyType final
+    auto keyType() const noexcept -> crypto::AsymmetricKeyType final
     {
         return type_;
     }
@@ -149,7 +149,7 @@ protected:
     const api::internal::Core& api_;
     const crypto::AsymmetricProvider& provider_;
     const VersionNumber version_;
-    const proto::AsymmetricKeyType type_;
+    const crypto::AsymmetricKeyType type_;
     const proto::KeyRole role_;
     bool has_public_;
     bool has_private_;
@@ -211,7 +211,7 @@ protected:
     Asymmetric(
         const api::internal::Core& api,
         const crypto::AsymmetricProvider& engine,
-        const proto::AsymmetricKeyType keyType,
+        const crypto::AsymmetricKeyType keyType,
         const proto::KeyRole role,
         const bool hasPublic,
         const bool hasPrivate,
@@ -221,7 +221,7 @@ protected:
     Asymmetric(
         const api::internal::Core& api,
         const crypto::AsymmetricProvider& engine,
-        const proto::AsymmetricKeyType keyType,
+        const crypto::AsymmetricKeyType keyType,
         const proto::KeyRole role,
         const VersionNumber version,
         EncryptedExtractor) noexcept(false);

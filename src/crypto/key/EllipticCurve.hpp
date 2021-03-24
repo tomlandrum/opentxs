@@ -16,8 +16,8 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/library/EcdsaProvider.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -105,14 +105,14 @@ protected:
     EllipticCurve(
         const api::internal::Core& api,
         const crypto::EcdsaProvider& ecdsa,
-        const proto::AsymmetricKeyType keyType,
+        const crypto::AsymmetricKeyType keyType,
         const proto::KeyRole role,
         const VersionNumber version,
         const PasswordPrompt& reason) noexcept(false);
     EllipticCurve(
         const api::internal::Core& api,
         const crypto::EcdsaProvider& ecdsa,
-        const proto::AsymmetricKeyType keyType,
+        const crypto::AsymmetricKeyType keyType,
         const Secret& privateKey,
         const Data& publicKey,
         const proto::KeyRole role,

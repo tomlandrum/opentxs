@@ -20,6 +20,7 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/api/crypto/Asymmetric.hpp"
 #include "opentxs/crypto/Bip32.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"
 #include "opentxs/crypto/key/Secp256k1.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -61,7 +62,7 @@ public:
         -> HDKey final;
 #if OT_CRYPTO_WITH_BIP32
     auto InstantiateKey(
-        const proto::AsymmetricKeyType type,
+        const opentxs::crypto::AsymmetricKeyType type,
         const std::string& seedID,
         const opentxs::crypto::Bip32::Key& serialized,
         const PasswordPrompt& reason,
@@ -112,7 +113,7 @@ public:
     ~Asymmetric() final = default;
 
 private:
-    using TypeMap = std::map<EcdsaCurve, proto::AsymmetricKeyType>;
+    using TypeMap = std::map<EcdsaCurve, opentxs::crypto::AsymmetricKeyType>;
 
     static const VersionNumber serialized_path_version_;
     static const TypeMap curve_to_key_type_;
@@ -128,7 +129,7 @@ private:
 #if OT_CRYPTO_WITH_BIP32
     template <typename ReturnType, typename NullType>
     auto instantiate_hd_key(
-        const proto::AsymmetricKeyType type,
+        const opentxs::crypto::AsymmetricKeyType type,
         const std::string& seedID,
         const opentxs::crypto::Bip32::Key& serialized,
         const PasswordPrompt& reason,

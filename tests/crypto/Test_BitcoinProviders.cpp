@@ -29,6 +29,7 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/Secret.hpp"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/Bip32.hpp"
 #include "opentxs/crypto/Bip32Child.hpp"
 #include "opentxs/crypto/Bip39.hpp"
@@ -460,7 +461,7 @@ public:
             const auto serialized =
                 library.DeriveKey(ot::EcdsaCurve::secp256k1, seed, {});
             auto pKey = client_.Asymmetric().InstantiateKey(
-                ot::proto::AKEYTYPE_SECP256K1,
+                ot::crypto::AsymmetricKeyType::Secp256k1,
                 seedID,
                 serialized,
                 reason_,
@@ -475,7 +476,7 @@ public:
 
             EXPECT_TRUE(key.HasPrivate());
             EXPECT_TRUE(key.HasPublic());
-            EXPECT_EQ(ot::proto::AKEYTYPE_SECP256K1, key.keyType());
+            EXPECT_EQ(ot::crypto::AsymmetricKeyType::Secp256k1, key.keyType());
             EXPECT_TRUE(compare_private(library, xprv, key.Xprv(reason_)));
         }
 
@@ -578,7 +579,7 @@ public:
                 const auto serialized =
                     library.DeriveKey(ot::EcdsaCurve::secp256k1, seed, rawPath);
                 auto pKey = client_.Asymmetric().InstantiateKey(
-                    ot::proto::AKEYTYPE_SECP256K1,
+                    ot::crypto::AsymmetricKeyType::Secp256k1,
                     seedID,
                     serialized,
                     reason_,
@@ -593,7 +594,8 @@ public:
 
                 EXPECT_TRUE(key.HasPrivate());
                 EXPECT_TRUE(key.HasPublic());
-                EXPECT_EQ(ot::proto::AKEYTYPE_SECP256K1, key.keyType());
+                EXPECT_EQ(
+                    ot::crypto::AsymmetricKeyType::Secp256k1, key.keyType());
                 EXPECT_TRUE(
                     compare_private(library, expectPrv, key.Xprv(reason_)));
                 EXPECT_TRUE(

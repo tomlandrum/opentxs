@@ -33,13 +33,13 @@ extern "C" {
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 #include "opentxs/crypto/library/HashingProvider.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
 #include "util/Sodium.hpp"
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
@@ -582,14 +582,14 @@ auto Sodium::SharedSecret(
         return false;
     }
 
-    if (publicKey.keyType() != proto::AKEYTYPE_ED25519) {
+    if (publicKey.keyType() != crypto::AsymmetricKeyType::ED25519) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Public key is wrong type")
             .Flush();
 
         return false;
     }
 
-    if (privateKey.keyType() != proto::AKEYTYPE_ED25519) {
+    if (privateKey.keyType() != crypto::AsymmetricKeyType::ED25519) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Private key is wrong type")
             .Flush();
 
@@ -688,7 +688,7 @@ auto Sodium::Sign(
     const AllocateOutput signature,
     const PasswordPrompt& reason) const -> bool
 {
-    if (proto::AKEYTYPE_ED25519 != key.keyType()) {
+    if (crypto::AsymmetricKeyType::ED25519 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;
@@ -784,7 +784,7 @@ auto Sodium::Verify(
     const Data& signature,
     const proto::HashType type) const -> bool
 {
-    if (proto::AKEYTYPE_ED25519 != key.keyType()) {
+    if (crypto::AsymmetricKeyType::ED25519 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;

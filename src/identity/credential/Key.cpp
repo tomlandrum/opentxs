@@ -24,6 +24,7 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/crypto/OTSignatureMetadata.hpp"
 #include "opentxs/core/crypto/Signature.hpp"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
@@ -206,7 +207,7 @@ auto Key::deserialize_key(
 }
 
 auto Key::GetKeypair(
-    const proto::AsymmetricKeyType type,
+    const crypto::AsymmetricKeyType type,
     const proto::KeyRole role) const -> const crypto::key::Keypair&
 {
     const crypto::key::Keypair* output{nullptr};
@@ -228,7 +229,7 @@ auto Key::GetKeypair(
 
     OT_ASSERT(nullptr != output);
 
-    if (proto::AKEYTYPE_NULL != type) {
+    if (crypto::AsymmetricKeyType::Null != type) {
         if (type != output->GetPublicKey().keyType()) {
             throw std::out_of_range("wrong key type");
         }

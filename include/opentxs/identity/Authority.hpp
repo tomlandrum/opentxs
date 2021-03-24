@@ -60,44 +60,44 @@ public:
         std::unique_ptr<proto::ContactData>& contactData) const = 0;
     OPENTXS_EXPORT virtual OTIdentifier GetMasterCredID() const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPublicAuthKey(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPublicEncrKey(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual std::int32_t GetPublicKeysBySignature(
         crypto::key::Keypair::Keys& listOutput,
         const Signature& theSignature,
         char cKeyType = '0') const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPublicSignKey(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPrivateSignKey(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPrivateEncrKey(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPrivateAuthKey(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Keypair& GetAuthKeypair(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Keypair& GetEncrKeypair(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Keypair& GetSignKeypair(
-        proto::AsymmetricKeyType keytype,
+        crypto::AsymmetricKeyType keytype,
         const String::List* plistRevokedIDs = nullptr) const = 0;
     OPENTXS_EXPORT virtual const credential::Key& GetTagCredential(
-        proto::AsymmetricKeyType keytype) const noexcept(false) = 0;
+        crypto::AsymmetricKeyType keytype) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual bool GetVerificationSet(
         std::unique_ptr<proto::VerificationSet>& verificationSet) const = 0;
     OPENTXS_EXPORT virtual bool hasCapability(
         const NymCapability& capability) const = 0;
     OPENTXS_EXPORT virtual ReadView Params(
-        const proto::AsymmetricKeyType type) const noexcept = 0;
+        const crypto::AsymmetricKeyType type) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Path(proto::HDPath& output) const = 0;
     OPENTXS_EXPORT virtual std::shared_ptr<Serialized> Serialize(
         const CredentialIndexModeFlag mode) const = 0;
@@ -116,7 +116,7 @@ public:
     OPENTXS_EXPORT virtual bool Unlock(
         const crypto::key::Asymmetric& dhKey,
         const std::uint32_t tag,
-        const proto::AsymmetricKeyType type,
+        const crypto::AsymmetricKeyType type,
         const crypto::key::Symmetric& key,
         PasswordPrompt& reason) const noexcept = 0;
     OPENTXS_EXPORT virtual VersionNumber VerificationCredentialVersion()

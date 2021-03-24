@@ -31,6 +31,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/Bip32.hpp"
 #include "opentxs/crypto/Bip32Child.hpp"
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
@@ -43,7 +44,6 @@
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Ciphertext.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "util/HDIndex.hpp"
 
@@ -108,7 +108,7 @@ HD::HD(
 HD::HD(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const proto::AsymmetricKeyType keyType,
+    const crypto::AsymmetricKeyType keyType,
     const proto::KeyRole role,
     const VersionNumber version,
     const PasswordPrompt& reason) noexcept(false)
@@ -123,7 +123,7 @@ HD::HD(
 HD::HD(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const proto::AsymmetricKeyType keyType,
+    const crypto::AsymmetricKeyType keyType,
     const Secret& privateKey,
     const Data& publicKey,
     const proto::KeyRole role,
@@ -151,7 +151,7 @@ HD::HD(
 HD::HD(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const proto::AsymmetricKeyType keyType,
+    const crypto::AsymmetricKeyType keyType,
     const Secret& privateKey,
     const Secret& chainCode,
     const Data& publicKey,
@@ -284,7 +284,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
 
         switch (type_) {
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
-            case proto::AKEYTYPE_ED25519: {
+            case crypto::AsymmetricKeyType::ED25519: {
                 return factory::Ed25519Key(
                     api_,
                     api_.Crypto().ED25519(),
@@ -299,7 +299,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
             }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-            case proto::AKEYTYPE_SECP256K1: {
+            case crypto::AsymmetricKeyType::Secp256k1: {
                 return factory::Secp256k1Key(
                     api_,
                     api_.Crypto().SECP256K1(),

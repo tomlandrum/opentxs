@@ -33,9 +33,9 @@ extern "C" {
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 #define OT_METHOD "opentxs::crypto::implementation::Secp256k1::"
 
@@ -304,14 +304,14 @@ auto Secp256k1::SharedSecret(
     const PasswordPrompt& reason,
     Secret& secret) const noexcept -> bool
 {
-    if (publicKey.keyType() != proto::AKEYTYPE_SECP256K1) {
+    if (publicKey.keyType() != crypto::AsymmetricKeyType::Secp256k1) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Public key is wrong type")
             .Flush();
 
         return false;
     }
 
-    if (privateKey.keyType() != proto::AKEYTYPE_SECP256K1) {
+    if (privateKey.keyType() != crypto::AsymmetricKeyType::Secp256k1) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Private key is wrong type")
             .Flush();
 
@@ -374,7 +374,7 @@ auto Secp256k1::Sign(
     const AllocateOutput signature,
     const PasswordPrompt& reason) const -> bool
 {
-    if (proto::AKEYTYPE_SECP256K1 != key.keyType()) {
+    if (crypto::AsymmetricKeyType::Secp256k1 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;
@@ -454,7 +454,7 @@ auto Secp256k1::SignDER(
     Space& output,
     const PasswordPrompt& reason) const noexcept -> bool
 {
-    if (proto::AKEYTYPE_SECP256K1 != key.keyType()) {
+    if (crypto::AsymmetricKeyType::Secp256k1 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;
@@ -534,7 +534,7 @@ auto Secp256k1::Verify(
     const Data& signature,
     const proto::HashType type) const -> bool
 {
-    if (proto::AKEYTYPE_SECP256K1 != key.keyType()) {
+    if (crypto::AsymmetricKeyType::Secp256k1 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;

@@ -23,6 +23,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/Bip32.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
@@ -58,9 +59,9 @@ namespace opentxs::api::crypto::implementation
 const VersionNumber Asymmetric::serialized_path_version_{1};
 
 const Asymmetric::TypeMap Asymmetric::curve_to_key_type_{
-    {EcdsaCurve::invalid, proto::AKEYTYPE_ERROR},
-    {EcdsaCurve::secp256k1, proto::AKEYTYPE_SECP256K1},
-    {EcdsaCurve::ed25519, proto::AKEYTYPE_ED25519},
+    {EcdsaCurve::invalid, opentxs::crypto::AsymmetricKeyType::Error},
+    {EcdsaCurve::secp256k1, opentxs::crypto::AsymmetricKeyType::Secp256k1},
+    {EcdsaCurve::ed25519, opentxs::crypto::AsymmetricKeyType::ED25519},
 };
 
 Asymmetric::Asymmetric(const api::internal::Core& api) noexcept
@@ -71,7 +72,7 @@ Asymmetric::Asymmetric(const api::internal::Core& api) noexcept
 #if OT_CRYPTO_WITH_BIP32
 template <typename ReturnType, typename NullType>
 auto Asymmetric::instantiate_hd_key(
-    const proto::AsymmetricKeyType type,
+    const opentxs::crypto::AsymmetricKeyType type,
     const std::string& seedID,
     const opentxs::crypto::Bip32::Key& serialized,
     const PasswordPrompt& reason,
@@ -81,7 +82,7 @@ auto Asymmetric::instantiate_hd_key(
     const auto& [privkey, ccode, pubkey, path, parent] = serialized;
 
     switch (type) {
-        case proto::AKEYTYPE_ED25519:
+        case opentxs::crypto::AsymmetricKeyType::ED25519:
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
         {
             return opentxs::factory::Ed25519Key(
@@ -99,7 +100,7 @@ auto Asymmetric::instantiate_hd_key(
 #else
             break;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
-        case proto::AKEYTYPE_SECP256K1:
+        case opentxs::crypto::AsymmetricKeyType::Secp256k1:
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
         {
             return opentxs::factory::Secp256k1Key(
@@ -209,7 +210,7 @@ auto Asymmetric::InstantiateHDKey(const proto::AsymmetricKey& serialized) const
 
 #if OT_CRYPTO_WITH_BIP32
 auto Asymmetric::InstantiateKey(
-    const proto::AsymmetricKeyType type,
+    const opentxs::crypto::AsymmetricKeyType type,
     const std::string& seedID,
     const opentxs::crypto::Bip32::Key& serialized,
     const PasswordPrompt& reason,
@@ -344,19 +345,19 @@ auto Asymmetric::NewKey(
 {
     switch (params.AsymmetricKeyType()) {
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
-        case (proto::AKEYTYPE_ED25519): {
+        case (opentxs::crypto::AsymmetricKeyType::ED25519): {
             return opentxs::factory::Ed25519Key(
                 api_, api_.Crypto().ED25519(), role, version, reason);
         }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-        case (proto::AKEYTYPE_SECP256K1): {
+        case (opentxs::crypto::AsymmetricKeyType::Secp256k1): {
             return opentxs::factory::Secp256k1Key(
                 api_, api_.Crypto().SECP256K1(), role, version, reason);
         }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
-        case (proto::AKEYTYPE_LEGACY): {
+        case (opentxs::crypto::AsymmetricKeyType::Legacy): {
             return opentxs::factory::RSAKey(
                 api_, api_.Crypto().RSA(), role, version, params, reason);
         }

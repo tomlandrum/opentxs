@@ -17,7 +17,7 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 
 namespace opentxs
 {
@@ -62,10 +62,10 @@ public:
     auto GetKeypair(const proto::KeyRole role) const
         -> const crypto::key::Keypair& final
     {
-        return GetKeypair(proto::AKEYTYPE_NULL, role);
+        return GetKeypair(crypto::AsymmetricKeyType::Null, role);
     }
     auto GetKeypair(
-        const proto::AsymmetricKeyType type,
+        const crypto::AsymmetricKeyType type,
         const proto::KeyRole role) const -> const crypto::key::Keypair& final;
     auto GetPublicKeysBySignature(
         crypto::key::Keypair::Keys& listOutput,

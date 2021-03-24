@@ -81,17 +81,17 @@ private:
 
     using Ciphertext = std::unique_ptr<proto::Ciphertext>;
     using DHMap =
-        std::map<proto::AsymmetricKeyType, std::vector<OTAsymmetricKey>>;
+        std::map<crypto::AsymmetricKeyType, std::vector<OTAsymmetricKey>>;
     using Nyms = std::vector<const identity::Nym*>;
     using Tag = std::uint32_t;
     using SessionKey =
-        std::tuple<Tag, proto::AsymmetricKeyType, OTSymmetricKey>;
+        std::tuple<Tag, crypto::AsymmetricKeyType, OTSymmetricKey>;
     using SessionKeys = std::vector<SessionKey>;
-    using SupportedKeys = std::vector<proto::AsymmetricKeyType>;
+    using SupportedKeys = std::vector<crypto::AsymmetricKeyType>;
     using Weight = unsigned int;
-    using WeightMap = std::map<proto::AsymmetricKeyType, Weight>;
+    using WeightMap = std::map<crypto::AsymmetricKeyType, Weight>;
     using Solution =
-        std::map<OTNymID, std::map<OTIdentifier, proto::AsymmetricKeyType>>;
+        std::map<OTNymID, std::map<OTIdentifier, crypto::AsymmetricKeyType>>;
     using Solutions = std::map<Weight, SupportedKeys>;
     using Requirements = std::vector<identity::Nym::NymKeys>;
 
@@ -145,7 +145,7 @@ private:
         const key::Symmetric& masterKey,
         const PasswordPrompt& reason) noexcept -> bool;
     auto get_dh_key(
-        const proto::AsymmetricKeyType type,
+        const crypto::AsymmetricKeyType type,
         const identity::Authority& nym,
         const PasswordPrompt& reason) noexcept -> const key::Asymmetric&;
     auto seal(

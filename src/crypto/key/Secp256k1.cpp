@@ -15,7 +15,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/crypto/key/Secp256k1.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/AsymmetricKeyType.hpp"
 
 namespace opentxs::factory
 {
@@ -186,7 +186,13 @@ Secp256k1::Secp256k1(
     const proto::KeyRole role,
     const VersionNumber version,
     const PasswordPrompt& reason) noexcept(false)
-    : ot_super(api, ecdsa, proto::AKEYTYPE_SECP256K1, role, version, reason)
+    : ot_super(
+          api,
+          ecdsa,
+          crypto::AsymmetricKeyType::Secp256k1,
+          role,
+          version,
+          reason)
 {
 }
 
@@ -202,7 +208,7 @@ Secp256k1::Secp256k1(
     : ot_super(
           api,
           ecdsa,
-          proto::AKEYTYPE_SECP256K1,
+          crypto::AsymmetricKeyType::Secp256k1,
           privateKey,
           publicKey,
           role,
@@ -228,7 +234,7 @@ Secp256k1::Secp256k1(
     : ot_super(
           api,
           ecdsa,
-          proto::AKEYTYPE_SECP256K1,
+          crypto::AsymmetricKeyType::Secp256k1,
           privateKey,
           chainCode,
           publicKey,

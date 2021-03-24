@@ -72,19 +72,19 @@ const VersionNumber Envelope::tagged_key_version_{1};
 const Envelope::SupportedKeys Envelope::supported_
 {
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
-    proto::AKEYTYPE_LEGACY,
+    crypto::AsymmetricKeyType::Legacy,
 #endif  // OT_CRYPTO_SUPPORTED_KEY_RSA
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-        proto::AKEYTYPE_SECP256K1,
+        crypto::AsymmetricKeyType::Secp256k1,
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
-        proto::AKEYTYPE_ED25519,
+        crypto::AsymmetricKeyType::ED25519,
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 };
 const Envelope::WeightMap Envelope::key_weights_{
-    {proto::AKEYTYPE_ED25519, 1},
-    {proto::AKEYTYPE_SECP256K1, 2},
-    {proto::AKEYTYPE_LEGACY, 4},
+    {crypto::AsymmetricKeyType::ED25519, 1},
+    {crypto::AsymmetricKeyType::Secp256k1, 2},
+    {crypto::AsymmetricKeyType::Legacy, 4},
 };
 const Envelope::Solutions Envelope::solutions_{calculate_solutions()};
 
@@ -258,11 +258,11 @@ auto Envelope::find_solution(const Nyms& recipients, Solution& map) noexcept
 }
 
 auto Envelope::get_dh_key(
-    const proto::AsymmetricKeyType type,
+    const crypto::AsymmetricKeyType type,
     const identity::Authority& nym,
     const PasswordPrompt& reason) noexcept -> const key::Asymmetric&
 {
-    if (proto::AKEYTYPE_LEGACY != type) {
+    if (crypto::AsymmetricKeyType::Legacy != type) {
         const auto& set = dh_keys_.at(type);
 
         OT_ASSERT(1 == set.size());
@@ -320,9 +320,14 @@ auto Envelope::read_dh(const api::Core& api, const SerializedType& rhs) noexcept
 {
     auto output = DHMap{};
 
-    for (const auto& key : rhs.dhkey()) {
-        auto& set = output[key.type()];
-        set.emplace_back(api.Factory().AsymmetricKey(key));
+    try {
+        for (const auto& key : rhs.dhkey()) {
+            auto& set =
+                output[crypto::key::Asymmetric::asymmetrickeytype_reverse_map_
+                           .at(key.type())];
+            set.emplace_back(api.Factory().AsymmetricKey(key));
+        }
+    } catch (...) {
     }
 
     return output;
@@ -333,11 +338,16 @@ auto Envelope::read_sk(const api::Core& api, const SerializedType& rhs) noexcept
 {
     auto output = SessionKeys{};
 
-    for (const auto& tagged : rhs.sessionkey()) {
-        output.emplace_back(SessionKey{
-            tagged.tag(),
-            tagged.type(),
-            api.Symmetric().Key(tagged.key(), proto::SMODE_CHACHA20POLY1305)});
+    try {
+        for (const auto& tagged : rhs.sessionkey()) {
+            output.emplace_back(SessionKey{
+                tagged.tag(),
+                crypto::key::Asymmetric::asymmetrickeytype_reverse_map_.at(
+                    tagged.type()),
+                api.Symmetric().Key(
+                    tagged.key(), proto::SMODE_CHACHA20POLY1305)});
+        }
+    } catch (...) {
     }
 
     return output;
@@ -440,7 +450,7 @@ auto Envelope::seal(
         try {
             const auto params = NymParameters{type};
 
-            if (proto::AKEYTYPE_LEGACY != type) {
+            if (crypto::AsymmetricKeyType::Legacy != type) {
                 auto& set = dh_keys_[type];
                 set.emplace_back(api_.Factory().AsymmetricKey(
                     params, reason, proto::KEYROLE_ENCRYPT));
@@ -508,7 +518,8 @@ auto Envelope::Serialize() const noexcept -> SerializedType
         auto& tagged = *output.add_sessionkey();
         tagged.set_version(tagged_key_version_);
         tagged.set_tag(tag);
-        tagged.set_type(type);
+        tagged.set_type(
+            crypto::key::Asymmetric::asymmetrickeytype_map_.at(type));
         key->Serialize(*tagged.mutable_key());
     }
 

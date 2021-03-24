@@ -29,7 +29,7 @@ class Key : virtual public Base
 {
 public:
     OPENTXS_EXPORT virtual const crypto::key::Keypair& GetKeypair(
-        const proto::AsymmetricKeyType type,
+        const crypto::AsymmetricKeyType type,
         const proto::KeyRole role) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Keypair& GetKeypair(
         const proto::KeyRole role) const = 0;

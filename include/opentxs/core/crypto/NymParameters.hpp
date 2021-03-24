@@ -45,7 +45,7 @@ namespace opentxs
 class NymParameters
 {
 public:
-    OPENTXS_EXPORT proto::AsymmetricKeyType AsymmetricKeyType() const noexcept;
+    OPENTXS_EXPORT crypto::AsymmetricKeyType AsymmetricKeyType() const noexcept;
     OPENTXS_EXPORT NymParameters
     ChangeType(const NymParameterType type) const noexcept;
     OPENTXS_EXPORT std::shared_ptr<proto::ContactData> ContactData()
@@ -146,7 +146,7 @@ public:
         ,
         const std::uint8_t pcVersion = 0) noexcept;
     OPENTXS_EXPORT NymParameters(
-        proto::AsymmetricKeyType key,
+        crypto::AsymmetricKeyType key,
         identity::CredentialType credential =
 #if OT_CRYPTO_WITH_BIP32
             identity::CredentialType::HD

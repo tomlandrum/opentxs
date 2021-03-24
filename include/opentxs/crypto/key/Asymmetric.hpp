@@ -21,6 +21,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
+#include "opentxs/crypto/Types.hpp"
 
 namespace opentxs
 {
@@ -52,7 +53,14 @@ namespace key
 class Asymmetric
 {
 public:
+    using AsymmetricKeyTypeMap =
+        std::map<crypto::AsymmetricKeyType, proto::AsymmetricKeyType>;
+    using AsymmetricKeyTypeReverseMap =
+        std::map<proto::AsymmetricKeyType, crypto::AsymmetricKeyType>;
     using Serialized = proto::AsymmetricKey;
+
+    static const AsymmetricKeyTypeMap asymmetrickeytype_map_;
+    static const AsymmetricKeyTypeReverseMap asymmetrickeytype_reverse_map_;
 
     OPENTXS_EXPORT static const VersionNumber DefaultVersion;
     OPENTXS_EXPORT static const VersionNumber MaxVersion;
@@ -68,7 +76,7 @@ public:
         Identifier& theOutput) const noexcept = 0;
     OPENTXS_EXPORT virtual bool CalculateTag(
         const identity::Authority& nym,
-        const proto::AsymmetricKeyType type,
+        const crypto::AsymmetricKeyType type,
         const PasswordPrompt& reason,
         std::uint32_t& tag,
         Secret& password) const noexcept = 0;
@@ -89,7 +97,7 @@ public:
         const NymCapability& capability) const noexcept = 0;
     OPENTXS_EXPORT virtual bool HasPrivate() const noexcept = 0;
     OPENTXS_EXPORT virtual bool HasPublic() const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::AsymmetricKeyType keyType()
+    OPENTXS_EXPORT virtual crypto::AsymmetricKeyType keyType()
         const noexcept = 0;
     OPENTXS_EXPORT virtual ReadView Params() const noexcept = 0;
     OPENTXS_EXPORT virtual const std::string Path() const noexcept = 0;
