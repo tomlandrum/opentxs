@@ -51,13 +51,14 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/Envelope.hpp"
+#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
@@ -648,7 +649,8 @@ public:
     OPENTXS_EXPORT virtual OTSymmetricKey SymmetricKey(
         const opentxs::crypto::SymmetricProvider& engine,
         const opentxs::PasswordPrompt& password,
-        const proto::SymmetricMode mode = proto::SMODE_ERROR) const = 0;
+        const opentxs::crypto::SymmetricMode mode =
+            opentxs::crypto::SymmetricMode::Error) const = 0;
     /** Instantiate a symmetric key from serialized form
      *
      *  \param[in] engine A reference to the crypto library to be bound to the
@@ -675,7 +677,7 @@ public:
         const std::uint64_t operations,
         const std::uint64_t difficulty,
         const std::size_t size,
-        const proto::SymmetricKeyType type) const = 0;
+        const opentxs::crypto::SymmetricKeyType type) const = 0;
     /** Construct a symmetric key from an existing Secret
      *
      *  \param[in] engine A reference to the crypto library to be bound to the

@@ -21,6 +21,7 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/Envelope.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -143,7 +144,7 @@ public:
 private:
     friend opentxs::Factory;
 
-    static const proto::SymmetricMode mode_;
+    static const opentxs::crypto::SymmetricMode mode_;
 
     const api::internal::Core& api_;
     const VersionNumber version_;

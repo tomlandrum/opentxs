@@ -345,7 +345,8 @@ auto Envelope::read_sk(const api::Core& api, const SerializedType& rhs) noexcept
                 crypto::key::Asymmetric::asymmetrickeytype_reverse_map_.at(
                     tagged.type()),
                 api.Symmetric().Key(
-                    tagged.key(), proto::SMODE_CHACHA20POLY1305)});
+                    tagged.key(),
+                    opentxs::crypto::SymmetricMode::ChaCha20Poly1305)});
         }
     } catch (...) {
     }

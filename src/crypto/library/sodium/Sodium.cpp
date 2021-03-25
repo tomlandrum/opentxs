@@ -35,6 +35,8 @@ extern "C" {
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
+#include "opentxs/crypto/SymmetricKeyType.hpp"
+#include "opentxs/crypto/SymmetricMode.hpp"
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
@@ -43,6 +45,7 @@ extern "C" {
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
 #include "util/Sodium.hpp"
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
+#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::crypto::implementation::Sodium::"
 
@@ -59,6 +62,14 @@ auto Sodium(const api::Crypto& crypto) noexcept
 
 namespace opentxs::crypto::implementation
 {
+const Sodium::SymmetricModeMap Sodium::symmetricmode_map_{
+    {opentxs::crypto::SymmetricMode::Error, proto::SMODE_ERROR},
+    {opentxs::crypto::SymmetricMode::ChaCha20Poly1305,
+     proto::SMODE_CHACHA20POLY1305},
+};
+const Sodium::SymmetricModeReverseMap Sodium::symmetricmode_reverse_map_{
+    reverse_map(symmetricmode_map_)};
+
 Sodium::Sodium(const api::Crypto& crypto) noexcept
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
     : AsymmetricProvider()
@@ -81,15 +92,20 @@ auto Sodium::Decrypt(
     const auto& mac = ciphertext.tag();
     const auto& mode = ciphertext.mode();
 
-    if (KeySize(mode) != keySize) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect key size.").Flush();
+    try {
+        if (KeySize(symmetricmode_reverse_map_.at(mode)) != keySize) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect key size.").Flush();
 
-        return false;
-    }
+            return false;
+        }
 
-    if (IvSize(mode) != nonce.size()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect nonce size.").Flush();
+        if (IvSize(symmetricmode_reverse_map_.at(mode)) != nonce.size()) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect nonce size.")
+                .Flush();
 
+            return false;
+        }
+    } catch (...) {
         return false;
     }
 
@@ -124,7 +140,7 @@ auto Sodium::Derive(
     const std::size_t saltSize,
     const std::uint64_t operations,
     const std::uint64_t difficulty,
-    const proto::SymmetricKeyType type,
+    const crypto::SymmetricKeyType type,
     std::uint8_t* output,
     std::size_t outputSize) const -> bool
 {
@@ -206,61 +222,68 @@ auto Sodium::Encrypt(
     OT_ASSERT(nullptr != input);
     OT_ASSERT(nullptr != key);
 
-    const auto& mode = ciphertext.mode();
-    const auto& nonce = ciphertext.iv();
-    auto& tag = *ciphertext.mutable_tag();
-    auto& output = *ciphertext.mutable_data();
+    try {
+        const auto& mode = symmetricmode_reverse_map_.at(ciphertext.mode());
+        const auto& nonce = ciphertext.iv();
+        auto& tag = *ciphertext.mutable_tag();
+        auto& output = *ciphertext.mutable_data();
 
-    bool result = false;
+        bool result = false;
 
-    if (mode == proto::SMODE_ERROR) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect mode.").Flush();
+        if (mode == opentxs::crypto::SymmetricMode::Error) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect mode.").Flush();
 
-        return result;
-    }
-
-    if (KeySize(mode) != keySize) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect key size.").Flush();
-
-        return result;
-    }
-
-    if (IvSize(mode) != nonce.size()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect nonce size.").Flush();
-
-        return result;
-    }
-
-    ciphertext.set_version(1);
-    tag.resize(TagSize(mode), 0x0);
-    output.resize(inputSize, 0x0);
-
-    OT_ASSERT(false == nonce.empty());
-    OT_ASSERT(false == tag.empty());
-
-    switch (mode) {
-        case (proto::SMODE_CHACHA20POLY1305): {
-            return (
-                0 == crypto_aead_chacha20poly1305_ietf_encrypt_detached(
-                         reinterpret_cast<unsigned char*>(output.data()),
-                         reinterpret_cast<unsigned char*>(tag.data()),
-                         nullptr,
-                         input,
-                         inputSize,
-                         nullptr,
-                         0,
-                         nullptr,
-                         reinterpret_cast<const unsigned char*>(nonce.data()),
-                         key));
+            return result;
         }
-        default: {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Unsupported encryption mode (")(mode)(").")
+
+        if (KeySize(mode) != keySize) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect key size.").Flush();
+
+            return result;
+        }
+
+        if (IvSize(mode) != nonce.size()) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect nonce size.")
                 .Flush();
-        }
-    }
 
-    return result;
+            return result;
+        }
+
+        ciphertext.set_version(1);
+        tag.resize(TagSize(mode), 0x0);
+        output.resize(inputSize, 0x0);
+
+        OT_ASSERT(false == nonce.empty());
+        OT_ASSERT(false == tag.empty());
+
+        switch (mode) {
+            case (opentxs::crypto::SymmetricMode::ChaCha20Poly1305): {
+                return (
+                    0 ==
+                    crypto_aead_chacha20poly1305_ietf_encrypt_detached(
+                        reinterpret_cast<unsigned char*>(output.data()),
+                        reinterpret_cast<unsigned char*>(tag.data()),
+                        nullptr,
+                        input,
+                        inputSize,
+                        nullptr,
+                        0,
+                        nullptr,
+                        reinterpret_cast<const unsigned char*>(nonce.data()),
+                        key));
+            }
+            default: {
+                LogOutput(OT_METHOD)(__FUNCTION__)(
+                    ": Unsupported encryption mode (")(static_cast<int>(mode))(
+                    ").")
+                    .Flush();
+            }
+        }
+
+        return result;
+    } catch (...) {
+        return false;
+    }
 }
 
 auto Sodium::Generate(
@@ -413,30 +436,32 @@ auto Sodium::HMAC(
     return false;
 }
 
-auto Sodium::IvSize(const proto::SymmetricMode mode) const -> std::size_t
+auto Sodium::IvSize(const opentxs::crypto::SymmetricMode mode) const
+    -> std::size_t
 {
     switch (mode) {
-        case (proto::SMODE_CHACHA20POLY1305): {
+        case (opentxs::crypto::SymmetricMode::ChaCha20Poly1305): {
             return crypto_aead_chacha20poly1305_IETF_NPUBBYTES;
         }
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Unsupported encryption mode (")(mode)(").")
+                ": Unsupported encryption mode (")(static_cast<int>(mode))(").")
                 .Flush();
         }
     }
     return 0;
 }
 
-auto Sodium::KeySize(const proto::SymmetricMode mode) const -> std::size_t
+auto Sodium::KeySize(const opentxs::crypto::SymmetricMode mode) const
+    -> std::size_t
 {
     switch (mode) {
-        case (proto::SMODE_CHACHA20POLY1305): {
+        case (opentxs::crypto::SymmetricMode::ChaCha20Poly1305): {
             return crypto_aead_chacha20poly1305_IETF_KEYBYTES;
         }
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Unsupported encryption mode (")(mode)(").")
+                ": Unsupported encryption mode (")(static_cast<int>(mode))(").")
                 .Flush();
         }
     }
@@ -476,16 +501,16 @@ auto Sodium::RandomizeMemory(void* destination, const std::size_t size) const
     return true;
 }
 
-auto Sodium::SaltSize(const proto::SymmetricKeyType type) const -> std::size_t
+auto Sodium::SaltSize(const crypto::SymmetricKeyType type) const -> std::size_t
 {
     switch (type) {
-        case (proto::SKEYTYPE_ARGON2): {
+        case (crypto::SymmetricKeyType::Argon2): {
 
             return crypto_pwhash_SALTBYTES;
         }
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Unsupported key type (")(
-                type)(").")
+                static_cast<int>(type))(").")
                 .Flush();
         }
     }
@@ -762,15 +787,16 @@ auto Sodium::Sign(
 }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 
-auto Sodium::TagSize(const proto::SymmetricMode mode) const -> std::size_t
+auto Sodium::TagSize(const opentxs::crypto::SymmetricMode mode) const
+    -> std::size_t
 {
     switch (mode) {
-        case (proto::SMODE_CHACHA20POLY1305): {
+        case (opentxs::crypto::SymmetricMode::ChaCha20Poly1305): {
             return crypto_aead_chacha20poly1305_IETF_ABYTES;
         }
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Unsupported encryption mode (")(mode)(").")
+                ": Unsupported encryption mode (")(static_cast<int>(mode))(").")
                 .Flush();
         }
     }

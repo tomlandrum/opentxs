@@ -14,6 +14,8 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
+#include "opentxs/crypto/SymmetricKeyType.hpp"
+#include "opentxs/crypto/SymmetricMode.hpp"
 
 namespace opentxs
 {
@@ -30,20 +32,22 @@ class Symmetric
 {
 public:
     OPENTXS_EXPORT virtual std::size_t IvSize(
-        const proto::SymmetricMode mode) const = 0;
+        const opentxs::crypto::SymmetricMode mode) const = 0;
     OPENTXS_EXPORT virtual OTSymmetricKey Key(
         const PasswordPrompt& password,
-        const proto::SymmetricMode mode =
-            proto::SMODE_CHACHA20POLY1305) const = 0;
+        const opentxs::crypto::SymmetricMode mode =
+            opentxs::crypto::SymmetricMode::ChaCha20Poly1305) const = 0;
     OPENTXS_EXPORT virtual OTSymmetricKey Key(
         const proto::SymmetricKey& serialized,
-        const proto::SymmetricMode mode) const = 0;
+        const opentxs::crypto::SymmetricMode mode) const = 0;
     OPENTXS_EXPORT virtual OTSymmetricKey Key(
         const Secret& seed,
         const std::uint64_t operations = 0,
         const std::uint64_t difficulty = 0,
-        const proto::SymmetricMode mode = proto::SMODE_CHACHA20POLY1305,
-        const proto::SymmetricKeyType type = proto::SKEYTYPE_ARGON2) const = 0;
+        const opentxs::crypto::SymmetricMode mode =
+            opentxs::crypto::SymmetricMode::ChaCha20Poly1305,
+        const opentxs::crypto::SymmetricKeyType type =
+            opentxs::crypto::SymmetricKeyType::Argon2) const = 0;
 
     OPENTXS_EXPORT virtual ~Symmetric() = default;
 

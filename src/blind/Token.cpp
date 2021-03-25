@@ -20,6 +20,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
+#include "opentxs/crypto/SymmetricMode.hpp"
 #include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Token.pb.h"
@@ -85,7 +86,8 @@ auto Factory::Token(
 
 namespace opentxs::blind::token::implementation
 {
-const proto::SymmetricMode Token::mode_{proto::SMODE_CHACHA20POLY1305};
+const opentxs::crypto::SymmetricMode Token::mode_{
+    opentxs::crypto::SymmetricMode::ChaCha20Poly1305};
 
 Token::Token(
     const api::internal::Core& api,
@@ -195,7 +197,7 @@ auto Token::reencrypt(
         newPassword,
         ciphertext,
         false,
-        proto::SMODE_CHACHA20POLY1305);
+        opentxs::crypto::SymmetricMode::ChaCha20Poly1305);
 
     if (false == output) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to encrypt ciphertext.")

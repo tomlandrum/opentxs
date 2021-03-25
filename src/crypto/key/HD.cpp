@@ -363,7 +363,7 @@ auto HD::get_chain_code(const PasswordPrompt& reason) const noexcept(false)
         // key, and this session key is only embedded in the private key
         // ciphertext
         auto sessionKey = api_.Symmetric().Key(
-            privateKey.key(), proto::SMODE_CHACHA20POLY1305);
+            privateKey.key(), opentxs::crypto::SymmetricMode::ChaCha20Poly1305);
 
         if (false == sessionKey.get()) {
             throw std::runtime_error{"Failed to extract session key"};

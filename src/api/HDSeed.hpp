@@ -161,6 +161,13 @@ public:
 
 private:
     using SeedMap = std::map<std::string, opentxs::crypto::Seed>;
+    using SymmetricModeMap =
+        std::map<opentxs::crypto::SymmetricMode, proto::SymmetricMode>;
+    using SymmetricModeReverseMap =
+        std::map<proto::SymmetricMode, opentxs::crypto::SymmetricMode>;
+
+    static const SymmetricModeMap symmetricmode_map_;
+    static const SymmetricModeReverseMap symmetricmode_reverse_map_;
 
     const api::Factory& factory_;
     const api::crypto::Symmetric& symmetric_;

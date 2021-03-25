@@ -12,6 +12,8 @@
 #include "opentxs/blind/Token.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
+#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Token.pb.h"
@@ -89,7 +91,7 @@ public:
     ~Token() override = default;
 
 protected:
-    static const proto::SymmetricMode mode_;
+    static const opentxs::crypto::SymmetricMode mode_;
 
     const api::internal::Core& api_;
     Purse& purse_;

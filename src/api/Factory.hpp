@@ -72,7 +72,6 @@
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
@@ -710,7 +709,8 @@ public:
     auto SymmetricKey(
         const opentxs::crypto::SymmetricProvider& engine,
         const opentxs::PasswordPrompt& password,
-        const proto::SymmetricMode mode) const -> OTSymmetricKey final;
+        const opentxs::crypto::SymmetricMode mode) const
+        -> OTSymmetricKey final;
     auto SymmetricKey(
         const opentxs::crypto::SymmetricProvider& engine,
         const proto::SymmetricKey serialized) const -> OTSymmetricKey final;
@@ -720,7 +720,8 @@ public:
         const std::uint64_t operations,
         const std::uint64_t difficulty,
         const std::size_t size,
-        const proto::SymmetricKeyType type) const -> OTSymmetricKey final;
+        const opentxs::crypto::SymmetricKeyType type) const
+        -> OTSymmetricKey final;
     auto SymmetricKey(
         const opentxs::crypto::SymmetricProvider& engine,
         const opentxs::Secret& raw,

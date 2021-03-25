@@ -33,6 +33,7 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
+#include "opentxs/crypto/SymmetricMode.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/CashEnums.pb.h"
@@ -176,7 +177,8 @@ auto Factory::Purse(
 
 namespace opentxs::blind::implementation
 {
-const proto::SymmetricMode Purse::mode_{proto::SMODE_CHACHA20POLY1305};
+const opentxs::crypto::SymmetricMode Purse::mode_{
+    opentxs::crypto::SymmetricMode::ChaCha20Poly1305};
 
 Purse::Purse(
     const api::internal::Core& api,
@@ -320,8 +322,8 @@ Purse::Purse(const api::internal::Core& api, const proto::Purse& in)
           deserialize_secondary_password(api, in),
           {})
 {
-    auto primary =
-        api.Symmetric().Key(in.primarykey(), proto::SMODE_CHACHA20POLY1305);
+    auto primary = api.Symmetric().Key(
+        in.primarykey(), opentxs::crypto::SymmetricMode::ChaCha20Poly1305);
     primary_.reset(new OTSymmetricKey(std::move(primary)));
 
     OT_ASSERT(primary_);
@@ -403,7 +405,8 @@ auto Purse::deserialize_secondary_key(
         case proto::PURSETYPE_REQUEST:
         case proto::PURSETYPE_ISSUE: {
             auto output = std::make_unique<OTSymmetricKey>(api.Symmetric().Key(
-                in.secondarykey(), proto::SMODE_CHACHA20POLY1305));
+                in.secondarykey(),
+                opentxs::crypto::SymmetricMode::ChaCha20Poly1305));
 
             if (false == bool(output)) {
                 LogOutput(OT_METHOD)(__FUNCTION__)(

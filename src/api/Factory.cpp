@@ -90,6 +90,7 @@
 #include "opentxs/core/trade/OTTrade.hpp"
 #include "opentxs/crypto/Bip32Child.hpp"
 #include "opentxs/crypto/Bip43Purpose.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"
 #include "opentxs/crypto/key/HD.hpp"
 #include "opentxs/crypto/key/Secp256k1.hpp"
@@ -101,7 +102,6 @@
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Envelope.pb.h"  // IWYU pragma: keep
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "opentxs/protobuf/PaymentCode.pb.h"
@@ -2225,7 +2225,7 @@ auto Factory::SymmetricKey() const -> OTSymmetricKey
 auto Factory::SymmetricKey(
     const opentxs::crypto::SymmetricProvider& engine,
     const opentxs::PasswordPrompt& password,
-    const proto::SymmetricMode mode) const -> OTSymmetricKey
+    const opentxs::crypto::SymmetricMode mode) const -> OTSymmetricKey
 {
     return OTSymmetricKey{factory::SymmetricKey(api_, engine, password, mode)};
 }
@@ -2243,7 +2243,7 @@ auto Factory::SymmetricKey(
     const std::uint64_t operations,
     const std::uint64_t difficulty,
     const std::size_t size,
-    const proto::SymmetricKeyType type) const -> OTSymmetricKey
+    const opentxs::crypto::SymmetricKeyType type) const -> OTSymmetricKey
 {
     return OTSymmetricKey{factory::SymmetricKey(
         api_, engine, seed, operations, difficulty, size, type)};

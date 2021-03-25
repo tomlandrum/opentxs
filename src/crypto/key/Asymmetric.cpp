@@ -466,7 +466,7 @@ auto Asymmetric::get_private_key(const PasswordPrompt& reason) const
 
         const auto& privateKey = *encrypted_key_;
         auto sessionKey = api_.Symmetric().Key(
-            privateKey.key(), proto::SMODE_CHACHA20POLY1305);
+            privateKey.key(), opentxs::crypto::SymmetricMode::ChaCha20Poly1305);
 
         if (false == sessionKey.get()) {
             throw std::runtime_error{"Failed to extract session key"};

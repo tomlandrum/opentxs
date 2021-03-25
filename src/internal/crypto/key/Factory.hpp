@@ -154,7 +154,7 @@ auto SymmetricKey(
     const api::internal::Core& api,
     const crypto::SymmetricProvider& engine,
     const opentxs::PasswordPrompt& reason,
-    const proto::SymmetricMode mode) noexcept
+    const opentxs::crypto::SymmetricMode mode) noexcept
     -> std::unique_ptr<crypto::key::Symmetric>;
 auto SymmetricKey(
     const api::internal::Core& api,
@@ -168,7 +168,7 @@ auto SymmetricKey(
     const std::uint64_t operations,
     const std::uint64_t difficulty,
     const std::size_t size,
-    const proto::SymmetricKeyType type) noexcept
+    const crypto::SymmetricKeyType type) noexcept
     -> std::unique_ptr<crypto::key::Symmetric>;
 auto SymmetricKey(
     const api::internal::Core& api,

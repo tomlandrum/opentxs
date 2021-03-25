@@ -19,7 +19,8 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/Types.hpp"
+#include "opentxs/crypto/SymmetricMode.hpp"
 
 namespace opentxs
 {
@@ -130,15 +131,22 @@ public:
     ~Sodium() final = default;
 
 private:
-    static const proto::SymmetricMode DEFAULT_MODE{
-        proto::SMODE_CHACHA20POLY1305};
+    using SymmetricModeMap =
+        std::map<opentxs::crypto::SymmetricMode, proto::SymmetricMode>;
+    using SymmetricModeReverseMap =
+        std::map<proto::SymmetricMode, opentxs::crypto::SymmetricMode>;
+
+    static const opentxs::crypto::SymmetricMode DEFAULT_MODE{
+        opentxs::crypto::SymmetricMode::ChaCha20Poly1305};
+    static const SymmetricModeMap symmetricmode_map_;
+    static const SymmetricModeReverseMap symmetricmode_reverse_map_;
 
     auto Decrypt(
         const proto::Ciphertext& ciphertext,
         const std::uint8_t* key,
         const std::size_t keySize,
         std::uint8_t* plaintext) const -> bool final;
-    auto DefaultMode() const -> proto::SymmetricMode final
+    auto DefaultMode() const -> opentxs::crypto::SymmetricMode final
     {
         return DEFAULT_MODE;
     }
@@ -149,7 +157,7 @@ private:
         const std::size_t saltSize,
         const std::uint64_t operations,
         const std::uint64_t difficulty,
-        const proto::SymmetricKeyType type,
+        const crypto::SymmetricKeyType type,
         std::uint8_t* output,
         std::size_t outputSize) const -> bool final;
     auto Encrypt(
@@ -158,15 +166,18 @@ private:
         const std::uint8_t* key,
         const std::size_t keySize,
         proto::Ciphertext& ciphertext) const -> bool final;
-    auto IvSize(const proto::SymmetricMode mode) const -> std::size_t final;
-    auto KeySize(const proto::SymmetricMode mode) const -> std::size_t final;
-    auto SaltSize(const proto::SymmetricKeyType type) const
+    auto IvSize(const opentxs::crypto::SymmetricMode mode) const
+        -> std::size_t final;
+    auto KeySize(const opentxs::crypto::SymmetricMode mode) const
+        -> std::size_t final;
+    auto SaltSize(const crypto::SymmetricKeyType type) const
         -> std::size_t final;
     auto sha1(
         const std::uint8_t* input,
         const std::size_t inputSize,
         std::uint8_t* output) const -> bool;
-    auto TagSize(const proto::SymmetricMode mode) const -> std::size_t final;
+    auto TagSize(const opentxs::crypto::SymmetricMode mode) const
+        -> std::size_t final;
 
     Sodium() = delete;
     Sodium(const Sodium&) = delete;

@@ -23,6 +23,7 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
+#include "opentxs/crypto/SymmetricMode.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -35,7 +36,7 @@ namespace
 bool init_{false};
 
 struct Test_Symmetric : public ::testing::Test {
-    static const ot::proto::SymmetricMode mode_;
+    static const ot::crypto::SymmetricMode mode_;
     static ot::OTNymID alice_nym_id_;
     static ot::OTNymID bob_nym_id_;
     static ot::OTSymmetricKey key_;
@@ -80,8 +81,8 @@ struct Test_Symmetric : public ::testing::Test {
     }
 };
 
-const ot::proto::SymmetricMode Test_Symmetric::mode_{
-    ot::proto::SMODE_CHACHA20POLY1305};
+const ot::crypto::SymmetricMode Test_Symmetric::mode_{
+    ot::crypto::SymmetricMode::ChaCha20Poly1305};
 ot::OTNymID Test_Symmetric::alice_nym_id_{ot::identifier::Nym::Factory()};
 ot::OTNymID Test_Symmetric::bob_nym_id_{ot::identifier::Nym::Factory()};
 ot::OTSymmetricKey Test_Symmetric::key_{ot::crypto::key::Symmetric::Factory()};

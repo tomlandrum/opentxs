@@ -13,7 +13,7 @@
 #include <cstdint>
 
 #include "opentxs/Proto.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/Types.hpp"
 
 namespace opentxs
 {
@@ -35,7 +35,8 @@ public:
         const std::uint8_t* key,
         const std::size_t keySize,
         std::uint8_t* plaintext) const = 0;
-    OPENTXS_EXPORT virtual proto::SymmetricMode DefaultMode() const = 0;
+    OPENTXS_EXPORT virtual opentxs::crypto::SymmetricMode DefaultMode()
+        const = 0;
     OPENTXS_EXPORT virtual bool Derive(
         const std::uint8_t* input,
         const std::size_t inputSize,
@@ -43,7 +44,7 @@ public:
         const std::size_t saltSize,
         const std::uint64_t operations,
         const std::uint64_t difficulty,
-        const proto::SymmetricKeyType type,
+        const crypto::SymmetricKeyType type,
         std::uint8_t* output,
         std::size_t outputSize) const = 0;
     OPENTXS_EXPORT virtual bool Encrypt(
@@ -53,13 +54,13 @@ public:
         const std::size_t keySize,
         proto::Ciphertext& ciphertext) const = 0;
     OPENTXS_EXPORT virtual std::size_t IvSize(
-        const proto::SymmetricMode mode) const = 0;
+        const opentxs::crypto::SymmetricMode mode) const = 0;
     OPENTXS_EXPORT virtual std::size_t KeySize(
-        const proto::SymmetricMode mode) const = 0;
+        const opentxs::crypto::SymmetricMode mode) const = 0;
     OPENTXS_EXPORT virtual std::size_t SaltSize(
-        const proto::SymmetricKeyType type) const = 0;
+        const crypto::SymmetricKeyType type) const = 0;
     OPENTXS_EXPORT virtual std::size_t TagSize(
-        const proto::SymmetricMode mode) const = 0;
+        const opentxs::crypto::SymmetricMode mode) const = 0;
 
     OPENTXS_EXPORT virtual ~SymmetricProvider() = default;
 
