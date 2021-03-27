@@ -36,6 +36,7 @@ extern "C" {
 #include "opentxs/crypto/AsymmetricKeyType.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
+#include "opentxs/identity/Types.hpp"
 
 #define OT_METHOD "opentxs::crypto::implementation::Secp256k1::"
 
@@ -165,7 +166,7 @@ auto Secp256k1::PubkeyAdd(
 auto Secp256k1::RandomKeypair(
     const AllocateOutput privateKey,
     const AllocateOutput publicKey,
-    const proto::KeyRole,
+    const identity::KeyRole,
     const NymParameters&,
     const AllocateOutput) const noexcept -> bool
 {

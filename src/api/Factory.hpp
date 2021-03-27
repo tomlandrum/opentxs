@@ -69,6 +69,7 @@
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
+#include "opentxs/identity/Types.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -185,7 +186,7 @@ public:
     auto AsymmetricKey(
         const NymParameters& params,
         const opentxs::PasswordPrompt& reason,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const VersionNumber version) const -> OTAsymmetricKey final;
     auto AsymmetricKey(const proto::AsymmetricKey& serialized) const
         -> OTAsymmetricKey final;
@@ -449,7 +450,7 @@ public:
     auto Keypair(
         const NymParameters& nymParameters,
         const VersionNumber version,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const opentxs::PasswordPrompt& reason) const -> OTKeypair final;
     auto Keypair(
         const proto::AsymmetricKey& serializedPubkey,
@@ -463,7 +464,7 @@ public:
         const Bip32Index credset,
         const Bip32Index credindex,
         const EcdsaCurve& curve,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const opentxs::PasswordPrompt& reason) const -> OTKeypair final;
 #endif  // OT_CRYPTO_WITH_BIP32
     auto Ledger(
@@ -807,6 +808,11 @@ protected:
     Factory(const api::internal::Core& api);
 
 private:
+    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
+    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
+
+    static const KeyRoleMap keyrole_map_;
+    static const KeyRoleReverseMap keyrole_reverse_map_;
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
     auto instantiate_secp256k1(const ReadView key, const ReadView chaincode)
         const noexcept -> std::unique_ptr<opentxs::crypto::key::Secp256k1>;

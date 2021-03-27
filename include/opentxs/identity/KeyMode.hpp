@@ -3,22 +3,23 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef OPENTXS_IDENTITY_TYPES_HPP
-#define OPENTXS_IDENTITY_TYPES_HPP
+#ifndef OPENTXS_IDENTITY_KEY_MODE_HPP
+#define OPENTXS_IDENTITY_KEY_MODE_HPP
 
-#include "opentxs/Forward.hpp"  // IWYU pragma: associated
+#include "opentxs/identity/Types.hpp"  // IWYU pragma: associated
 
-#include <cstddef>
 #include <cstdint>
 
 namespace opentxs
 {
 namespace identity
 {
-enum class CredentialType : std::uint8_t;
-enum class CredentialRole : std::uint8_t;
-enum class KeyMode : std::uint8_t;
-enum class KeyRole : std::uint8_t;
+enum class KeyMode : std::uint8_t {
+    Error = 0,
+    Null = 1,
+    Public = 2,
+    Private = 3,
+};
 }  // namespace identity
 }  // namespace opentxs
 #endif

@@ -20,7 +20,7 @@ extern "C" {
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/identity/Types.hpp"
 
 namespace opentxs
 {
@@ -67,7 +67,7 @@ public:
     auto RandomKeypair(
         const AllocateOutput privateKey,
         const AllocateOutput publicKey,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const NymParameters& options,
         const AllocateOutput params) const noexcept -> bool final;
     auto ScalarAdd(

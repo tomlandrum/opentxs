@@ -25,12 +25,12 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/identity/credential/Contact.hpp"
 #include "opentxs/identity/CredentialRole.hpp"
+#include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/protobuf/Claim.pb.h"
 #include "opentxs/protobuf/ContactData.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 
 #define OT_METHOD "opentxs::identity::credential::implementation::Contact::"
@@ -176,7 +176,7 @@ Contact::Contact(
           params,
           version,
           identity::CredentialRole::Contact,
-          proto::KEYMODE_NULL,
+          identity::KeyMode::Null,
           get_master_id(master))
     , data_(params.ContactData() ? *params.ContactData() : proto::ContactData{})
 {
@@ -221,7 +221,11 @@ auto Contact::serialize(
     -> std::shared_ptr<Base::SerializedType>
 {
     auto serializedCredential = Base::serialize(lock, asPrivate, asSigned);
-    serializedCredential->set_mode(proto::KEYMODE_NULL);
+    try {
+        serializedCredential->set_mode(
+            Base::keymode_map_.at(identity::KeyMode::Null));
+    } catch (...) {
+    }
     serializedCredential->clear_signature();  // this fixes a bug, but shouldn't
 
     if (asSigned) {

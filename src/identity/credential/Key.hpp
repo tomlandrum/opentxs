@@ -18,6 +18,7 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/identity/Types.hpp"
 
 namespace opentxs
 {
@@ -59,14 +60,15 @@ class Key : virtual public credential::internal::Key,
             public credential::implementation::Base
 {
 public:
-    auto GetKeypair(const proto::KeyRole role) const
+    auto GetKeypair(const identity::KeyRole role) const
         -> const crypto::key::Keypair& final
     {
         return GetKeypair(crypto::AsymmetricKeyType::Null, role);
     }
     auto GetKeypair(
         const crypto::AsymmetricKeyType type,
-        const proto::KeyRole role) const -> const crypto::key::Keypair& final;
+        const identity::KeyRole role) const
+        -> const crypto::key::Keypair& final;
     auto GetPublicKeysBySignature(
         crypto::key::Keypair::Keys& listOutput,
         const opentxs::Signature& theSignature,
@@ -76,13 +78,13 @@ public:
     auto Verify(
         const Data& plaintext,
         const proto::Signature& sig,
-        const proto::KeyRole key) const -> bool final;
+        const identity::KeyRole key) const -> bool final;
     auto Sign(
         const GetPreimage input,
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
-        proto::KeyRole key,
+        identity::KeyRole key,
         const proto::HashType hash) const -> bool final;
     auto TransportKey(
         Data& publicKey,
@@ -129,6 +131,11 @@ protected:
         const std::string& masterID) noexcept(false);
 
 private:
+    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
+    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
+
+    static const KeyRoleMap keyrole_map_;
+    static const KeyRoleReverseMap keyrole_reverse_map_;
     static const VersionConversionMap credential_subversion_;
     static const VersionConversionMap subversion_to_key_version_;
 

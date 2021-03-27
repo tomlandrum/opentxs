@@ -293,7 +293,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     pubkey,
                     path,
                     parent,
-                    role_,
+                    Asymmetric::keyrole_map_.at(role_),
                     version_,
                     reason);
             }
@@ -308,7 +308,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     pubkey,
                     path,
                     parent,
-                    role_,
+                    Asymmetric::keyrole_map_.at(role_),
                     version_,
                     reason);
             }

@@ -69,6 +69,13 @@ auto Asymmetric::Factory() noexcept -> OTAsymmetricKey
 
 namespace opentxs::crypto::key::implementation
 {
+const Asymmetric::KeyRoleMap Asymmetric::keyrole_map_{
+    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
+    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
+    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
+};
+const Asymmetric::KeyRoleReverseMap Asymmetric::keyrole_reverse_map_{
+    reverse_map(keyrole_map_)};
 const std::map<crypto::SignatureRole, VersionNumber> Asymmetric::sig_version_{
     {SignatureRole::PublicCredential, 1},
     {SignatureRole::PrivateCredential, 1},
@@ -112,7 +119,7 @@ Asymmetric::Asymmetric(
     , provider_(engine)
     , version_(version)
     , type_(keyType)
-    , role_(role)
+    , role_(keyrole_reverse_map_.at(role))
     , has_public_(hasPublic)
     , has_private_(hasPrivate)
     , m_pMetadata(new OTSignatureMetadata(api_))
@@ -171,12 +178,12 @@ Asymmetric::Asymmetric(
 {
 }
 
-Asymmetric::Asymmetric(const Asymmetric& rhs) noexcept
+Asymmetric::Asymmetric(const Asymmetric& rhs) noexcept(false)
     : Asymmetric(
           rhs.api_,
           rhs.provider_,
           rhs.type_,
-          rhs.role_,
+          keyrole_map_.at(rhs.role_),
           rhs.has_public_,
           rhs.has_private_,
           rhs.version_,
@@ -193,12 +200,14 @@ Asymmetric::Asymmetric(const Asymmetric& rhs) noexcept
 {
 }
 
-Asymmetric::Asymmetric(const Asymmetric& rhs, const ReadView newPublic) noexcept
+Asymmetric::Asymmetric(
+    const Asymmetric& rhs,
+    const ReadView newPublic) noexcept(false)
     : Asymmetric(
           rhs.api_,
           rhs.provider_,
           rhs.type_,
-          rhs.role_,
+          keyrole_map_.at(rhs.role_),
           true,
           false,
           rhs.version_,
@@ -289,7 +298,7 @@ auto Asymmetric::CalculateTag(
     try {
         const auto& cred = nym.GetTagCredential(type);
         const auto& key =
-            cred.GetKeypair(type, proto::KEYROLE_ENCRYPT).GetPublicKey();
+            cred.GetKeypair(type, identity::KeyRole::Encrypt).GetPublicKey();
 
         if (false == get_tag(key, nym.GetMasterCredID(), reason, tag)) {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to calculate tag.")
@@ -439,8 +448,8 @@ auto Asymmetric::generate_key(
     const AllocateOutput privateKey,
     const AllocateOutput params) noexcept(false) -> void
 {
-    const auto generated =
-        provider.RandomKeypair(privateKey, publicKey, role, options, params);
+    const auto generated = provider.RandomKeypair(
+        privateKey, publicKey, keyrole_reverse_map_.at(role), options, params);
 
     if (false == generated) {
         throw std::runtime_error("Failed to generate key");
@@ -588,19 +597,23 @@ auto Asymmetric::Serialize() const noexcept
     OT_ASSERT(pOutput);
 
     auto& output = *pOutput;
-    output.set_version(version_);
-    output.set_role(role_);
-    output.set_type(static_cast<proto::AsymmetricKeyType>(type_));
-    output.set_key(key_->data(), key_->size());
 
-    if (has_private_) {
-        output.set_mode(proto::KEYMODE_PRIVATE);
+    try {
+        output.set_version(version_);
+        output.set_role(keyrole_map_.at(role_));
+        output.set_type(static_cast<proto::AsymmetricKeyType>(type_));
+        output.set_key(key_->data(), key_->size());
 
-        if (encrypted_key_) {
-            *output.mutable_encryptedkey() = *encrypted_key_;
+        if (has_private_) {
+            output.set_mode(proto::KEYMODE_PRIVATE);
+
+            if (encrypted_key_) {
+                *output.mutable_encryptedkey() = *encrypted_key_;
+            }
+        } else {
+            output.set_mode(proto::KEYMODE_PUBLIC);
         }
-    } else {
-        output.set_mode(proto::KEYMODE_PUBLIC);
+    } catch (...) {
     }
 
     return pOutput;

@@ -36,6 +36,7 @@
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/identity/Authority.hpp"
 #include "opentxs/identity/Nym.hpp"
+#include "opentxs/identity/Types.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -454,11 +455,11 @@ auto Envelope::seal(
             if (crypto::AsymmetricKeyType::Legacy != type) {
                 auto& set = dh_keys_[type];
                 set.emplace_back(api_.Factory().AsymmetricKey(
-                    params, reason, proto::KEYROLE_ENCRYPT));
+                    params, reason, identity::KeyRole::Encrypt));
                 const auto& key = set.crbegin()->get();
 
                 OT_ASSERT(key.keyType() == type);
-                OT_ASSERT(key.Role() == proto::KEYROLE_ENCRYPT);
+                OT_ASSERT(key.Role() == identity::KeyRole::Encrypt);
             }
         } catch (...) {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to generate DH key")

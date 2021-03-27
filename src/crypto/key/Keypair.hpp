@@ -12,7 +12,7 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/identity/Types.hpp"
 
 namespace opentxs
 {
@@ -60,7 +60,7 @@ public:
 
     Keypair(
         const api::internal::Core& api,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         std::unique_ptr<crypto::key::Asymmetric> publicKey,
         std::unique_ptr<crypto::key::Asymmetric> privateKey) noexcept;
 
@@ -72,7 +72,7 @@ private:
     const api::internal::Core& api_;
     OTAsymmetricKey m_pkeyPrivate;
     OTAsymmetricKey m_pkeyPublic;
-    const proto::KeyRole role_;
+    const identity::KeyRole role_;
 
     auto clone() const -> Keypair* final { return new Keypair(*this); }
 

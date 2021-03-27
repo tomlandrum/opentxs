@@ -1288,7 +1288,12 @@ auto Nym::Sign(
     for (auto& it : active_) {
         if (nullptr != it.second) {
             bool success = it.second->Sign(
-                preimage, role, signature, reason, proto::KEYROLE_SIGN, hash);
+                preimage,
+                role,
+                signature,
+                reason,
+                identity::KeyRole::Sign,
+                hash);
 
             if (success) {
                 haveSig = true;

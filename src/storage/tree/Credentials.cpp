@@ -15,6 +15,7 @@
 
 #include "opentxs/Types.hpp"
 #include "opentxs/api/storage/Driver.hpp"
+#include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -24,11 +25,21 @@
 #include "opentxs/protobuf/verify/StorageCredentials.hpp"
 #include "storage/Plugin.hpp"
 #include "storage/tree/Node.hpp"
+#include "util/Container.hpp"
 
 namespace opentxs
 {
 namespace storage
 {
+const Credentials::KeyModeMap Credentials::keymode_map_{
+    {identity::KeyMode::Error, proto::KEYMODE_ERROR},
+    {identity::KeyMode::Null, proto::KEYMODE_NULL},
+    {identity::KeyMode::Private, proto::KEYMODE_PRIVATE},
+    {identity::KeyMode::Public, proto::KEYMODE_PUBLIC},
+};
+const Credentials::KeyModeReverseMap Credentials::keymode_reverse_map_{
+    reverse_map(keymode_map_)};
+
 Credentials::Credentials(
     const opentxs::api::storage::Driver& storage,
     const std::string& hash)
@@ -73,7 +84,16 @@ auto Credentials::check_existing(const bool incoming, Metadata& metadata) const
             abort();
         }
 
-        isPrivate = (proto::KEYMODE_PRIVATE == existing->mode());
+        try {
+            isPrivate =
+                (identity::KeyMode::Private ==
+                 keymode_reverse_map_.at(existing->mode()));
+        } catch (...) {
+            std::cerr << __FUNCTION__
+                      << ": Failed to determine whether the existing "
+                         "credential is private"
+                      << std::endl;
+        }
     }
 
     return !isPrivate;
@@ -127,7 +147,13 @@ auto Credentials::Load(
 
     if (!loaded) { return false; }
 
-    isPrivate = (proto::KEYMODE_PRIVATE == cred->mode());
+    try {
+        isPrivate =
+            (identity::KeyMode::Private ==
+             keymode_reverse_map_.at(cred->mode()));
+    } catch (...) {
+        return false;
+    }
 
     return true;
 }

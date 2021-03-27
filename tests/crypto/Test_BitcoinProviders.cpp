@@ -465,7 +465,7 @@ public:
                 seedID,
                 serialized,
                 reason_,
-                ot::proto::KEYROLE_SIGN,
+                ot::identity::KeyRole::Sign,
                 ot::crypto::key::EllipticCurve::DefaultVersion);
 
             EXPECT_TRUE(pKey);
@@ -583,7 +583,7 @@ public:
                     seedID,
                     serialized,
                     reason_,
-                    ot::proto::KEYROLE_SIGN,
+                    ot::identity::KeyRole::Sign,
                     ot::crypto::key::EllipticCurve::DefaultVersion);
 
                 EXPECT_TRUE(pKey);

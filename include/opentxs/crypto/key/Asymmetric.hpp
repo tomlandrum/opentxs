@@ -105,7 +105,7 @@ public:
     OPENTXS_EXPORT virtual ReadView PrivateKey(
         const PasswordPrompt& reason) const noexcept = 0;
     OPENTXS_EXPORT virtual ReadView PublicKey() const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::KeyRole Role() const noexcept = 0;
+    OPENTXS_EXPORT virtual identity::KeyRole Role() const noexcept = 0;
     OPENTXS_EXPORT virtual std::shared_ptr<proto::AsymmetricKey> Serialize()
         const noexcept = 0;
     OPENTXS_EXPORT virtual proto::HashType SigHashType() const noexcept = 0;

@@ -95,6 +95,7 @@
 #include "opentxs/crypto/key/HD.hpp"
 #include "opentxs/crypto/key/Secp256k1.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
+#include "opentxs/identity/KeyRole.hpp"
 #include "opentxs/ext/OTPayment.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
@@ -110,12 +111,21 @@
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 #include "opentxs/protobuf/verify/Envelope.hpp"
+#include "util/Container.hpp"
 #include "util/HDIndex.hpp"
 
 #define OT_METHOD "opentxs::api::implementation::Factory::"
 
 namespace opentxs::api::implementation
 {
+const Factory::KeyRoleMap Factory::keyrole_map_{
+    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
+    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
+    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
+};
+const Factory::KeyRoleReverseMap Factory::keyrole_reverse_map_{
+    reverse_map(keyrole_map_)};
+
 Factory::Factory(const api::internal::Core& api)
     : api::internal::Factory()
     , api_(api)
@@ -172,7 +182,7 @@ auto Factory::Armored(const ProtobufType& input, const std::string& header)
 auto Factory::AsymmetricKey(
     const NymParameters& params,
     const opentxs::PasswordPrompt& reason,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     const VersionNumber version) const -> OTAsymmetricKey
 {
     auto output = asymmetric_.NewKey(params, reason, role, version).release();
@@ -1158,7 +1168,7 @@ auto Factory::Item(
 auto Factory::Keypair(
     const NymParameters& params,
     const VersionNumber version,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     const opentxs::PasswordPrompt& reason) const -> OTKeypair
 {
     auto pPrivateKey = asymmetric_.NewKey(params, reason, role, version);
@@ -1214,7 +1224,7 @@ auto Factory::Keypair(
     try {
         return OTKeypair{factory::Keypair(
             api_,
-            serializedPrivkey.role(),
+            keyrole_reverse_map_.at(serializedPrivkey.role()),
             std::move(pPublicKey),
             std::move(pPrivateKey))};
     } catch (...) {
@@ -1237,7 +1247,7 @@ auto Factory::Keypair(const proto::AsymmetricKey& serializedPubkey) const
     try {
         return OTKeypair{factory::Keypair(
             api_,
-            serializedPubkey.role(),
+            keyrole_reverse_map_.at(serializedPubkey.role()),
             std::move(pPublicKey),
             std::make_unique<opentxs::crypto::key::implementation::Null>())};
     } catch (...) {
@@ -1252,20 +1262,20 @@ auto Factory::Keypair(
     const Bip32Index credset,
     const Bip32Index credindex,
     const EcdsaCurve& curve,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     const opentxs::PasswordPrompt& reason) const -> OTKeypair
 {
     auto input(fingerprint);
     auto roleIndex = Bip32Index{0};
 
     switch (role) {
-        case proto::KEYROLE_AUTH: {
+        case identity::KeyRole::Auth: {
             roleIndex = HDIndex{Bip32Child::AUTH_KEY, Bip32Child::HARDENED};
         } break;
-        case proto::KEYROLE_ENCRYPT: {
+        case identity::KeyRole::Encrypt: {
             roleIndex = HDIndex{Bip32Child::ENCRYPT_KEY, Bip32Child::HARDENED};
         } break;
-        case proto::KEYROLE_SIGN: {
+        case identity::KeyRole::Sign: {
             roleIndex = HDIndex{Bip32Child::SIGN_KEY, Bip32Child::HARDENED};
         } break;
         default: {

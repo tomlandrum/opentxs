@@ -30,16 +30,27 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/CredentialRole.hpp"
+#include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/credential/Primary.hpp"
 #include "opentxs/protobuf/ChildCredentialParameters.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
+#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::identity::credential::implementation::Base::"
 
 namespace opentxs::identity::credential::implementation
 {
+const Base::KeyModeMap Base::keymode_map_{
+    {identity::KeyMode::Error, proto::KEYMODE_ERROR},
+    {identity::KeyMode::Null, proto::KEYMODE_NULL},
+    {identity::KeyMode::Private, proto::KEYMODE_PRIVATE},
+    {identity::KeyMode::Public, proto::KEYMODE_PUBLIC},
+};
+const Base::KeyModeReverseMap Base::keymode_reverse_map_{
+    reverse_map(keymode_map_)};
+
 Base::Base(
     const api::internal::Core& api,
     const identity::internal::Authority& parent,
@@ -47,7 +58,7 @@ Base::Base(
     const NymParameters& nymParameters,
     const VersionNumber version,
     const identity::CredentialRole role,
-    const proto::KeyMode mode,
+    const identity::KeyMode mode,
     const std::string& masterID) noexcept
     : Signable(api, {}, version, {}, {})
     , parent_(parent)
@@ -80,7 +91,7 @@ Base::Base(
     , master_id_(masterID)
     , type_(credentialtype_reverse_map_.at(serialized.type()))
     , role_(credentialrole_reverse_map_.at(serialized.role()))
-    , mode_(serialized.mode())
+    , mode_(keymode_reverse_map_.at(serialized.mode()))
 {
     if (serialized.nymid() != nym_id_) {
         throw std::runtime_error(
@@ -194,7 +205,7 @@ auto Base::isValid(
 {
     SerializationModeFlag serializationMode = AS_PUBLIC;
 
-    if (proto::KEYMODE_PRIVATE == mode_) { serializationMode = AS_PRIVATE; }
+    if (identity::KeyMode::Private == mode_) { serializationMode = AS_PRIVATE; }
 
     credential = serialize(lock, serializationMode, WITH_SIGNATURES);
 
@@ -203,7 +214,7 @@ auto Base::isValid(
         isValid = proto::Validate<proto::Credential>(
             *credential,
             VERBOSE,
-            mode_,
+            keymode_map_.at(mode_),
             credentialrole_map_.at(role_),
             true);  // with signatures
     } catch (...) {
@@ -306,16 +317,17 @@ auto Base::serialize(
         }
 
         if (asPrivate) {
-            if (proto::KEYMODE_PRIVATE == mode_) {
-                serializedCredential->set_mode(mode_);
+            if (identity::KeyMode::Private == mode_) {
+                serializedCredential->set_mode(keymode_map_.at(mode_));
             } else {
                 LogOutput(OT_METHOD)(__FUNCTION__)(
-                    ": Can't serialized a public credential as a private "
+                    ": Can't serialize a public credential as a private "
                     "credential.")
                     .Flush();
             }
         } else {
-            serializedCredential->set_mode(proto::KEYMODE_PUBLIC);
+            serializedCredential->set_mode(
+                keymode_map_.at(identity::KeyMode::Public));
         }
 
         if (asSigned) {
@@ -345,6 +357,9 @@ auto Base::serialize(
         serializedCredential->set_id(id(lock)->str());
         serializedCredential->set_nymid(nym_id_);
     } catch (...) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Problem serializing a credential.")
+            .Flush();
     }
 
     return serializedCredential;

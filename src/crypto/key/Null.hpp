@@ -119,7 +119,7 @@ public:
         return {};
     }
     auto PublicKey() const noexcept -> ReadView final { return {}; }
-    auto Role() const noexcept -> proto::KeyRole final { return {}; }
+    auto Role() const noexcept -> identity::KeyRole final { return {}; }
     auto Serialize() const noexcept
         -> std::shared_ptr<proto::AsymmetricKey> final
     {

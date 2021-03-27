@@ -96,7 +96,7 @@ public:
         const EcdsaCurve& curve,
         const Path& path,
         const PasswordPrompt& reason,
-        const proto::KeyRole role = proto::KEYROLE_SIGN,
+        const identity::KeyRole role = identity::KeyRole::Sign,
         const VersionNumber version =
             opentxs::crypto::key::EllipticCurve::DefaultVersion) const
         -> std::unique_ptr<opentxs::crypto::key::HD> final;
@@ -160,12 +160,16 @@ public:
     ~HDSeed() final = default;
 
 private:
+    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
+    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
     using SeedMap = std::map<std::string, opentxs::crypto::Seed>;
     using SymmetricModeMap =
         std::map<opentxs::crypto::SymmetricMode, proto::SymmetricMode>;
     using SymmetricModeReverseMap =
         std::map<proto::SymmetricMode, opentxs::crypto::SymmetricMode>;
 
+    static const KeyRoleMap keyrole_map_;
+    static const KeyRoleReverseMap keyrole_reverse_map_;
     static const SymmetricModeMap symmetricmode_map_;
     static const SymmetricModeReverseMap symmetricmode_reverse_map_;
 

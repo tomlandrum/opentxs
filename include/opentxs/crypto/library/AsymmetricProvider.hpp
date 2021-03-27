@@ -17,6 +17,7 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/crypto/Types.hpp"
+#include "opentxs/identity/KeyRole.hpp"
 
 namespace opentxs
 {
@@ -62,7 +63,7 @@ public:
     OPENTXS_EXPORT virtual bool RandomKeypair(
         const AllocateOutput privateKey,
         const AllocateOutput publicKey,
-        const proto::KeyRole role = proto::KEYROLE_SIGN,
+        const identity::KeyRole role = identity::KeyRole::Sign,
         const NymParameters& options = {},
         const AllocateOutput params = {}) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Sign(

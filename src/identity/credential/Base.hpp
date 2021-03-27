@@ -15,8 +15,9 @@
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/contract/Signable.hpp"
+#include "opentxs/identity/KeyMode.hpp"
+#include "opentxs/identity/KeyRole.hpp"
 #include "opentxs/protobuf/Credential.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -58,6 +59,11 @@ class Base : virtual public credential::internal::Base,
 {
 public:
     using SerializedType = proto::Credential;
+    using KeyModeMap = std::map<identity::KeyMode, proto::KeyMode>;
+    using KeyModeReverseMap = std::map<proto::KeyMode, identity::KeyMode>;
+
+    static const KeyModeMap keymode_map_;
+    static const KeyModeReverseMap keymode_reverse_map_;
 
     auto asString(const bool asPrivate = false) const -> std::string final;
     auto CredentialID() const -> const Identifier& final { return id_.get(); }
@@ -76,11 +82,11 @@ public:
         return false;
     }
     auto MasterSignature() const -> Signature final;
-    auto Mode() const -> proto::KeyMode final { return mode_; }
+    auto Mode() const -> identity::KeyMode final { return mode_; }
     auto Role() const -> identity::CredentialRole final { return role_; }
     auto Private() const -> bool final
     {
-        return (proto::KEYMODE_PRIVATE == mode_);
+        return (identity::KeyMode::Private == mode_);
     }
     auto Save() const -> bool final;
     auto SelfSignature(CredentialModeFlag version = PUBLIC_VERSION) const
@@ -100,7 +106,8 @@ public:
     auto Verify(
         const Data& plaintext,
         const proto::Signature& sig,
-        const proto::KeyRole key = proto::KEYROLE_SIGN) const -> bool override
+        const identity::KeyRole key = identity::KeyRole::Sign) const
+        -> bool override
     {
         return false;
     }
@@ -124,7 +131,7 @@ protected:
     const std::string master_id_;
     const identity::CredentialType type_;
     const identity::CredentialRole role_;
-    const proto::KeyMode mode_;
+    const identity::KeyMode mode_;
 
     static auto get_master_id(const internal::Primary& master) noexcept
         -> std::string;
@@ -154,7 +161,7 @@ protected:
         const NymParameters& nymParameters,
         const VersionNumber version,
         const identity::CredentialRole role,
-        const proto::KeyMode mode,
+        const identity::KeyMode mode,
         const std::string& masterID) noexcept;
     Base(
         const api::internal::Core& api,

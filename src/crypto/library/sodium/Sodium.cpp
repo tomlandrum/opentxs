@@ -482,7 +482,7 @@ auto Sodium::PubkeyAdd(
 auto Sodium::RandomKeypair(
     const AllocateOutput privateKey,
     const AllocateOutput publicKey,
-    const proto::KeyRole,
+    const identity::KeyRole,
     const NymParameters&,
     const AllocateOutput) const noexcept -> bool
 {

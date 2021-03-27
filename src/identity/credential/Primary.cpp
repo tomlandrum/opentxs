@@ -23,11 +23,11 @@
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/identity/CredentialRole.hpp"
+#include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/credential/Base.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Credential.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "opentxs/protobuf/MasterCredentialParameters.pb.h"
 #include "opentxs/protobuf/NymIDSource.pb.h"
@@ -228,7 +228,7 @@ auto Primary::Verify(
         isValid = proto::Validate<proto::Credential>(
             credential,
             VERBOSE,
-            proto::KEYMODE_PUBLIC,
+            Base::keymode_map_.at(identity::KeyMode::Public),
             credentialrole_map_.at(role),
             false);
     } catch (...) {

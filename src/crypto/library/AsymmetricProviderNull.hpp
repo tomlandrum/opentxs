@@ -15,7 +15,7 @@ public:
     auto RandomKeypair(
         const AllocateOutput,
         const AllocateOutput,
-        const proto::KeyRole,
+        const identity::KeyRole,
         const NymParameters&,
         const AllocateOutput) const noexcept -> bool final
     {

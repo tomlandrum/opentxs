@@ -25,10 +25,10 @@
 #include "opentxs/identity/Authority.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/identity/Source.hpp"
+#include "opentxs/identity/Types.hpp"
 #include "opentxs/identity/credential/Base.hpp"
 #include "opentxs/identity/credential/Key.hpp"
 #include "opentxs/identity/credential/Primary.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -150,7 +150,7 @@ public:
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
-        proto::KeyRole key,
+        identity::KeyRole key,
         const proto::HashType hash) const -> bool final;
     auto Source() const -> const identity::Source& final
     {
@@ -173,7 +173,7 @@ public:
     auto Verify(
         const Data& plaintext,
         const proto::Signature& sig,
-        const proto::KeyRole key) const -> bool final;
+        const identity::KeyRole key) const -> bool final;
     auto Verify(const proto::Verification& item) const -> bool final;
     auto VerifyInternally() const -> bool final;
 
@@ -204,11 +204,15 @@ private:
         map<OTIdentifier, std::unique_ptr<credential::internal::Secondary>>;
     using KeyCredentialItem = std::
         pair<OTIdentifier, std::unique_ptr<credential::internal::Secondary>>;
+    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
+    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
     using VerificationCredentialMap = std::
         map<OTIdentifier, std::unique_ptr<credential::internal::Verification>>;
     using mapOfCredentials =
         std::map<std::string, std::unique_ptr<credential::internal::Base>>;
 
+    static const KeyRoleMap keyrole_map_;
+    static const KeyRoleReverseMap keyrole_reverse_map_;
     static const VersionConversionMap authority_to_contact_;
     static const VersionConversionMap authority_to_primary_;
     static const VersionConversionMap authority_to_secondary_;

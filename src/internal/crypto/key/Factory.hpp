@@ -84,7 +84,7 @@ auto Ed25519Key(
 auto Keypair() noexcept -> std::unique_ptr<crypto::key::Keypair>;
 auto Keypair(
     const api::internal::Core& api,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     std::unique_ptr<crypto::key::Asymmetric> publicKey,
     std::unique_ptr<crypto::key::Asymmetric> privateKey) noexcept(false)
     -> std::unique_ptr<crypto::key::Keypair>;

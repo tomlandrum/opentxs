@@ -18,6 +18,7 @@
 #include "opentxs/core/String.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
+#include "opentxs/identity/KeyRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
 
@@ -106,7 +107,7 @@ public:
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
-        proto::KeyRole key = proto::KEYROLE_SIGN,
+        identity::KeyRole key = identity::KeyRole::Sign,
         const proto::HashType hash = proto::HASHTYPE_ERROR) const = 0;
     OPENTXS_EXPORT virtual const identity::Source& Source() const = 0;
     OPENTXS_EXPORT virtual bool TransportKey(
@@ -124,7 +125,7 @@ public:
     OPENTXS_EXPORT virtual bool Verify(
         const Data& plaintext,
         const proto::Signature& sig,
-        const proto::KeyRole key = proto::KEYROLE_SIGN) const = 0;
+        const identity::KeyRole key = identity::KeyRole::Sign) const = 0;
     OPENTXS_EXPORT virtual bool Verify(
         const proto::Verification& item) const = 0;
     OPENTXS_EXPORT virtual bool VerifyInternally() const = 0;

@@ -29,9 +29,9 @@
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
 #include "opentxs/identity/credential/Primary.hpp"
 #include "opentxs/identity/CredentialType.hpp"
+#include "opentxs/identity/KeyRole.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/KeyCredential.pb.h"
 #include "opentxs/protobuf/MasterCredentialParameters.pb.h"
 #include "opentxs/protobuf/NymIDSource.pb.h"
@@ -73,7 +73,7 @@ auto Factory::NymIDSource(
                     params.Keypair() = api.Factory().Keypair(
                         params,
                         crypto::key::Asymmetric::DefaultVersion,
-                        proto::KEYROLE_SIGN,
+                        identity::KeyRole::Sign,
                         reason);
                 } break;
                 case identity::CredentialType::HD:
@@ -93,7 +93,7 @@ auto Factory::NymIDSource(
                         params.Credset(),
                         params.CredIndex(),
                         curve,
-                        proto::KEYROLE_SIGN,
+                        identity::KeyRole::Sign,
                         reason);
                 } break;
 #endif  // OT_CRYPTO_WITH_BIP32

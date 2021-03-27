@@ -154,7 +154,7 @@ public:
     OPENTXS_EXPORT virtual OTAsymmetricKey AsymmetricKey(
         const NymParameters& params,
         const opentxs::PasswordPrompt& reason,
-        const proto::KeyRole role = proto::KEYROLE_SIGN,
+        const identity::KeyRole role = identity::KeyRole::Sign,
         const VersionNumber version =
             opentxs::crypto::key::Asymmetric::DefaultVersion) const = 0;
     OPENTXS_EXPORT virtual OTAsymmetricKey AsymmetricKey(
@@ -402,7 +402,7 @@ public:
     OPENTXS_EXPORT virtual OTKeypair Keypair(
         const NymParameters& nymParameters,
         const VersionNumber version,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const opentxs::PasswordPrompt& reason) const = 0;
     OPENTXS_EXPORT virtual OTKeypair Keypair(
         const proto::AsymmetricKey& serializedPubkey,
@@ -416,7 +416,7 @@ public:
         const Bip32Index credset,
         const Bip32Index credindex,
         const EcdsaCurve& curve,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const opentxs::PasswordPrompt& reason) const = 0;
 #endif  // OT_CRYPTO_WITH_BIP32
     OPENTXS_EXPORT virtual std::unique_ptr<opentxs::Ledger> Ledger(

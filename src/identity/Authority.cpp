@@ -39,6 +39,7 @@
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
+#include "opentxs/identity/KeyRole.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/credential/Key.hpp"
 #include "opentxs/identity/credential/Verification.hpp"
@@ -51,6 +52,7 @@
 #include "opentxs/protobuf/Verification.pb.h"
 #include "opentxs/protobuf/verify/Credential.hpp"
 #include "opentxs/protobuf/verify/VerifyContacts.hpp"
+#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::identity::implementation::Authority::"
 
@@ -117,6 +119,13 @@ auto Authority::NymToContactCredential(const VersionNumber nym) noexcept(false)
 
 namespace opentxs::identity::implementation
 {
+const Authority::KeyRoleMap Authority::keyrole_map_{
+    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
+    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
+    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
+};
+const Authority::KeyRoleReverseMap Authority::keyrole_reverse_map_{
+    reverse_map(keyrole_map_)};
 const VersionConversionMap Authority::authority_to_contact_{
     {1, 1},
     {2, 2},
@@ -558,7 +567,7 @@ auto Authority::EncryptionTargets() const noexcept -> AuthorityKeys
             continue;
         }
 
-        const auto& keypair = cred.GetKeypair(proto::KEYROLE_ENCRYPT);
+        const auto& keypair = cred.GetKeypair(identity::KeyRole::Encrypt);
         set.emplace(keypair.GetPublicKey().keyType());
     }
 
@@ -611,7 +620,7 @@ auto Authority::get_keypair(
         if (is_revoked(id->str(), plistRevokedIDs)) { continue; }
 
         try {
-            return credential.GetKeypair(type, role);
+            return credential.GetKeypair(type, keyrole_reverse_map_.at(role));
         } catch (...) {
             continue;
         }
@@ -741,7 +750,7 @@ auto Authority::GetTagCredential(crypto::AsymmetricKeyType type) const
             continue;
         }
 
-        const auto& keypair = cred.GetKeypair(proto::KEYROLE_ENCRYPT);
+        const auto& keypair = cred.GetKeypair(identity::KeyRole::Encrypt);
 
         if (type == keypair.GetPublicKey().keyType()) { return cred; }
     }
@@ -968,7 +977,7 @@ auto Authority::Params(const crypto::AsymmetricKeyType type) const noexcept
 {
     try {
         return GetTagCredential(type)
-            .GetKeypair(type, proto::KEYROLE_ENCRYPT)
+            .GetKeypair(type, identity::KeyRole::Encrypt)
             .GetPublicKey()
             .Params();
     } catch (...) {
@@ -1062,7 +1071,7 @@ auto Authority::Sign(
     const crypto::SignatureRole role,
     proto::Signature& signature,
     const opentxs::PasswordPrompt& reason,
-    proto::KeyRole key,
+    identity::KeyRole key,
     const proto::HashType hash) const -> bool
 {
     switch (role) {
@@ -1151,7 +1160,7 @@ auto Authority::Unlock(
 
         try {
             const auto& encryptKey =
-                cred.GetKeypair(proto::KEYROLE_ENCRYPT).GetPrivateKey();
+                cred.GetKeypair(identity::KeyRole::Encrypt).GetPrivateKey();
 
             if (type != encryptKey.keyType()) { continue; }
 
@@ -1220,7 +1229,7 @@ auto Authority::validate_credential(const Item& item) const -> bool
 auto Authority::Verify(
     const Data& plaintext,
     const proto::Signature& sig,
-    const proto::KeyRole key) const -> bool
+    const identity::KeyRole key) const -> bool
 {
     std::string signerID(sig.credentialid());
 
@@ -1255,7 +1264,9 @@ auto Authority::Verify(const proto::Verification& item) const -> bool
     signature.clear_signature();
 
     return Verify(
-        api_.Factory().Data(serialized), signatureCopy, proto::KEYROLE_SIGN);
+        api_.Factory().Data(serialized),
+        signatureCopy,
+        identity::KeyRole::Sign);
 }
 
 auto Authority::VerifyInternally() const -> bool

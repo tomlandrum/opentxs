@@ -21,6 +21,7 @@
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/identity/Types.hpp"
 
 namespace opentxs
 {
@@ -93,7 +94,7 @@ public:
     auto RandomKeypair(
         const AllocateOutput privateKey,
         const AllocateOutput publicKey,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const NymParameters& options,
         const AllocateOutput params) const noexcept -> bool final;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519

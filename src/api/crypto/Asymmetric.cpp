@@ -37,9 +37,11 @@
 #include "opentxs/crypto/key/Secp256k1.hpp"
 #include "opentxs/crypto/library/EcdsaProvider.hpp"
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
+#include "opentxs/identity/Types.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
+#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::api::crypto::implementation::Asymmetric::"
 
@@ -56,6 +58,14 @@ auto AsymmetricAPI(const api::internal::Core& api) noexcept
 
 namespace opentxs::api::crypto::implementation
 {
+const Asymmetric::KeyRoleMap Asymmetric::keyrole_map_{
+    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
+    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
+    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
+};
+const Asymmetric::KeyRoleReverseMap Asymmetric::keyrole_reverse_map_{
+    reverse_map(keyrole_map_)};
+
 const VersionNumber Asymmetric::serialized_path_version_{1};
 
 const Asymmetric::TypeMap Asymmetric::curve_to_key_type_{
@@ -76,7 +86,7 @@ auto Asymmetric::instantiate_hd_key(
     const std::string& seedID,
     const opentxs::crypto::Bip32::Key& serialized,
     const PasswordPrompt& reason,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     const VersionNumber version) const noexcept -> std::unique_ptr<ReturnType>
 {
     const auto& [privkey, ccode, pubkey, path, parent] = serialized;
@@ -93,7 +103,7 @@ auto Asymmetric::instantiate_hd_key(
                 pubkey,
                 serialize_path(seedID, path),
                 parent,
-                role,
+                keyrole_map_.at(role),
                 version,
                 reason);
         }
@@ -111,7 +121,7 @@ auto Asymmetric::instantiate_hd_key(
                 pubkey,
                 serialize_path(seedID, path),
                 parent,
-                role,
+                keyrole_map_.at(role),
                 version,
                 reason);
         }
@@ -214,7 +224,7 @@ auto Asymmetric::InstantiateKey(
     const std::string& seedID,
     const opentxs::crypto::Bip32::Key& serialized,
     const PasswordPrompt& reason,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     const VersionNumber version) const -> Asymmetric::HDKey
 {
     using ReturnType = opentxs::crypto::key::HD;
@@ -260,7 +270,7 @@ auto Asymmetric::NewHDKey(
     const EcdsaCurve& curve,
     const opentxs::crypto::Bip32::Path& path,
     const PasswordPrompt& reason,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     const VersionNumber version) const -> Asymmetric::HDKey
 {
     return InstantiateKey(
@@ -276,8 +286,8 @@ auto Asymmetric::NewHDKey(
 auto Asymmetric::InstantiateSecp256k1Key(
     const ReadView publicKey,
     const PasswordPrompt& reason,
-    const proto::KeyRole role,
-    const VersionNumber version) const noexcept -> Secp256k1Key
+    const identity::KeyRole role,
+    const VersionNumber version) const noexcept(false) -> Secp256k1Key
 {
     static const auto blank = api_.Factory().Secret(0);
 
@@ -286,7 +296,7 @@ auto Asymmetric::InstantiateSecp256k1Key(
         api_.Crypto().SECP256K1(),
         blank,
         api_.Factory().Data(publicKey),
-        role,
+        keyrole_map_.at(role),
         version,
         reason);
 }
@@ -294,8 +304,8 @@ auto Asymmetric::InstantiateSecp256k1Key(
 auto Asymmetric::InstantiateSecp256k1Key(
     const Secret& priv,
     const PasswordPrompt& reason,
-    const proto::KeyRole role,
-    const VersionNumber version) const noexcept -> Secp256k1Key
+    const identity::KeyRole role,
+    const VersionNumber version) const noexcept(false) -> Secp256k1Key
 {
     auto pub = api_.Factory().Data();
     const auto& ecdsa = api_.Crypto().SECP256K1();
@@ -307,7 +317,8 @@ auto Asymmetric::InstantiateSecp256k1Key(
         return {};
     }
 
-    return factory::Secp256k1Key(api_, ecdsa, priv, pub, role, version, reason);
+    return factory::Secp256k1Key(
+        api_, ecdsa, priv, pub, keyrole_map_.at(role), version, reason);
 }
 
 auto Asymmetric::NewSecp256k1Key(
@@ -315,8 +326,8 @@ auto Asymmetric::NewSecp256k1Key(
     const Secret& seed,
     const opentxs::crypto::Bip32::Path& derive,
     const PasswordPrompt& reason,
-    const proto::KeyRole role,
-    const VersionNumber version) const -> Secp256k1Key
+    const identity::KeyRole role,
+    const VersionNumber version) const noexcept(false) -> Secp256k1Key
 {
     const auto serialized =
         api_.Crypto().BIP32().DeriveKey(EcdsaCurve::secp256k1, seed, derive);
@@ -330,7 +341,7 @@ auto Asymmetric::NewSecp256k1Key(
         pubkey,
         serialize_path(seedID, path),
         parent,
-        role,
+        keyrole_map_.at(role),
         version,
         reason);
 }
@@ -340,20 +351,28 @@ auto Asymmetric::NewSecp256k1Key(
 auto Asymmetric::NewKey(
     const NymParameters& params,
     const PasswordPrompt& reason,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     const VersionNumber version) const -> Asymmetric::Key
 {
     switch (params.AsymmetricKeyType()) {
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
         case (opentxs::crypto::AsymmetricKeyType::ED25519): {
             return opentxs::factory::Ed25519Key(
-                api_, api_.Crypto().ED25519(), role, version, reason);
+                api_,
+                api_.Crypto().ED25519(),
+                keyrole_map_.at(role),
+                version,
+                reason);
         }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
         case (opentxs::crypto::AsymmetricKeyType::Secp256k1): {
             return opentxs::factory::Secp256k1Key(
-                api_, api_.Crypto().SECP256K1(), role, version, reason);
+                api_,
+                api_.Crypto().SECP256K1(),
+                keyrole_map_.at(role),
+                version,
+                reason);
         }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #if OT_CRYPTO_SUPPORTED_KEY_RSA

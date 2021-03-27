@@ -20,6 +20,7 @@
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
 #include "opentxs/crypto/Types.hpp"
+#include "opentxs/identity/Types.hpp"
 #include "opentxs/protobuf/Signature.pb.h"
 
 namespace opentxs
@@ -108,7 +109,7 @@ public:
     auto PrivateKey(const PasswordPrompt& reason) const noexcept
         -> ReadView final;
     auto PublicKey() const noexcept -> ReadView final { return key_->Bytes(); }
-    auto Role() const noexcept -> proto::KeyRole final { return role_; }
+    auto Role() const noexcept -> identity::KeyRole final { return role_; }
     auto Serialize() const noexcept
         -> std::shared_ptr<proto::AsymmetricKey> override;
     auto SigHashType() const noexcept -> proto::HashType override
@@ -145,12 +146,17 @@ protected:
 
     using EncryptedKey = std::unique_ptr<proto::Ciphertext>;
     using EncryptedExtractor = std::function<EncryptedKey(Data&, Secret&)>;
+    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
+    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
+
+    static const KeyRoleMap keyrole_map_;
+    static const KeyRoleReverseMap keyrole_reverse_map_;
 
     const api::internal::Core& api_;
     const crypto::AsymmetricProvider& provider_;
     const VersionNumber version_;
     const crypto::AsymmetricKeyType type_;
-    const proto::KeyRole role_;
+    const identity::KeyRole role_;
     bool has_public_;
     bool has_private_;
     OTSignatureMetadata* m_pMetadata;
@@ -230,8 +236,8 @@ protected:
         const crypto::AsymmetricProvider& engine,
         const proto::AsymmetricKey& serializedKey,
         EncryptedExtractor) noexcept(false);
-    Asymmetric(const Asymmetric& rhs) noexcept;
-    Asymmetric(const Asymmetric& rhs, const ReadView newPublic) noexcept;
+    Asymmetric(const Asymmetric& rhs) noexcept(false);
+    Asymmetric(const Asymmetric& rhs, const ReadView newPublic) noexcept(false);
     Asymmetric(
         const Asymmetric& rhs,
         OTData&& newPublicKey,

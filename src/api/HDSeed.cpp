@@ -68,6 +68,13 @@ auto HDSeed(
 
 namespace opentxs::api::implementation
 {
+const HDSeed::KeyRoleMap HDSeed::keyrole_map_{
+    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
+    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
+    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
+};
+const HDSeed::KeyRoleReverseMap HDSeed::keyrole_reverse_map_{
+    reverse_map(keyrole_map_)};
 const HDSeed::SymmetricModeMap HDSeed::symmetricmode_map_{
     {opentxs::crypto::SymmetricMode::Error, proto::SMODE_ERROR},
     {opentxs::crypto::SymmetricMode::ChaCha20Poly1305,
@@ -217,7 +224,7 @@ auto HDSeed::GetHDKey(
     const EcdsaCurve& curve,
     const Path& path,
     const PasswordPrompt& reason,
-    const proto::KeyRole role,
+    const identity::KeyRole role,
     const VersionNumber version) const
     -> std::unique_ptr<opentxs::crypto::key::HD>
 {
@@ -323,7 +330,7 @@ auto HDSeed::GetPaymentCode(
         api.Factory().Data(key.PublicKey()),
         path,
         key.Parent(),
-        key.Role(),
+        keyrole_map_.at(key.Role()),
         key.Version(),
         reason);
 #else

@@ -32,7 +32,6 @@
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
-//#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/verify/SymmetricKey.hpp"
 #include "util/Container.hpp"
 

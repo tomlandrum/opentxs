@@ -23,7 +23,7 @@
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"
 #include "opentxs/crypto/key/Secp256k1.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/identity/KeyRole.hpp"
 #include "opentxs/protobuf/HDPath.pb.h"
 
 namespace opentxs
@@ -66,7 +66,7 @@ public:
         const std::string& seedID,
         const opentxs::crypto::Bip32::Key& serialized,
         const PasswordPrompt& reason,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const VersionNumber version) const -> HDKey final;
 #endif  // OT_CRYPTO_WITH_BIP32
     auto InstantiateKey(const proto::AsymmetricKey& serialized) const
@@ -78,34 +78,36 @@ public:
         const EcdsaCurve& curve,
         const opentxs::crypto::Bip32::Path& path,
         const PasswordPrompt& reason,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const VersionNumber version) const -> HDKey final;
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
     auto InstantiateSecp256k1Key(
         const ReadView publicKey,
         const PasswordPrompt& reason,
-        const proto::KeyRole role,
-        const VersionNumber version) const noexcept -> Secp256k1Key final;
+        const identity::KeyRole role,
+        const VersionNumber version) const noexcept(false)
+        -> Secp256k1Key final;
     auto InstantiateSecp256k1Key(
         const Secret& privateKey,
         const PasswordPrompt& reason,
-        const proto::KeyRole role,
-        const VersionNumber version) const noexcept -> Secp256k1Key final;
+        const identity::KeyRole role,
+        const VersionNumber version) const noexcept(false)
+        -> Secp256k1Key final;
     auto NewSecp256k1Key(
         const std::string& seedID,
         const Secret& seed,
         const opentxs::crypto::Bip32::Path& path,
         const PasswordPrompt& reason,
-        const proto::KeyRole role = proto::KEYROLE_SIGN,
+        const identity::KeyRole role = identity::KeyRole::Sign,
         const VersionNumber version =
             opentxs::crypto::key::Secp256k1::DefaultVersion) const
-        -> Secp256k1Key final;
+        noexcept(false) -> Secp256k1Key final;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #endif  // OT_CRYPTO_WITH_BIP32
     auto NewKey(
         const NymParameters& params,
         const PasswordPrompt& reason,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const VersionNumber version) const -> Key final;
 
     Asymmetric(const api::internal::Core& api) noexcept;
@@ -113,8 +115,12 @@ public:
     ~Asymmetric() final = default;
 
 private:
+    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
+    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
     using TypeMap = std::map<EcdsaCurve, opentxs::crypto::AsymmetricKeyType>;
 
+    static const KeyRoleMap keyrole_map_;
+    static const KeyRoleReverseMap keyrole_reverse_map_;
     static const VersionNumber serialized_path_version_;
     static const TypeMap curve_to_key_type_;
 
@@ -133,7 +139,7 @@ private:
         const std::string& seedID,
         const opentxs::crypto::Bip32::Key& serialized,
         const PasswordPrompt& reason,
-        const proto::KeyRole role,
+        const identity::KeyRole role,
         const VersionNumber version) const noexcept
         -> std::unique_ptr<ReturnType>;
 #endif  // OT_CRYPTO_WITH_BIP32
