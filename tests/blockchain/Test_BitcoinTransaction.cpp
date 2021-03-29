@@ -446,9 +446,9 @@ TEST_F(Test_BitcoinTransaction, normalized_id)
     auto id2 = api_.Factory().Data();
 
     ASSERT_TRUE(api_.Crypto().Hash().Digest(
-        ot::proto::HASHTYPE_SHA256D, tx_bytes_->Bytes(), id1->WriteInto()));
+        ot::crypto::HashType::Sha256D, tx_bytes_->Bytes(), id1->WriteInto()));
     ASSERT_TRUE(api_.Crypto().Hash().Digest(
-        ot::proto::HASHTYPE_SHA256D,
+        ot::crypto::HashType::Sha256D,
         mutated_bytes_->Bytes(),
         id2->WriteInto()));
     EXPECT_EQ(id1.get(), tx_id_.get());

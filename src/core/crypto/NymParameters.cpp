@@ -23,8 +23,10 @@
 #include "opentxs/crypto/Language.hpp"
 #include "opentxs/crypto/SeedStrength.hpp"
 #include "opentxs/crypto/SeedStyle.hpp"
+#include "opentxs/identity/SourceProofType.hpp"
+#include "opentxs/identity/SourceType.hpp"
+#include "opentxs/identity/Types.hpp"
 #include "opentxs/protobuf/ContactData.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/VerificationSet.pb.h"
 #include "util/Container.hpp"
 
@@ -47,8 +49,8 @@ const auto nym_to_key_{reverse_map(key_to_nym_)};
 struct NymParameters::Imp {
     const NymParameterType nymType_;
     const identity::CredentialType credentialType_;
-    const proto::SourceType sourceType_;
-    const proto::SourceProofType sourceProofType_;
+    const identity::SourceType sourceType_;
+    const identity::SourceProofType sourceProofType_;
     std::shared_ptr<proto::ContactData> contact_data_;
     std::shared_ptr<proto::VerificationSet> verification_set_;
     std::uint8_t payment_code_version_;
@@ -72,7 +74,7 @@ struct NymParameters::Imp {
 
     Imp(const NymParameterType type,
         const identity::CredentialType credential,
-        const proto::SourceType source,
+        const identity::SourceType source,
         const std::uint8_t pcVersion) noexcept
         : nymType_(type)
         , credentialType_(
@@ -80,12 +82,12 @@ struct NymParameters::Imp {
                   ? identity::CredentialType::Legacy
                   : credential)
         , sourceType_(
-              (NymParameterType::rsa == nymType_) ? proto::SOURCETYPE_PUBKEY
+              (NymParameterType::rsa == nymType_) ? identity::SourceType::PubKey
                                                   : source)
         , sourceProofType_(
-              (proto::SOURCETYPE_BIP47 == sourceType_)
-                  ? proto::SOURCEPROOFTYPE_SIGNATURE
-                  : proto::SOURCEPROOFTYPE_SELF_SIGNATURE)
+              (identity::SourceType::Bip47 == sourceType_)
+                  ? identity::SourceProofType::Signature
+                  : identity::SourceProofType::SelfSignature)
         , contact_data_(nullptr)
         , verification_set_(nullptr)
         , payment_code_version_(
@@ -137,7 +139,7 @@ struct NymParameters::Imp {
 NymParameters::NymParameters(
     const NymParameterType type,
     const identity::CredentialType credential,
-    const proto::SourceType source,
+    const identity::SourceType source,
     const std::uint8_t pcVersion) noexcept
     : imp_(std::make_unique<Imp>(type, credential, source, pcVersion))
 {
@@ -147,7 +149,7 @@ NymParameters::NymParameters(
 NymParameters::NymParameters(
     crypto::AsymmetricKeyType key,
     identity::CredentialType credential,
-    const proto::SourceType source,
+    const identity::SourceType source,
     const std::uint8_t pcVersion) noexcept
     : NymParameters(key_to_nym_.at(key), credential, source, pcVersion)
 {
@@ -200,10 +202,10 @@ auto NymParameters::ChangeType(const NymParameterType type) const noexcept
     if (NymParameterType::rsa == output.imp_->nymType_) {
         const_cast<identity::CredentialType&>(output.imp_->credentialType_) =
             identity::CredentialType::Legacy;
-        const_cast<proto::SourceType&>(output.imp_->sourceType_) =
-            proto::SOURCETYPE_PUBKEY;
-        const_cast<proto::SourceProofType&>(output.imp_->sourceProofType_) =
-            proto::SOURCEPROOFTYPE_SELF_SIGNATURE;
+        const_cast<identity::SourceType&>(output.imp_->sourceType_) =
+            identity::SourceType::PubKey;
+        const_cast<identity::SourceProofType&>(output.imp_->sourceProofType_) =
+            identity::SourceProofType::SelfSignature;
     }
 
     return output;
@@ -283,11 +285,12 @@ auto NymParameters::SeedStyle() const noexcept -> crypto::SeedStyle
     return imp_->seed_style_;
 }
 #endif  // OT_CRYPTO_WITH_BIP32
-auto NymParameters::SourceProofType() const noexcept -> proto::SourceProofType
+auto NymParameters::SourceProofType() const noexcept
+    -> identity::SourceProofType
 {
     return imp_->sourceProofType_;
 }
-auto NymParameters::SourceType() const noexcept -> proto::SourceType
+auto NymParameters::SourceType() const noexcept -> identity::SourceType
 {
     return imp_->sourceType_;
 }

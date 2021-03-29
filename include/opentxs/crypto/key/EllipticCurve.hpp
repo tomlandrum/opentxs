@@ -46,7 +46,7 @@ public:
         const Secret& scalar) const noexcept = 0;
     OPENTXS_EXPORT virtual bool SignDER(
         const ReadView preimage,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         Space& output,
         const PasswordPrompt& reason) const noexcept = 0;
 

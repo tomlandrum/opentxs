@@ -34,7 +34,6 @@
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 
 template class opentxs::Pimpl<opentxs::Identifier>;
@@ -418,17 +417,17 @@ void Identifier::GetString(String& id) const
     }
 }
 
-auto Identifier::IDToHashType(const ID type) -> proto::HashType
+auto Identifier::IDToHashType(const ID type) -> crypto::HashType
 {
     switch (type) {
         case (ID::sha256): {
-            return proto::HASHTYPE_SHA256;
+            return crypto::HashType::Sha256;
         }
         case (ID::blake2b): {
-            return proto::HASHTYPE_BLAKE2B160;
+            return crypto::HashType::Blake2b160;
         }
         default: {
-            return proto::HASHTYPE_NONE;
+            return crypto::HashType::None;
         }
     }
 }

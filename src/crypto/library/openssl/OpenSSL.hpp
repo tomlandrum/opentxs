@@ -30,7 +30,6 @@ extern "C" {
 #include "opentxs/Version.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -87,12 +86,12 @@ class OpenSSL final : virtual public crypto::OpenSSL
 {
 public:
     auto Digest(
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::uint8_t* input,
         const size_t inputSize,
         std::uint8_t* output) const -> bool final;
     auto HMAC(
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::uint8_t* input,
         const size_t inputSize,
         const std::uint8_t* key,
@@ -104,7 +103,7 @@ public:
         const void* salt,
         const std::size_t saltSize,
         const std::size_t iterations,
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::size_t bytes,
         void* output) const noexcept -> bool final;
     auto RIPEMD160(
@@ -129,14 +128,14 @@ public:
         const api::internal::Core& api,
         const ReadView plaintext,
         const key::Asymmetric& key,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         const AllocateOutput signature,
         const PasswordPrompt& reason) const -> bool final;
     auto Verify(
         const Data& plaintext,
         const key::Asymmetric& theKey,
         const Data& signature,
-        const proto::HashType hashType) const -> bool final;
+        const crypto::HashType hashType) const -> bool final;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_RSA
 
     OpenSSL() noexcept;
@@ -203,13 +202,13 @@ private:
         operator Hash() noexcept { return hash_; }
         operator Key() noexcept { return key_.get(); }
 
-        auto init_digest(const proto::HashType hash) noexcept -> bool;
+        auto init_digest(const crypto::HashType hash) noexcept -> bool;
         auto init_sign(
-            const proto::HashType hash,
+            const crypto::HashType hash,
             const key::Asymmetric& key,
             const PasswordPrompt& reason) noexcept -> bool;
         auto init_verify(
-            const proto::HashType hash,
+            const crypto::HashType hash,
             const key::Asymmetric& key) noexcept -> bool;
 
         MD() noexcept;
@@ -227,7 +226,7 @@ private:
         const ReadView bytes,
         const Instantiate function,
         OpenSSL_EVP_PKEY& output) noexcept -> bool;
-    static auto HashTypeToOpenSSLType(const proto::HashType hashType) noexcept
+    static auto HashTypeToOpenSSLType(const crypto::HashType hashType) noexcept
         -> const ::EVP_MD*;
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
     static auto primes(const int bits) -> int;

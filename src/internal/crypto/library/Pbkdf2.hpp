@@ -8,7 +8,7 @@
 #include <cstdint>
 
 #include "opentxs/Proto.hpp"
-#include "opentxs/protobuf/Enums.pb.h"  // IWYU pragma: keep
+#include "opentxs/crypto/Types.hpp"
 
 namespace opentxs::crypto
 {
@@ -21,7 +21,7 @@ public:
         const void* salt,
         const std::size_t saltSize,
         const std::size_t iterations,
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::size_t bytes,
         void* output) const noexcept -> bool = 0;
 

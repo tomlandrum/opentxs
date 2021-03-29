@@ -176,15 +176,15 @@ auto Sodium::Derive(
 }
 
 auto Sodium::Digest(
-    const proto::HashType hashType,
+    const crypto::HashType hashType,
     const std::uint8_t* input,
     const size_t inputSize,
     std::uint8_t* output) const -> bool
 {
     switch (hashType) {
-        case (proto::HASHTYPE_BLAKE2B160):
-        case (proto::HASHTYPE_BLAKE2B256):
-        case (proto::HASHTYPE_BLAKE2B512): {
+        case (crypto::HashType::Blake2b160):
+        case (crypto::HashType::Blake2b256):
+        case (crypto::HashType::Blake2b512): {
             return (
                 0 == ::crypto_generichash(
                          output,
@@ -194,13 +194,13 @@ auto Sodium::Digest(
                          nullptr,
                          0));
         }
-        case (proto::HASHTYPE_SHA256): {
+        case (crypto::HashType::Sha256): {
             return (0 == ::crypto_hash_sha256(output, input, inputSize));
         }
-        case (proto::HASHTYPE_SHA512): {
+        case (crypto::HashType::Sha512): {
             return (0 == ::crypto_hash_sha512(output, input, inputSize));
         }
-        case (proto::HASHTYPE_SHA1): {
+        case (crypto::HashType::Sha1): {
             return sha1(input, inputSize, output);
         }
         default: {
@@ -342,7 +342,7 @@ auto Sodium::Generate(
 }
 
 auto Sodium::HMAC(
-    const proto::HashType hashType,
+    const crypto::HashType hashType,
     const std::uint8_t* input,
     const size_t inputSize,
     const std::uint8_t* key,
@@ -350,9 +350,9 @@ auto Sodium::HMAC(
     std::uint8_t* output) const -> bool
 {
     switch (hashType) {
-        case (proto::HASHTYPE_BLAKE2B160):
-        case (proto::HASHTYPE_BLAKE2B256):
-        case (proto::HASHTYPE_BLAKE2B512): {
+        case (crypto::HashType::Blake2b160):
+        case (crypto::HashType::Blake2b256):
+        case (crypto::HashType::Blake2b512): {
             return (
                 0 == ::crypto_generichash(
                          output,
@@ -362,7 +362,7 @@ auto Sodium::HMAC(
                          key,
                          keySize));
         }
-        case (proto::HASHTYPE_SHA256): {
+        case (crypto::HashType::Sha256): {
             auto success{false};
             auto state = crypto_auth_hmacsha256_state{};
             success = (0 == crypto_auth_hmacsha256_init(&state, key, keySize));
@@ -387,7 +387,7 @@ auto Sodium::HMAC(
 
             return (0 == ::crypto_auth_hmacsha256_final(&state, output));
         }
-        case (proto::HASHTYPE_SHA512): {
+        case (crypto::HashType::Sha512): {
             auto success{false};
             auto state = crypto_auth_hmacsha512_state{};
             success = (0 == crypto_auth_hmacsha512_init(&state, key, keySize));
@@ -412,7 +412,7 @@ auto Sodium::HMAC(
 
             return (0 == ::crypto_auth_hmacsha512_final(&state, output));
         }
-        case (proto::HASHTYPE_SIPHASH24): {
+        case (crypto::HashType::SipHash24): {
             if (crypto_shorthash_KEYBYTES < keySize) {
                 LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect key size: ")(
                     keySize)(" vs expected ")(crypto_shorthash_KEYBYTES)
@@ -709,7 +709,7 @@ auto Sodium::Sign(
     const api::internal::Core& api,
     const ReadView plaintext,
     const key::Asymmetric& key,
-    const proto::HashType hash,
+    const crypto::HashType hash,
     const AllocateOutput signature,
     const PasswordPrompt& reason) const -> bool
 {
@@ -727,9 +727,9 @@ auto Sodium::Sign(
         return false;
     }
 
-    if (proto::HASHTYPE_BLAKE2B256 != hash) {
+    if (crypto::HashType::Blake2b256 != hash) {
         LogVerbose(OT_METHOD)(__FUNCTION__)(": Unsupported hash function: ")(
-            hash)
+            static_cast<int>(hash))
             .Flush();
 
         return false;
@@ -808,7 +808,7 @@ auto Sodium::Verify(
     const Data& plaintext,
     const key::Asymmetric& key,
     const Data& signature,
-    const proto::HashType type) const -> bool
+    const crypto::HashType type) const -> bool
 {
     if (crypto::AsymmetricKeyType::ED25519 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
@@ -816,9 +816,9 @@ auto Sodium::Verify(
         return false;
     }
 
-    if (proto::HASHTYPE_BLAKE2B256 != type) {
+    if (crypto::HashType::Blake2b256 != type) {
         LogVerbose(OT_METHOD)(__FUNCTION__)(": Unsupported hash function: ")(
-            type)
+            static_cast<int>(type))
             .Flush();
 
         return false;

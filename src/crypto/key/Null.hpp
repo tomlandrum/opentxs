@@ -62,7 +62,7 @@ public:
     {
         return {};
     }
-    auto CalculateHash(const proto::HashType, const PasswordPrompt&)
+    auto CalculateHash(const crypto::HashType, const PasswordPrompt&)
         const noexcept -> OTData final
     {
         return Data::Factory();
@@ -125,9 +125,9 @@ public:
     {
         return nullptr;
     }
-    auto SigHashType() const noexcept -> proto::HashType final
+    auto SigHashType() const noexcept -> crypto::HashType final
     {
-        return proto::HASHTYPE_NONE;
+        return crypto::HashType::None;
     }
     auto Sign(
         const GetPreimage,
@@ -135,13 +135,13 @@ public:
         proto::Signature&,
         const Identifier&,
         const PasswordPrompt&,
-        const proto::HashType) const noexcept -> bool final
+        const crypto::HashType) const noexcept -> bool final
     {
         return false;
     }
     auto Sign(
         const ReadView,
-        const proto::HashType,
+        const crypto::HashType,
         const AllocateOutput,
         const PasswordPrompt&) const noexcept -> bool final
     {
@@ -201,7 +201,7 @@ public:
     }
     auto SignDER(
         const ReadView,
-        const proto::HashType,
+        const crypto::HashType,
         Space&,
         const PasswordPrompt&) const noexcept -> bool final
     {

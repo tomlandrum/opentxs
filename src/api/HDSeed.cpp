@@ -35,6 +35,7 @@
 #include "opentxs/crypto/Bip39.hpp"
 #include "opentxs/crypto/Bip43Purpose.hpp"
 #include "opentxs/crypto/Bip44Type.hpp"
+#include "opentxs/crypto/HashType.hpp"
 #include "opentxs/crypto/Language.hpp"      // IWYU pragma: keep
 #include "opentxs/crypto/SeedStrength.hpp"  // IWYU pragma: keep
 #include "opentxs/crypto/SeedStyle.hpp"     // IWYU pragma: keep
@@ -311,7 +312,9 @@ auto HDSeed::GetPaymentCode(
     const auto code = [&] {
         auto out = api.Factory().Secret(0);
         api.Crypto().Hash().Digest(
-            proto::HASHTYPE_SHA256D, key.PublicKey(), out->WriteInto());
+            opentxs::crypto::HashType::Sha256D,
+            key.PublicKey(),
+            out->WriteInto());
 
         return out;
     }();

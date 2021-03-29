@@ -70,7 +70,7 @@ public:
         const api::internal::Core& api,
         const ReadView plaintext,
         const key::Asymmetric& key,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         const AllocateOutput signature,
         const PasswordPrompt& reason) const = 0;
     OPENTXS_EXPORT virtual bool SignContract(
@@ -78,18 +78,18 @@ public:
         const String& strContractUnsigned,
         const key::Asymmetric& theKey,
         Signature& theSignature,  // output
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const PasswordPrompt& reason) const = 0;
     OPENTXS_EXPORT virtual bool Verify(
         const Data& plaintext,
         const key::Asymmetric& theKey,
         const Data& signature,
-        const proto::HashType hashType) const = 0;
+        const crypto::HashType hashType) const = 0;
     OPENTXS_EXPORT virtual bool VerifyContractSignature(
         const String& strContractToVerify,
         const key::Asymmetric& theKey,
         const Signature& theSignature,
-        const proto::HashType hashType) const = 0;
+        const crypto::HashType hashType) const = 0;
 
     virtual ~AsymmetricProvider() = default;
 

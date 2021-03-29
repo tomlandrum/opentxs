@@ -82,7 +82,7 @@ public:
     auto Path(proto::HDPath&) const noexcept -> bool override { return {}; }
     auto SignDER(
         const ReadView preimage,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         Space& output,
         const PasswordPrompt& reason) const noexcept -> bool final;
 

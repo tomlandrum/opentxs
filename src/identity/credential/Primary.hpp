@@ -14,7 +14,6 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/identity/credential/Base.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/SourceProof.pb.h"
 
 namespace opentxs
@@ -71,6 +70,13 @@ public:
 private:
     friend opentxs::Factory;
 
+    using SourceProofTypeMap =
+        std::map<identity::SourceProofType, proto::SourceProofType>;
+    using SourceProofTypeReverseMap =
+        std::map<proto::SourceProofType, identity::SourceProofType>;
+
+    static const SourceProofTypeMap sourceprooftype_map_;
+    static const SourceProofTypeReverseMap sourceprooftype_reverse_map_;
     static const VersionConversionMap credential_to_master_params_;
 
     const proto::SourceProof source_proof_;

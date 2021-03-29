@@ -7,7 +7,6 @@
 
 #include "opentxs/Bytes.hpp"
 #include "opentxs/crypto/library/EcdsaProvider.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -41,7 +40,7 @@ public:
         [[maybe_unused]] const api::internal::Core& api,
         [[maybe_unused]] const ReadView plaintext,
         [[maybe_unused]] const key::Asymmetric& key,
-        [[maybe_unused]] const proto::HashType hash,
+        [[maybe_unused]] const crypto::HashType hash,
         [[maybe_unused]] Space& signature,
         [[maybe_unused]] const PasswordPrompt& reason) const noexcept override
     {

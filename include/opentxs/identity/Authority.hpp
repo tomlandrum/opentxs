@@ -108,7 +108,7 @@ public:
         proto::Signature& signature,
         const PasswordPrompt& reason,
         identity::KeyRole key = identity::KeyRole::Sign,
-        const proto::HashType hash = proto::HASHTYPE_ERROR) const = 0;
+        const crypto::HashType hash = crypto::HashType::Error) const = 0;
     OPENTXS_EXPORT virtual const identity::Source& Source() const = 0;
     OPENTXS_EXPORT virtual bool TransportKey(
         Data& publicKey,

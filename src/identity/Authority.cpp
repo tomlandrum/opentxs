@@ -1072,7 +1072,7 @@ auto Authority::Sign(
     proto::Signature& signature,
     const opentxs::PasswordPrompt& reason,
     identity::KeyRole key,
-    const proto::HashType hash) const -> bool
+    const crypto::HashType hash) const -> bool
 {
     switch (role) {
         case (crypto::SignatureRole::PublicCredential): {

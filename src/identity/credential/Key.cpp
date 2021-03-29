@@ -429,7 +429,7 @@ auto Key::SelfSign(
             signature,
             reason,
             identity::KeyRole::Sign,
-            proto::HASHTYPE_ERROR);
+            crypto::HashType::Error);
 
         OT_ASSERT(havePublicSig);
 
@@ -447,7 +447,7 @@ auto Key::SelfSign(
         signature,
         reason,
         identity::KeyRole::Sign,
-        proto::HASHTYPE_ERROR);
+        crypto::HashType::Error);
 
     OT_ASSERT(havePrivateSig);
 
@@ -482,7 +482,7 @@ auto Key::Sign(
     proto::Signature& signature,
     const PasswordPrompt& reason,
     identity::KeyRole key,
-    const proto::HashType hash) const -> bool
+    const crypto::HashType hash) const -> bool
 {
     const crypto::key::Keypair* keyToUse{nullptr};
 

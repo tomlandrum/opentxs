@@ -21,7 +21,7 @@
 #include "opentxs/api/crypto/Crypto.hpp"
 #include "opentxs/api/crypto/Hash.hpp"
 #include "opentxs/core/Data.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/HashType.hpp"
 
 namespace
 {
@@ -313,7 +313,7 @@ TEST_F(Test_Hash, PKCS5_PBKDF2_HMAC_SHA1)
         auto output = ot::Data::Factory();
 
         EXPECT_TRUE(crypto_.Hash().PKCS5_PBKDF2_HMAC(
-            P, salt, c, ot::proto::HASHTYPE_SHA1, dkLen, output));
+            P, salt, c, ot::crypto::HashType::Sha1, dkLen, output));
         EXPECT_EQ(output.get(), expected.get());
     }
 }
@@ -327,7 +327,7 @@ TEST_F(Test_Hash, PKCS5_PBKDF2_HMAC_SHA256)
         auto output = ot::Data::Factory();
 
         EXPECT_TRUE(crypto_.Hash().PKCS5_PBKDF2_HMAC(
-            P, salt, c, ot::proto::HASHTYPE_SHA256, dkLen, output));
+            P, salt, c, ot::crypto::HashType::Sha256, dkLen, output));
         EXPECT_EQ(output.get(), expected.get());
     }
 }
@@ -340,7 +340,7 @@ TEST_F(Test_Hash, PKCS5_PBKDF2_HMAC_SHA512)
         auto output = ot::Data::Factory();
 
         EXPECT_TRUE(crypto_.Hash().PKCS5_PBKDF2_HMAC(
-            P, salt, c, ot::proto::HASHTYPE_SHA512, dkLen, output));
+            P, salt, c, ot::crypto::HashType::Sha512, dkLen, output));
         EXPECT_EQ(output.get(), expected.get());
     }
 }
@@ -356,12 +356,12 @@ TEST_F(Test_Hash, HMAC_SHA2)
         auto output512 = ot::Data::Factory();
 
         EXPECT_TRUE(crypto_.Hash().HMAC(
-            ot::proto::HASHTYPE_SHA256,
+            ot::crypto::HashType::Sha256,
             dataPassword->Bytes(),
             data->Bytes(),
             output256->WriteInto()));
         EXPECT_TRUE(crypto_.Hash().HMAC(
-            ot::proto::HASHTYPE_SHA512,
+            ot::crypto::HashType::Sha512,
             dataPassword->Bytes(),
             data->Bytes(),
             output512->WriteInto()));
@@ -419,11 +419,15 @@ TEST_F(Test_Hash, nist_short)
         auto calculatedSha512 = ot::Data::Factory();
 
         EXPECT_TRUE(crypto_.Hash().Digest(
-            ot::proto::HASHTYPE_SHA1, input, calculatedSha1->WriteInto()));
+            ot::crypto::HashType::Sha1, input, calculatedSha1->WriteInto()));
         EXPECT_TRUE(crypto_.Hash().Digest(
-            ot::proto::HASHTYPE_SHA256, input, calculatedSha256->WriteInto()));
+            ot::crypto::HashType::Sha256,
+            input,
+            calculatedSha256->WriteInto()));
         EXPECT_TRUE(crypto_.Hash().Digest(
-            ot::proto::HASHTYPE_SHA512, input, calculatedSha512->WriteInto()));
+            ot::crypto::HashType::Sha512,
+            input,
+            calculatedSha512->WriteInto()));
 
         EXPECT_EQ(calculatedSha1.get(), eSha1);
         EXPECT_EQ(calculatedSha256.get(), eSha256);
@@ -450,11 +454,11 @@ TEST_F(Test_Hash, nist_million_characters)
     ASSERT_EQ(preimage.at(copies - 1u), character);
 
     EXPECT_TRUE(crypto_.Hash().Digest(
-        ot::proto::HASHTYPE_SHA1, view, calculatedSha1->WriteInto()));
+        ot::crypto::HashType::Sha1, view, calculatedSha1->WriteInto()));
     EXPECT_TRUE(crypto_.Hash().Digest(
-        ot::proto::HASHTYPE_SHA256, view, calculatedSha256->WriteInto()));
+        ot::crypto::HashType::Sha256, view, calculatedSha256->WriteInto()));
     EXPECT_TRUE(crypto_.Hash().Digest(
-        ot::proto::HASHTYPE_SHA512, view, calculatedSha512->WriteInto()));
+        ot::crypto::HashType::Sha512, view, calculatedSha512->WriteInto()));
 
     EXPECT_EQ(calculatedSha1.get(), eSha1);
     EXPECT_EQ(calculatedSha256.get(), eSha256);
@@ -487,11 +491,11 @@ TEST_F(Test_Hash, nist_gigabyte_string)
 
     ASSERT_EQ(preimage.size(), size);
     EXPECT_TRUE(crypto_.Hash().Digest(
-        ot::proto::HASHTYPE_SHA1, view, calculatedSha1->WriteInto()));
+        ot::crypto::HashType::Sha1, view, calculatedSha1->WriteInto()));
     EXPECT_TRUE(crypto_.Hash().Digest(
-        ot::proto::HASHTYPE_SHA256, view, calculatedSha256->WriteInto()));
+        ot::crypto::HashType::Sha256, view, calculatedSha256->WriteInto()));
     EXPECT_TRUE(crypto_.Hash().Digest(
-        ot::proto::HASHTYPE_SHA512, view, calculatedSha512->WriteInto()));
+        ot::crypto::HashType::Sha512, view, calculatedSha512->WriteInto()));
     EXPECT_EQ(calculatedSha1.get(), eSha1);
     EXPECT_EQ(calculatedSha256.get(), eSha256);
     EXPECT_EQ(calculatedSha512.get(), eSha512);

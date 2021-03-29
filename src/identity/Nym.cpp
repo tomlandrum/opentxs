@@ -72,7 +72,7 @@ auto Factory::Nym(
     using ReturnType = identity::implementation::Nym;
 
     if ((identity::CredentialType::Legacy == params.credentialType()) &&
-        (proto::SOURCETYPE_BIP47 == params.SourceType())) {
+        (identity::SourceType::Bip47 == params.SourceType())) {
         LogOutput("opentxs::Factory::")(__FUNCTION__)(": Invalid parameters")
             .Flush();
 
@@ -146,7 +146,7 @@ auto session_key_from_iv(
     const api::internal::Core& api,
     const crypto::key::Asymmetric& signingKey,
     const Data& iv,
-    const proto::HashType hashType,
+    const crypto::HashType hashType,
     opentxs::PasswordPrompt& reason) -> bool;
 
 const VersionConversionMap Nym::akey_to_session_key_version_{
@@ -1039,7 +1039,7 @@ auto Nym::Path(proto::HDPath& output) const -> bool
 
 auto Nym::PaymentCode() const -> std::string
 {
-    if (proto::SOURCETYPE_BIP47 != source_.Type()) { return ""; }
+    if (identity::SourceType::Bip47 != source_.Type()) { return ""; }
 
     auto serialized = source_.Serialize();
 
@@ -1275,7 +1275,7 @@ auto Nym::Sign(
     const crypto::SignatureRole role,
     proto::Signature& signature,
     const opentxs::PasswordPrompt& reason,
-    const proto::HashType hash) const -> bool
+    const crypto::HashType hash) const -> bool
 {
     sLock lock(shared_lock_);
 

@@ -37,7 +37,6 @@
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
 #include "opentxs/crypto/library/HashingProvider.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 
 using namespace irr;
@@ -76,7 +75,7 @@ Contract::Contract(
     , m_ID(api_.Factory().Identifier(strID))
     , m_xmlUnsigned(StringXML::Factory())
     , m_strRawFile(String::Factory())
-    , m_strSigHashType(proto::HASHTYPE_ERROR)
+    , m_strSigHashType(crypto::HashType::Error)
     , m_strContractType(String::Factory("CONTRACT"))
     , m_mapNyms()
     , m_listSignatures()
@@ -161,7 +160,7 @@ void Contract::SetIdentifier(const Identifier& theID) { m_ID = theID; }
 // that I need to load it!
 void Contract::Release_Contract()
 {
-    m_strSigHashType = proto::HASHTYPE_ERROR;
+    m_strSigHashType = crypto::HashType::Error;
     m_xmlUnsigned->Release();
     m_strRawFile->Release();
 
@@ -504,7 +503,7 @@ auto Contract::SignWithKey(
 auto Contract::SignContract(
     const crypto::key::Asymmetric& theKey,
     Signature& theSignature,
-    const proto::HashType hashType,
+    const crypto::HashType hashType,
     const PasswordPrompt& reason) -> bool
 {
     // We assume if there's any important metadata, it will already
@@ -690,7 +689,7 @@ auto Contract::VerifySignature(
 auto Contract::VerifySignature(
     const crypto::key::Asymmetric& theKey,
     const Signature& theSignature,
-    const proto::HashType hashType) const -> bool
+    const crypto::HashType hashType) const -> bool
 {
     const auto* metadata = theKey.GetMetadata();
 
@@ -878,7 +877,7 @@ auto Contract::AddBookendsAroundContent(
     String& strOutput,
     const String& strContents,
     const String& strContractType,
-    const proto::HashType hashType,
+    const crypto::HashType hashType,
     const listOfSignatures& listSignatures) -> bool
 {
     auto strTemp = String::Factory();
@@ -1415,7 +1414,7 @@ auto Contract::ParseRawFile() -> bool
             "portion of contract into memory.")
             .Flush();
         return false;
-    } else if (proto::HASHTYPE_ERROR == m_strSigHashType) {
+    } else if (crypto::HashType::Error == m_strSigHashType) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to set hash type.")
             .Flush();
 

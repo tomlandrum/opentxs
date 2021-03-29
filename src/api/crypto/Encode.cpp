@@ -31,8 +31,8 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/crypto/HashType.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 // #define OT_METHOD opentxs::api::crypto::implementation::Encode::
 
@@ -144,7 +144,9 @@ auto Encode::IdentifierEncode(const void* data, const std::size_t size) const
     auto preimage = Data::Factory(data, size);
     auto checksum = Data::Factory();
     auto hash = crypto_.Hash().Digest(
-        proto::HASHTYPE_SHA256DC, preimage->Bytes(), checksum->WriteInto());
+        opentxs::crypto::HashType::Sha256DC,
+        preimage->Bytes(),
+        checksum->WriteInto());
 
     OT_ASSERT(4 == checksum->size())
     OT_ASSERT(hash)
@@ -171,7 +173,9 @@ auto Encode::IdentifierEncode(const Secret& input) const -> std::string
         Data::Factory(bytes.data(), bytes.size());  // TODO should be secret
     auto checksum = Data::Factory();
     auto hash = crypto_.Hash().Digest(
-        proto::HASHTYPE_SHA256DC, preimage->Bytes(), checksum->WriteInto());
+        opentxs::crypto::HashType::Sha256DC,
+        preimage->Bytes(),
+        checksum->WriteInto());
 
     OT_ASSERT(4 == checksum->size())
     OT_ASSERT(hash)
@@ -199,7 +203,7 @@ auto Encode::IdentifierDecode(const std::string& input) const -> std::string
     auto checksum = Data::Factory();
     const auto incoming = Data::Factory(vector.data() + (vector.size() - 4), 4);
     auto hash = crypto_.Hash().Digest(
-        proto::HASHTYPE_SHA256DC, output, checksum->WriteInto());
+        opentxs::crypto::HashType::Sha256DC, output, checksum->WriteInto());
 
     OT_ASSERT(4 == checksum->size())
     OT_ASSERT(hash)

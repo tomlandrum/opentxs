@@ -8,7 +8,6 @@
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -47,13 +46,13 @@ public:
         const String& strContractUnsigned,
         const key::Asymmetric& theKey,
         Signature& theSignature,  // output
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const PasswordPrompt& reason) const -> bool override;
     auto VerifyContractSignature(
         const String& strContractToVerify,
         const key::Asymmetric& theKey,
         const Signature& theSignature,
-        const proto::HashType hashType) const -> bool override;
+        const crypto::HashType hashType) const -> bool override;
 
     ~AsymmetricProvider() override = default;
 

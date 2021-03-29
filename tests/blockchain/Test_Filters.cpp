@@ -557,7 +557,9 @@ TEST_F(Test_Filters, init_array)
         auto& next = stress_test_.emplace_back(api_.Factory().Data());
 
         EXPECT_TRUE(api_.Crypto().Hash().Digest(
-            ot::proto::HASHTYPE_SHA256, previous->Bytes(), next->WriteInto()));
+            ot::crypto::HashType::Sha256,
+            previous->Bytes(),
+            next->WriteInto()));
     }
 }
 

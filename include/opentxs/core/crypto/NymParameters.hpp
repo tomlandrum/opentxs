@@ -28,6 +28,8 @@
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/identity/CredentialType.hpp"
 #include "opentxs/identity/credential/Base.hpp"
+#include "opentxs/identity/SourceType.hpp"
+#include "opentxs/identity/Types.hpp"
 
 namespace opentxs
 {
@@ -77,8 +79,8 @@ public:
     OPENTXS_EXPORT crypto::SeedStrength SeedStrength() const noexcept;
     OPENTXS_EXPORT crypto::SeedStyle SeedStyle() const noexcept;
 #endif  // OT_CRYPTO_WITH_BIP32
-    OPENTXS_EXPORT proto::SourceProofType SourceProofType() const noexcept;
-    OPENTXS_EXPORT proto::SourceType SourceType() const noexcept;
+    OPENTXS_EXPORT identity::SourceProofType SourceProofType() const noexcept;
+    OPENTXS_EXPORT identity::SourceType SourceType() const noexcept;
 #if OT_CRYPTO_WITH_BIP32
     OPENTXS_EXPORT bool UseAutoIndex() const noexcept;
 #endif  // OT_CRYPTO_WITH_BIP32
@@ -137,11 +139,11 @@ public:
             identity::CredentialType::Legacy
 #endif
         ,
-        const proto::SourceType source =
+        const identity::SourceType source =
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
-            proto::SOURCETYPE_BIP47
+            identity::SourceType::Bip47
 #else
-            proto::SOURCETYPE_PUBKEY
+            identity::SourceType::PubKey
 #endif
         ,
         const std::uint8_t pcVersion = 0) noexcept;
@@ -154,11 +156,11 @@ public:
             identity::CredentialType::Legacy
 #endif
         ,
-        const proto::SourceType source =
+        const identity::SourceType source =
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
-            proto::SOURCETYPE_BIP47
+            identity::SourceType::Bip47
 #else
-            proto::SOURCETYPE_PUBKEY
+            identity::SourceType::PubKey
 #endif
         ,
         const std::uint8_t pcVersion = 0) noexcept;

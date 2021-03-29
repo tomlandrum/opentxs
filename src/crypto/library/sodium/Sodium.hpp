@@ -67,7 +67,7 @@ class Sodium final : virtual public crypto::Sodium,
 {
 public:
     auto Digest(
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::uint8_t* input,
         const size_t inputSize,
         std::uint8_t* output) const -> bool final;
@@ -80,7 +80,7 @@ public:
         const std::size_t bytes,
         AllocateOutput writer) const noexcept -> bool final;
     auto HMAC(
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::uint8_t* input,
         const size_t inputSize,
         const std::uint8_t* key,
@@ -117,14 +117,14 @@ public:
         const api::internal::Core& api,
         const ReadView plaintext,
         const key::Asymmetric& key,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         const AllocateOutput signature,
         const PasswordPrompt& reason) const -> bool final;
     auto Verify(
         const Data& plaintext,
         const key::Asymmetric& theKey,
         const Data& signature,
-        const proto::HashType hashType) const -> bool final;
+        const crypto::HashType hashType) const -> bool final;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 
     Sodium(const api::Crypto& crypto) noexcept;

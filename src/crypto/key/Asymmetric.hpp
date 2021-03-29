@@ -65,7 +65,7 @@ class Asymmetric : virtual public key::Asymmetric
 {
 public:
     auto CalculateHash(
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const PasswordPrompt& password) const noexcept -> OTData final;
     auto CalculateTag(
         const identity::Authority& nym,
@@ -102,7 +102,7 @@ public:
     auto NewSignature(
         const Identifier& credentialID,
         const crypto::SignatureRole role,
-        const proto::HashType hash) const -> proto::Signature;
+        const crypto::HashType hash) const -> proto::Signature;
     auto Params() const noexcept -> ReadView override { return {}; }
     auto Path() const noexcept -> const std::string override;
     auto Path(proto::HDPath& output) const noexcept -> bool override;
@@ -112,9 +112,9 @@ public:
     auto Role() const noexcept -> identity::KeyRole final { return role_; }
     auto Serialize() const noexcept
         -> std::shared_ptr<proto::AsymmetricKey> override;
-    auto SigHashType() const noexcept -> proto::HashType override
+    auto SigHashType() const noexcept -> crypto::HashType override
     {
-        return proto::HASHTYPE_BLAKE2B256;
+        return crypto::HashType::Blake2b256;
     }
     auto Sign(
         const GetPreimage input,
@@ -122,18 +122,18 @@ public:
         proto::Signature& signature,
         const Identifier& credential,
         const PasswordPrompt& reason,
-        const proto::HashType hash) const noexcept -> bool final;
+        const crypto::HashType hash) const noexcept -> bool final;
     auto Sign(
         const ReadView preimage,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         const AllocateOutput output,
         const PasswordPrompt& reason) const noexcept -> bool final;
     auto TransportKey(
         Data& publicKey,
         Secret& privateKey,
         const PasswordPrompt& reason) const noexcept -> bool override;
-    auto Verify(const Data& plaintext, const proto::Signature& sig)
-        const noexcept -> bool final;
+    auto Verify(const Data& plaintext, const proto::Signature& sig) const
+        noexcept(false) -> bool final;
     auto Version() const noexcept -> VersionNumber final { return version_; }
 
     operator bool() const noexcept override;
@@ -244,9 +244,13 @@ protected:
         OTSecret&& newSecretKey) noexcept;
 
 private:
+    using HashTypeMap = std::map<crypto::HashType, proto::HashType>;
+    using HashTypeReverseMap = std::map<proto::HashType, crypto::HashType>;
     using SignatureRoleMap =
         std::map<crypto::SignatureRole, proto::SignatureRole>;
 
+    static const HashTypeMap hashtype_map_;
+    static const HashTypeReverseMap hashtype_reverse_map_;
     static const std::map<crypto::SignatureRole, VersionNumber> sig_version_;
     static const SignatureRoleMap signaturerole_map_;
 

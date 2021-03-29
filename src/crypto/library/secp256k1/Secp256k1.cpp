@@ -371,7 +371,7 @@ auto Secp256k1::Sign(
     const api::internal::Core& api,
     const ReadView plaintext,
     const key::Asymmetric& key,
-    const proto::HashType type,
+    const crypto::HashType type,
     const AllocateOutput signature,
     const PasswordPrompt& reason) const -> bool
 {
@@ -451,7 +451,7 @@ auto Secp256k1::SignDER(
     const api::internal::Core& api,
     const ReadView plaintext,
     const key::Asymmetric& key,
-    const proto::HashType type,
+    const crypto::HashType type,
     Space& output,
     const PasswordPrompt& reason) const noexcept -> bool
 {
@@ -533,7 +533,7 @@ auto Secp256k1::Verify(
     const Data& plaintext,
     const key::Asymmetric& key,
     const Data& signature,
-    const proto::HashType type) const -> bool
+    const crypto::HashType type) const -> bool
 {
     if (crypto::AsymmetricKeyType::Secp256k1 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
@@ -558,7 +558,7 @@ auto Secp256k1::Verify(
     }
 }
 
-auto Secp256k1::hash(const proto::HashType type, const ReadView data) const
+auto Secp256k1::hash(const crypto::HashType type, const ReadView data) const
     noexcept(false) -> OTData
 {
     auto output = Data::Factory();

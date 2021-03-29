@@ -16,7 +16,7 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/identity/Source.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/identity/SourceType.hpp"
 
 namespace opentxs
 {
@@ -53,7 +53,7 @@ class Source final : virtual public identity::Source
 public:
     auto asString() const noexcept -> OTString final;
     auto Description() const noexcept -> OTString final;
-    auto Type() const noexcept -> proto::SourceType final { return type_; }
+    auto Type() const noexcept -> identity::SourceType final { return type_; }
     auto NymID() const noexcept -> OTNymID final;
     auto Serialize() const noexcept
         -> std::shared_ptr<proto::NymIDSource> final;
@@ -68,22 +68,28 @@ public:
 private:
     friend opentxs::Factory;
 
+    using SourceTypeMap = std::map<identity::SourceType, proto::SourceType>;
+    using SourceTypeReverseMap =
+        std::map<proto::SourceType, identity::SourceType>;
+
+    static const SourceTypeMap sourcetype_map_;
+    static const SourceTypeReverseMap sourcetype_reverse_map_;
     static const VersionConversionMap key_to_source_version_;
 
     const api::Factory& factory_;
 
-    proto::SourceType type_;
+    identity::SourceType type_;
     OTAsymmetricKey pubkey_;
     OTPaymentCode payment_code_;
     VersionNumber version_;
 
     static auto deserialize_pubkey(
         const api::Factory& factory,
-        const proto::SourceType type,
+        const identity::SourceType type,
         const proto::NymIDSource& serialized) -> OTAsymmetricKey;
     static auto deserialize_paymentcode(
         const api::Factory& factory,
-        const proto::SourceType type,
+        const identity::SourceType type,
         const proto::NymIDSource& serialized) -> OTPaymentCode;
     static auto extract_key(
         const proto::Credential& credential,
@@ -93,7 +99,7 @@ private:
 
     Source(
         const api::Factory& factory,
-        const proto::NymIDSource& serializedSource) noexcept;
+        const proto::NymIDSource& serializedSource) noexcept(false);
     Source(
         const api::Factory& factory,
         const NymParameters& nymParameters) noexcept(false);

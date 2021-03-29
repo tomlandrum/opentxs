@@ -116,7 +116,7 @@ auto AsymmetricProvider::SignContract(
     const String& strContractUnsigned,
     const key::Asymmetric& theKey,
     Signature& theSignature,  // output
-    const proto::HashType hashType,
+    const crypto::HashType hashType,
     const PasswordPrompt& reason) const -> bool
 {
     auto plaintext = Data::Factory(
@@ -145,7 +145,7 @@ auto AsymmetricProvider::VerifyContractSignature(
     const String& strContractToVerify,
     const key::Asymmetric& theKey,
     const Signature& theSignature,
-    const proto::HashType hashType) const -> bool
+    const crypto::HashType hashType) const -> bool
 {
     auto plaintext = Data::Factory(
         strContractToVerify.Get(),

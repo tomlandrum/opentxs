@@ -65,7 +65,7 @@ auto HD::CalculateFingerprint(
     }
 
     const auto hashed =
-        hash.Digest(proto::HASHTYPE_BITCOIN, key, digest->WriteInto());
+        hash.Digest(crypto::HashType::Bitcoin, key, digest->WriteInto());
 
     if (false == hashed) {
         LogOutput(OT_METHOD)(__FUNCTION__)(

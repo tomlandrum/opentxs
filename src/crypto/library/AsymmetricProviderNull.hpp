@@ -41,7 +41,7 @@ public:
         const api::internal::Core&,
         const ReadView,
         const key::Asymmetric&,
-        const proto::HashType,
+        const crypto::HashType,
         const AllocateOutput,
         const PasswordPrompt&) const -> bool final
     {
@@ -52,7 +52,7 @@ public:
         const String&,
         const key::Asymmetric&,
         Signature&,  // output
-        const proto::HashType,
+        const crypto::HashType,
         const PasswordPrompt&) const -> bool final
     {
         return false;
@@ -61,7 +61,7 @@ public:
         const Data&,
         const key::Asymmetric&,
         const Data&,
-        const proto::HashType) const -> bool final
+        const crypto::HashType) const -> bool final
     {
         return false;
     }
@@ -69,7 +69,7 @@ public:
         const String&,
         const key::Asymmetric&,
         const Signature&,
-        const proto::HashType) const -> bool final
+        const crypto::HashType) const -> bool final
     {
         return false;
     }

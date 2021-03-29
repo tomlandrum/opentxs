@@ -15,6 +15,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
@@ -24,17 +25,17 @@ namespace crypto
 class HashingProvider
 {
 public:
-    static proto::HashType StringToHashType(const String& inputString);
-    static OTString HashTypeToString(const proto::HashType hashType);
-    static std::size_t HashSize(const proto::HashType hashType);
+    static crypto::HashType StringToHashType(const String& inputString);
+    static OTString HashTypeToString(const crypto::HashType hashType);
+    static std::size_t HashSize(const crypto::HashType hashType);
 
     OPENTXS_EXPORT virtual bool Digest(
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::uint8_t* input,
         const std::size_t inputSize,
         std::uint8_t* output) const = 0;
     OPENTXS_EXPORT virtual bool HMAC(
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::uint8_t* input,
         const std::size_t inputSize,
         const std::uint8_t* key,

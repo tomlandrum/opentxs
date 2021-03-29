@@ -1645,7 +1645,9 @@ auto Factory::PaymentCode(const std::string& base58) const noexcept
                             payload.key_.size()};
                         auto code = api_.Factory().Data();
                         api_.Crypto().Hash().Digest(
-                            proto::HASHTYPE_SHA256D, key, code->WriteInto());
+                            opentxs::crypto::HashType::Sha256D,
+                            key,
+                            code->WriteInto());
                         out = ReturnType::Base58Preimage{
                             payload.version_, false, key, code->Bytes(), 0, 0};
                     }

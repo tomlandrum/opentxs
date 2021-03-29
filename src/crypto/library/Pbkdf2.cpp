@@ -17,7 +17,7 @@ extern "C" {
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/crypto/library/HashingProvider.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/HashType.hpp"
 
 #define OT_METHOD "opentxs::crypto::implementation::Pbkdf2::"
 
@@ -34,7 +34,7 @@ auto Pbkdf2::PKCS5_PBKDF2_HMAC(
     const void* salt,
     const std::size_t saltSize,
     const std::size_t iterations,
-    const proto::HashType hashType,
+    const crypto::HashType hashType,
     const std::size_t bytes,
     void* output) const noexcept -> bool
 {
@@ -70,7 +70,7 @@ auto Pbkdf2::PKCS5_PBKDF2_HMAC(
     auto lock = Lock{pbkdf_lock_};
 
     switch (hashType) {
-        case proto::HASHTYPE_SHA256: {
+        case crypto::HashType::Sha256: {
             pbkdf2_hmac_sha256(
                 static_cast<const std::uint8_t*>(input),
                 static_cast<int>(inputSize),
@@ -80,7 +80,7 @@ auto Pbkdf2::PKCS5_PBKDF2_HMAC(
                 static_cast<std::uint8_t*>(output),
                 static_cast<int>(bytes));
         } break;
-        case proto::HASHTYPE_SHA512: {
+        case crypto::HashType::Sha512: {
             pbkdf2_hmac_sha512(
                 static_cast<const std::uint8_t*>(input),
                 static_cast<int>(inputSize),

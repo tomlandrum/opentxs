@@ -151,7 +151,7 @@ public:
         proto::Signature& signature,
         const PasswordPrompt& reason,
         identity::KeyRole key,
-        const proto::HashType hash) const -> bool final;
+        const crypto::HashType hash) const -> bool final;
     auto Source() const -> const identity::Source& final
     {
         return parent_.Source();

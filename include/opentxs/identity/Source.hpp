@@ -13,7 +13,7 @@
 #include <memory>
 
 #include "opentxs/Proto.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/identity/Types.hpp"
 
 namespace opentxs
 {
@@ -40,7 +40,7 @@ class Source
 public:
     OPENTXS_EXPORT virtual OTString asString() const noexcept = 0;
     OPENTXS_EXPORT virtual OTString Description() const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::SourceType Type() const noexcept = 0;
+    OPENTXS_EXPORT virtual identity::SourceType Type() const noexcept = 0;
     OPENTXS_EXPORT virtual OTNymID NymID() const noexcept = 0;
     OPENTXS_EXPORT virtual std::shared_ptr<proto::NymIDSource> Serialize()
         const noexcept = 0;

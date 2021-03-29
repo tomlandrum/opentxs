@@ -46,12 +46,12 @@ public:
 #if OT_CRYPTO_WITH_BIP32
     const std::string fingerprint_;
 #endif  // OT_CRYPTO_WITH_BIP32
-    const proto::HashType sha256_{proto::HASHTYPE_SHA256};
-    const proto::HashType sha512_{proto::HASHTYPE_SHA512};
-    const proto::HashType blake160_{proto::HASHTYPE_BLAKE2B160};
-    const proto::HashType blake256_{proto::HASHTYPE_BLAKE2B256};
-    const proto::HashType blake512_{proto::HASHTYPE_BLAKE2B512};
-    const proto::HashType ripemd160_{proto::HASHTYPE_RIPEMD160};
+    const crypto::HashType sha256_{crypto::HashType::Sha256};
+    const crypto::HashType sha512_{crypto::HashType::Sha512};
+    const crypto::HashType blake160_{crypto::HashType::Blake2b160};
+    const crypto::HashType blake256_{crypto::HashType::Blake2b256};
+    const crypto::HashType blake512_{crypto::HashType::Blake2b512};
+    const crypto::HashType ripemd160_{crypto::HashType::Ripemd160};
     const std::string plaintext_string_1_{"Test string"};
     const std::string plaintext_string_2_{"Another string"};
     const OTData plaintext_1{
@@ -202,7 +202,7 @@ public:
         const Data& plaintext,
         const crypto::AsymmetricProvider& lib,
         const crypto::key::Asymmetric& key,
-        const proto::HashType hash)
+        const crypto::HashType hash)
     {
         auto reason = client_.Factory().PasswordPrompt(__FUNCTION__);
         auto sig = Data::Factory();
@@ -219,7 +219,7 @@ public:
     [[maybe_unused]] bool bad_signature(
         const crypto::AsymmetricProvider& lib,
         const crypto::key::Asymmetric& key,
-        const proto::HashType hash)
+        const crypto::HashType hash)
     {
         auto reason = client_.Factory().PasswordPrompt(__FUNCTION__);
         auto sig = Data::Factory();

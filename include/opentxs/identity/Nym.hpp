@@ -22,10 +22,11 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/HashType.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/iterator/Bidirectional.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
+//#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -159,7 +160,7 @@ public:
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
-        const proto::HashType hash = proto::HASHTYPE_ERROR) const = 0;
+        const crypto::HashType hash = crypto::HashType::Error) const = 0;
     OPENTXS_EXPORT virtual std::size_t size() const noexcept = 0;
     OPENTXS_EXPORT virtual std::string SocialMediaProfiles(
         const proto::ContactItemType type,

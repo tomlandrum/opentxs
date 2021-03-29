@@ -28,6 +28,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/crypto/OTSignatureMetadata.hpp"
+#include "opentxs/crypto/HashType.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/crypto/Types.hpp"
@@ -69,6 +70,23 @@ auto Asymmetric::Factory() noexcept -> OTAsymmetricKey
 
 namespace opentxs::crypto::key::implementation
 {
+const Asymmetric::HashTypeMap Asymmetric::hashtype_map_{
+    {crypto::HashType::Error, proto::HASHTYPE_ERROR},
+    {crypto::HashType::None, proto::HASHTYPE_NONE},
+    {crypto::HashType::Sha256, proto::HASHTYPE_SHA256},
+    {crypto::HashType::Sha512, proto::HASHTYPE_SHA512},
+    {crypto::HashType::Blake2b160, proto::HASHTYPE_BLAKE2B160},
+    {crypto::HashType::Blake2b256, proto::HASHTYPE_BLAKE2B256},
+    {crypto::HashType::Blake2b512, proto::HASHTYPE_BLAKE2B512},
+    {crypto::HashType::Ripemd160, proto::HASHTYPE_RIPEMD160},
+    {crypto::HashType::Sha1, proto::HASHTYPE_SHA1},
+    {crypto::HashType::Sha256D, proto::HASHTYPE_SHA256D},
+    {crypto::HashType::Sha256DC, proto::HASHTYPE_SHA256DC},
+    {crypto::HashType::Bitcoin, proto::HASHTYPE_BITCOIN},
+    {crypto::HashType::SipHash24, proto::HASHTYPE_SIPHASH24},
+};
+const Asymmetric::HashTypeReverseMap Asymmetric::hashtype_reverse_map_{
+    reverse_map(hashtype_map_)};
 const Asymmetric::KeyRoleMap Asymmetric::keyrole_map_{
     {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
     {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
@@ -252,7 +270,7 @@ auto Asymmetric::operator==(const proto::AsymmetricKey& rhs) const noexcept
 }
 
 auto Asymmetric::CalculateHash(
-    const proto::HashType hashType,
+    const crypto::HashType hashType,
     const PasswordPrompt& reason) const noexcept -> OTData
 {
     auto output = api_.Factory().Data();
@@ -510,7 +528,7 @@ auto Asymmetric::get_tag(
     }
 
     if (false == api_.Crypto().Hash().HMAC(
-                     proto::HASHTYPE_SHA256,
+                     crypto::HashType::Sha256,
                      password->Bytes(),
                      credential.Bytes(),
                      hashed->WriteInto(Secret::Mode::Mem))) {
@@ -546,7 +564,7 @@ auto Asymmetric::hasCapability(const NymCapability& capability) const noexcept
 auto Asymmetric::NewSignature(
     const Identifier& credentialID,
     const crypto::SignatureRole role,
-    const proto::HashType hash) const -> proto::Signature
+    const crypto::HashType hash) const -> proto::Signature
 {
     proto::Signature output{};
     try {
@@ -554,7 +572,8 @@ auto Asymmetric::NewSignature(
         output.set_credentialid(credentialID.str());
         output.set_role(signaturerole_map_.at(role));
         output.set_hashtype(
-            (proto::HASHTYPE_ERROR == hash) ? SigHashType() : hash);
+            (crypto::HashType::Error == hash) ? hashtype_map_.at(SigHashType())
+                                              : hashtype_map_.at(hash));
         output.clear_signature();
     } catch (...) {
     }
@@ -631,9 +650,9 @@ auto Asymmetric::Sign(
     proto::Signature& signature,
     const Identifier& credential,
     const PasswordPrompt& reason,
-    const proto::HashType hash) const noexcept -> bool
+    const crypto::HashType hash) const noexcept -> bool
 {
-    const auto type{(proto::HASHTYPE_ERROR == hash) ? SigHashType() : hash};
+    const auto type{(crypto::HashType::Error == hash) ? SigHashType() : hash};
 
     try {
         signature = NewSignature(credential, role, type);
@@ -651,7 +670,7 @@ auto Asymmetric::Sign(
 
 auto Asymmetric::Sign(
     const ReadView preimage,
-    const proto::HashType hash,
+    const crypto::HashType hash,
     const AllocateOutput output,
     const PasswordPrompt& reason) const noexcept -> bool
 {
@@ -684,7 +703,7 @@ auto Asymmetric::TransportKey(
 }
 
 auto Asymmetric::Verify(const Data& plaintext, const proto::Signature& sig)
-    const noexcept -> bool
+    const noexcept(false) -> bool
 {
     if (false == HasPublic()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Missing public key").Flush();
@@ -695,7 +714,8 @@ auto Asymmetric::Verify(const Data& plaintext, const proto::Signature& sig)
     auto signature = Data::Factory();
     signature->Assign(sig.signature().c_str(), sig.signature().size());
 
-    return engine().Verify(plaintext, *this, signature, sig.hashtype());
+    return engine().Verify(
+        plaintext, *this, signature, hashtype_reverse_map_.at(sig.hashtype()));
 }
 
 Asymmetric::~Asymmetric()

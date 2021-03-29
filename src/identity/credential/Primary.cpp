@@ -25,6 +25,8 @@
 #include "opentxs/identity/CredentialRole.hpp"
 #include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/identity/Source.hpp"
+#include "opentxs/identity/SourceProofType.hpp"
+#include "opentxs/identity/SourceType.hpp"
 #include "opentxs/identity/credential/Base.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Credential.pb.h"
@@ -34,6 +36,7 @@
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/SourceProof.pb.h"
 #include "opentxs/protobuf/verify/Credential.hpp"
+#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::identity::credential::implementation::Primary::"
 
@@ -84,6 +87,13 @@ auto Factory::PrimaryCredential(
 
 namespace opentxs::identity::credential::implementation
 {
+const Primary::SourceProofTypeMap Primary::sourceprooftype_map_ = {
+    {identity::SourceProofType::SelfSignature,
+     proto::SOURCEPROOFTYPE_SELF_SIGNATURE},
+    {identity::SourceProofType::Signature, proto::SOURCEPROOFTYPE_SIGNATURE},
+};
+const Primary::SourceProofTypeReverseMap Primary::sourceprooftype_reverse_map_{
+    reverse_map(Primary::sourceprooftype_map_)};
 const VersionConversionMap Primary::credential_to_master_params_{
     {1, 1},
     {2, 1},
@@ -109,7 +119,7 @@ Primary::Primary(
           identity::CredentialRole::MasterKey,
           reason,
           "",
-          proto::SOURCETYPE_PUBKEY == params.SourceType())
+          identity::SourceType::PubKey == params.SourceType())
     , source_proof_(source_proof(params))
 {
     {
@@ -211,8 +221,11 @@ void Primary::sign(
 auto Primary::source_proof(const NymParameters& params) -> proto::SourceProof
 {
     auto output = proto::SourceProof{};
-    output.set_version(1);
-    output.set_type(params.SourceProofType());
+    try {
+        output.set_version(1);
+        output.set_type(sourceprooftype_map_.at(params.SourceProofType()));
+    } catch (...) {
+    }
 
     return output;
 }
@@ -265,11 +278,11 @@ auto Primary::verify_against_source(const Lock& lock) const -> bool
     auto hasSourceSignature{true};
 
     switch (source_.Type()) {
-        case proto::SOURCETYPE_PUBKEY: {
+        case identity::SourceType::PubKey: {
             pSerialized = serialize(lock, AS_PUBLIC, WITH_SIGNATURES);
             hasSourceSignature = false;
         } break;
-        case proto::SOURCETYPE_BIP47: {
+        case identity::SourceType::Bip47: {
             pSerialized = serialize(lock, AS_PUBLIC, WITHOUT_SIGNATURES);
         } break;
         default: {

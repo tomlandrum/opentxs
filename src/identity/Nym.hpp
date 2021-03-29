@@ -218,7 +218,7 @@ public:
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
-        const proto::HashType hash) const -> bool final;
+        const crypto::HashType hash) const -> bool final;
     auto Verify(const ProtobufType& input, proto::Signature& signature) const
         -> bool final;
 

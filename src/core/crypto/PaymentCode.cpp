@@ -442,7 +442,7 @@ auto PaymentCode::calculate_mask_v1(
     auto mask = Mask{};
     const auto secret = shared_secret_mask_v1(local, remote, reason);
     const auto hashed = api_.Crypto().Hash().HMAC(
-        proto::HASHTYPE_SHA512,
+        crypto::HashType::Sha512,
         outpoint,
         secret->Bytes(),
         preallocated(mask.size(), mask.data()));
@@ -461,7 +461,7 @@ auto PaymentCode::calculate_mask_v3(
     auto mask = Mask{};
     const auto secret = shared_secret_mask_v1(local, remote, reason);
     const auto hashed = api_.Crypto().Hash().HMAC(
-        proto::HASHTYPE_SHA512,
+        crypto::HashType::Sha512,
         secret->Bytes(),
         pubkey,
         preallocated(mask.size(), mask.data()));
@@ -796,7 +796,7 @@ auto PaymentCode::Locator(const AllocateOutput dest, const std::uint8_t version)
                     auto out = std::array<std::byte, 33>{};
                     out[0] = std::byte{0x02};
                     const auto hashed = api_.Crypto().Hash().Digest(
-                        proto::HASHTYPE_SHA256,
+                        crypto::HashType::Sha256,
                         binary_preimage(),
                         preallocated(out.size() - 1, std::next(out.data(), 1)));
 
@@ -826,7 +826,7 @@ auto PaymentCode::Locator(const AllocateOutput dest, const std::uint8_t version)
                 const auto effective = (0 == version) ? version_ : version;
                 auto hash = space(64);
                 auto rc = api_.Crypto().Hash().HMAC(
-                    proto::HASHTYPE_SHA512,
+                    crypto::HashType::Sha512,
                     chain_code_->Bytes(),
                     ReadView{
                         reinterpret_cast<const char*>(&effective),
@@ -925,7 +925,7 @@ auto PaymentCode::postprocess(const Secret& in) const noexcept(false)
 {
     auto output = api_.Factory().Secret({});
     auto rc = api_.Crypto().Hash().Digest(
-        proto::HASHTYPE_SHA256, in.Bytes(), output->WriteInto());
+        crypto::HashType::Sha256, in.Bytes(), output->WriteInto());
 
     if (false == rc) {
         throw std::runtime_error{"Failed to hash shared secret"};
@@ -988,7 +988,7 @@ auto PaymentCode::shared_secret_payment_v3(
     static_assert(sizeof(bip44) == sizeof(std::uint32_t));
 
     auto rc = api_.Crypto().Hash().HMAC(
-        proto::HASHTYPE_SHA512,
+        crypto::HashType::Sha512,
         secret->Bytes(),
         ReadView{reinterpret_cast<const char*>(&bip44), sizeof(bip44)},
         hmac->WriteInto());
@@ -1035,7 +1035,7 @@ auto PaymentCode::Sign(
         api_,
         data.Bytes(),
         key,
-        proto::HASHTYPE_SHA256,
+        crypto::HashType::Sha256,
         output.WriteInto(),
         reason);
 #else
@@ -1220,7 +1220,7 @@ auto PaymentCode::unblind_v3(
     const auto code = [&] {
         auto out = api_.Factory().Secret(0);
         const auto rc = api_.Crypto().Hash().Digest(
-            proto::HASHTYPE_SHA256D, pre.Key(), out->WriteInto());
+            crypto::HashType::Sha256D, pre.Key(), out->WriteInto());
 
         if (false == rc) {
             throw std::runtime_error{"Failed to calculate chain code"};

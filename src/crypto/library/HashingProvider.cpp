@@ -9,52 +9,52 @@
 
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/HashType.hpp"
 
 namespace opentxs::crypto
 {
 auto HashingProvider::StringToHashType(const String& inputString)
-    -> proto::HashType
+    -> crypto::HashType
 {
     if (inputString.Compare("NULL")) {
-        return proto::HASHTYPE_NONE;
+        return crypto::HashType::None;
     } else if (inputString.Compare("SHA256")) {
-        return proto::HASHTYPE_SHA256;
+        return crypto::HashType::Sha256;
     } else if (inputString.Compare("SHA512")) {
-        return proto::HASHTYPE_SHA512;
+        return crypto::HashType::Sha512;
     } else if (inputString.Compare("BLAKE2B160")) {
-        return proto::HASHTYPE_BLAKE2B160;
+        return crypto::HashType::Blake2b160;
     } else if (inputString.Compare("BLAKE2B256")) {
-        return proto::HASHTYPE_BLAKE2B256;
+        return crypto::HashType::Blake2b256;
     } else if (inputString.Compare("BLAKE2B512")) {
-        return proto::HASHTYPE_BLAKE2B512;
+        return crypto::HashType::Blake2b512;
     }
 
-    return proto::HASHTYPE_ERROR;
+    return crypto::HashType::Error;
 }
-auto HashingProvider::HashTypeToString(const proto::HashType hashType)
+auto HashingProvider::HashTypeToString(const crypto::HashType hashType)
     -> OTString
 
 {
     auto hashTypeString = String::Factory();
 
     switch (hashType) {
-        case proto::HASHTYPE_NONE: {
+        case crypto::HashType::None: {
             hashTypeString = String::Factory("NULL");
         } break;
-        case proto::HASHTYPE_SHA256: {
+        case crypto::HashType::Sha256: {
             hashTypeString = String::Factory("SHA256");
         } break;
-        case proto::HASHTYPE_SHA512: {
+        case crypto::HashType::Sha512: {
             hashTypeString = String::Factory("SHA512");
         } break;
-        case proto::HASHTYPE_BLAKE2B160: {
+        case crypto::HashType::Blake2b160: {
             hashTypeString = String::Factory("BLAKE2B160");
         } break;
-        case proto::HASHTYPE_BLAKE2B256: {
+        case crypto::HashType::Blake2b256: {
             hashTypeString = String::Factory("BLAKE2B256");
         } break;
-        case proto::HASHTYPE_BLAKE2B512: {
+        case crypto::HashType::Blake2b512: {
             hashTypeString = String::Factory("BLAKE2B512");
         } break;
         default: {
@@ -65,40 +65,40 @@ auto HashingProvider::HashTypeToString(const proto::HashType hashType)
     return hashTypeString;
 }
 
-auto HashingProvider::HashSize(const proto::HashType hashType) -> std::size_t
+auto HashingProvider::HashSize(const crypto::HashType hashType) -> std::size_t
 {
     switch (hashType) {
-        case proto::HASHTYPE_SHA256: {
+        case crypto::HashType::Sha256: {
             return 32;
         }
-        case proto::HASHTYPE_SHA512: {
+        case crypto::HashType::Sha512: {
             return 64;
         }
-        case proto::HASHTYPE_BLAKE2B160: {
+        case crypto::HashType::Blake2b160: {
             return 20;
         }
-        case proto::HASHTYPE_BLAKE2B256: {
+        case crypto::HashType::Blake2b256: {
             return 32;
         }
-        case proto::HASHTYPE_BLAKE2B512: {
+        case crypto::HashType::Blake2b512: {
             return 64;
         }
-        case proto::HASHTYPE_RIPEMD160: {
+        case crypto::HashType::Ripemd160: {
             return 20;
         }
-        case proto::HASHTYPE_SHA1: {
+        case crypto::HashType::Sha1: {
             return 20;
         }
-        case proto::HASHTYPE_SHA256D: {
+        case crypto::HashType::Sha256D: {
             return 32;
         }
-        case proto::HASHTYPE_SHA256DC: {
+        case crypto::HashType::Sha256DC: {
             return 4;
         }
-        case proto::HASHTYPE_BITCOIN: {
+        case crypto::HashType::Bitcoin: {
             return 20;
         }
-        case proto::HASHTYPE_SIPHASH24: {
+        case crypto::HashType::SipHash24: {
             return 8;
         }
         default: {

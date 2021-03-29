@@ -20,8 +20,8 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -117,7 +117,7 @@ private:
 
     static auto contract_contents_to_identifier(const Contract& in)
         -> Identifier*;
-    static auto IDToHashType(const ID type) -> proto::HashType;
+    static auto IDToHashType(const ID type) -> crypto::HashType;
     static auto path_to_data(
         const proto::ContactItemType type,
         const proto::HDPath& path) -> OTData;

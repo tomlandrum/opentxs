@@ -30,6 +30,7 @@
 #include "opentxs/identity/credential/Primary.hpp"
 #include "opentxs/identity/CredentialType.hpp"
 #include "opentxs/identity/KeyRole.hpp"
+#include "opentxs/identity/SourceType.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/KeyCredential.pb.h"
@@ -37,6 +38,7 @@
 #include "opentxs/protobuf/NymIDSource.pb.h"
 #include "opentxs/protobuf/PaymentCode.pb.h"
 #include "opentxs/protobuf/SourceProof.pb.h"
+#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::identity::Source::"
 
@@ -50,7 +52,7 @@ auto Factory::NymIDSource(
     using ReturnType = identity::implementation::Source;
 
     switch (params.SourceType()) {
-        case proto::SOURCETYPE_BIP47: {
+        case identity::SourceType::Bip47: {
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
             const auto paymentCode = api.Factory().PaymentCode(
                 params.Seed(),
@@ -67,7 +69,7 @@ auto Factory::NymIDSource(
             return nullptr;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
         }
-        case proto::SOURCETYPE_PUBKEY:
+        case identity::SourceType::PubKey:
             switch (params.credentialType()) {
                 case identity::CredentialType::Legacy: {
                     params.Keypair() = api.Factory().Keypair(
@@ -111,7 +113,6 @@ auto Factory::NymIDSource(
             }
 
             return new ReturnType{api.Factory(), params};
-        case proto::SOURCETYPE_ERROR:
         default: {
             LogOutput("opentxs::Factory::")(__FUNCTION__)(
                 ": Unsupported source type.")
@@ -134,6 +135,12 @@ auto Factory::NymIDSource(
 
 namespace opentxs::identity::implementation
 {
+const Source::SourceTypeMap Source::sourcetype_map_{
+    {identity::SourceType::PubKey, proto::SOURCETYPE_PUBKEY},
+    {identity::SourceType::Bip47, proto::SOURCETYPE_BIP47},
+};
+const Source::SourceTypeReverseMap Source::sourcetype_reverse_map_{
+    reverse_map(sourcetype_map_)};
 const VersionConversionMap Source::key_to_source_version_{
     {1, 1},
     {2, 2},
@@ -142,9 +149,9 @@ const VersionConversionMap Source::key_to_source_version_{
 
 Source::Source(
     const api::Factory& factory,
-    const proto::NymIDSource& serialized) noexcept
+    const proto::NymIDSource& serialized) noexcept(false)
     : factory_(factory)
-    , type_(serialized.type())
+    , type_(sourcetype_reverse_map_.at(serialized.type()))
     , pubkey_(deserialize_pubkey(factory, type_, serialized))
     , payment_code_(deserialize_paymentcode(factory, type_, serialized))
     , version_(serialized.version())
@@ -168,7 +175,7 @@ Source::Source(
 
 Source::Source(const api::Factory& factory, const PaymentCode& source) noexcept
     : factory_{factory}
-    , type_(proto::SOURCETYPE_BIP47)
+    , type_(identity::SourceType::Bip47)
     , pubkey_(crypto::key::Asymmetric::Factory())
     , payment_code_{source}
     , version_(key_to_source_version_.at(payment_code_->Version()))
@@ -189,10 +196,10 @@ auto Source::asData() const -> OTData
 
 auto Source::deserialize_paymentcode(
     const api::Factory& factory,
-    const proto::SourceType type,
+    const identity::SourceType type,
     const proto::NymIDSource& serialized) -> OTPaymentCode
 {
-    if (proto::SOURCETYPE_BIP47 == type) {
+    if (identity::SourceType::Bip47 == type) {
 
         return factory.PaymentCode(serialized.paymentcode());
     } else {
@@ -203,10 +210,10 @@ auto Source::deserialize_paymentcode(
 
 auto Source::deserialize_pubkey(
     const api::Factory& factory,
-    const proto::SourceType type,
+    const identity::SourceType type,
     const proto::NymIDSource& serialized) -> OTAsymmetricKey
 {
-    if (proto::SOURCETYPE_PUBKEY == type) {
+    if (identity::SourceType::PubKey == type) {
 
         return factory.AsymmetricKey(serialized.key());
     } else {
@@ -245,11 +252,11 @@ auto Source::NymID() const noexcept -> OTNymID
     auto nymID = factory_.NymID();
 
     switch (type_) {
-        case proto::SOURCETYPE_PUBKEY: {
+        case identity::SourceType::PubKey: {
             nymID->CalculateDigest(asData()->Bytes());
 
         } break;
-        case proto::SOURCETYPE_BIP47: {
+        case identity::SourceType::Bip47: {
             nymID = payment_code_->ID();
         } break;
         default: {
@@ -262,24 +269,27 @@ auto Source::NymID() const noexcept -> OTNymID
 auto Source::Serialize() const noexcept -> std::shared_ptr<proto::NymIDSource>
 {
     auto source = std::make_shared<proto::NymIDSource>();
-    source->set_version(version_);
-    source->set_type(type_);
+    try {
+        source->set_version(version_);
+        source->set_type(sourcetype_map_.at(type_));
 
-    switch (type_) {
-        case proto::SOURCETYPE_PUBKEY: {
-            OT_ASSERT(pubkey_.get())
+        switch (type_) {
+            case identity::SourceType::PubKey: {
+                OT_ASSERT(pubkey_.get())
 
-            auto key = pubkey_->Serialize();
-            key->set_role(proto::KEYROLE_SIGN);
-            *(source->mutable_key()) = *key;
+                auto key = pubkey_->Serialize();
+                key->set_role(proto::KEYROLE_SIGN);
+                *(source->mutable_key()) = *key;
 
-        } break;
-        case proto::SOURCETYPE_BIP47: {
-            *(source->mutable_paymentcode()) = payment_code_->Serialize();
+            } break;
+            case identity::SourceType::Bip47: {
+                *(source->mutable_paymentcode()) = payment_code_->Serialize();
 
-        } break;
-        default: {
+            } break;
+            default: {
+            }
         }
+    } catch (...) {
     }
 
     return source;
@@ -297,7 +307,7 @@ auto Source::Verify(
     std::shared_ptr<proto::AsymmetricKey> sourceKey;
 
     switch (type_) {
-        case proto::SOURCETYPE_PUBKEY: {
+        case identity::SourceType::PubKey: {
             if (!pubkey_.get()) { return false; }
 
             isSelfSigned =
@@ -331,7 +341,7 @@ auto Source::Verify(
                 return false;
             }
         } break;
-        case proto::SOURCETYPE_BIP47:
+        case identity::SourceType::Bip47:
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
         {
             if (!payment_code_->Verify(master, sourceSignature)) {
@@ -367,11 +377,11 @@ auto Source::Sign(
     bool goodsig = false;
 
     switch (type_) {
-        case (proto::SOURCETYPE_PUBKEY): {
+        case (identity::SourceType::PubKey): {
             OT_ASSERT_MSG(false, "This is not implemented yet.");
 
         } break;
-        case (proto::SOURCETYPE_BIP47): {
+        case (identity::SourceType::Bip47): {
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
             goodsig = payment_code_->Sign(credential, sig, reason);
 #else
@@ -398,13 +408,13 @@ auto Source::Description() const noexcept -> OTString
     auto keyID = factory_.Identifier();
 
     switch (type_) {
-        case (proto::SOURCETYPE_PUBKEY): {
+        case (identity::SourceType::PubKey): {
             if (pubkey_.get()) {
                 pubkey_->CalculateID(keyID);
                 description = String::Factory(keyID);
             }
         } break;
-        case (proto::SOURCETYPE_BIP47): {
+        case (identity::SourceType::Bip47): {
             description = String::Factory(payment_code_->asBase58());
 
         } break;

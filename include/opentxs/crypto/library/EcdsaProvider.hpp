@@ -32,7 +32,7 @@ public:
         const api::internal::Core& api,
         const ReadView plaintext,
         const key::Asymmetric& key,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         Space& signature,
         const PasswordPrompt& reason) const noexcept = 0;
 

@@ -16,6 +16,7 @@ namespace opentxs
 namespace crypto
 {
 enum class AsymmetricKeyType : std::uint8_t;
+enum class HashType : std::uint8_t;
 enum class Language : std::uint8_t;
 enum class SeedStrength : std::size_t;
 enum class SeedStyle : std::uint8_t;

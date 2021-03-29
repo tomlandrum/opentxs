@@ -25,8 +25,8 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/library/HashingProvider.hpp"
+#include "opentxs/crypto/HashType.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "smhasher/src/MurmurHash3.h"
 
 #define OT_METHOD "opentxs::api::crypto::implementation::Hash::"
@@ -69,7 +69,7 @@ Hash::Hash(
 }
 
 auto Hash::allocate(
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const AllocateOutput destination) noexcept -> WritableView
 {
     if (false == bool(destination)) { return {}; }
@@ -82,9 +82,10 @@ auto Hash::bitcoin_hash_160(
     const std::size_t size,
     void* output) const noexcept -> bool
 {
-    auto temp = space(Provider::HashSize(proto::HASHTYPE_SHA256));
+    auto temp = space(Provider::HashSize(opentxs::crypto::HashType::Sha256));
 
-    if (false == digest(proto::HASHTYPE_SHA256, input, size, temp.data())) {
+    if (false ==
+        digest(opentxs::crypto::HashType::Sha256, input, size, temp.data())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Failed to calculate intermediate hash.")
             .Flush();
@@ -92,11 +93,12 @@ auto Hash::bitcoin_hash_160(
         return false;
     }
 
-    return digest(proto::HASHTYPE_RIPEMD160, temp.data(), temp.size(), output);
+    return digest(
+        opentxs::crypto::HashType::Ripemd160, temp.data(), temp.size(), output);
 }
 
 auto Hash::Digest(
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const ReadView data,
     const AllocateOutput destination) const noexcept -> bool
 {
@@ -113,7 +115,7 @@ auto Hash::Digest(
 }
 
 auto Hash::Digest(
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const opentxs::network::zeromq::Frame& data,
     const AllocateOutput destination) const noexcept -> bool
 {
@@ -141,7 +143,7 @@ auto Hash::Digest(
         return false;
     }
 
-    const auto type = static_cast<proto::HashType>(hash);
+    const auto type = static_cast<opentxs::crypto::HashType>(hash);
     auto temp =
         Data::Factory();  // FIXME IdentifierEncode should accept ReadView
     auto view = allocate(type, temp->WriteInto());
@@ -177,43 +179,43 @@ auto Hash::Digest(
 }
 
 auto Hash::digest(
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const void* input,
     const std::size_t size,
     void* output) const noexcept -> bool
 {
     switch (type) {
-        case proto::HASHTYPE_SHA1:
-        case proto::HASHTYPE_SHA256:
-        case proto::HASHTYPE_SHA512: {
+        case opentxs::crypto::HashType::Sha1:
+        case opentxs::crypto::HashType::Sha256:
+        case opentxs::crypto::HashType::Sha512: {
             return sha_.Digest(
                 type,
                 static_cast<const std::uint8_t*>(input),
                 size,
                 static_cast<std::uint8_t*>(output));
         }
-        case proto::HASHTYPE_BLAKE2B160:
-        case proto::HASHTYPE_BLAKE2B256:
-        case proto::HASHTYPE_BLAKE2B512: {
+        case opentxs::crypto::HashType::Blake2b160:
+        case opentxs::crypto::HashType::Blake2b256:
+        case opentxs::crypto::HashType::Blake2b512: {
             return blake_.Digest(
                 type,
                 static_cast<const std::uint8_t*>(input),
                 size,
                 static_cast<std::uint8_t*>(output));
         }
-        case proto::HASHTYPE_RIPEMD160: {
+        case opentxs::crypto::HashType::Ripemd160: {
             return ripe_.RIPEMD160(
                 static_cast<const std::uint8_t*>(input),
                 size,
                 static_cast<std::uint8_t*>(output));
         }
-        case proto::HASHTYPE_SHA256D: {
+        case opentxs::crypto::HashType::Sha256D: {
             return sha_256_double(input, size, output);
         }
-        case proto::HASHTYPE_SHA256DC: {
+        case opentxs::crypto::HashType::Sha256DC: {
             return sha_256_double_checksum(input, size, output);
         }
-        case proto::HASHTYPE_BITCOIN: {
+        case opentxs::crypto::HashType::Bitcoin: {
             return bitcoin_hash_160(input, size, output);
         }
         default: {
@@ -226,7 +228,7 @@ auto Hash::digest(
 }
 
 auto Hash::HMAC(
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const ReadView key,
     const ReadView& data,
     const AllocateOutput digest) const noexcept -> bool
@@ -250,7 +252,7 @@ auto Hash::HMAC(
 }
 
 auto Hash::HMAC(
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const std::uint8_t* input,
     const std::size_t size,
     const std::uint8_t* key,
@@ -258,14 +260,14 @@ auto Hash::HMAC(
     std::uint8_t* output) const noexcept -> bool
 {
     switch (type) {
-        case proto::HASHTYPE_SHA256:
-        case proto::HASHTYPE_SHA512: {
+        case opentxs::crypto::HashType::Sha256:
+        case opentxs::crypto::HashType::Sha512: {
             return sha_.HMAC(type, input, size, key, keySize, output);
         }
-        case proto::HASHTYPE_BLAKE2B160:
-        case proto::HASHTYPE_BLAKE2B256:
-        case proto::HASHTYPE_BLAKE2B512:
-        case proto::HASHTYPE_SIPHASH24: {
+        case opentxs::crypto::HashType::Blake2b160:
+        case opentxs::crypto::HashType::Blake2b256:
+        case opentxs::crypto::HashType::Blake2b512:
+        case opentxs::crypto::HashType::SipHash24: {
             return blake_.HMAC(type, input, size, key, keySize, output);
         }
         default: {
@@ -294,7 +296,7 @@ auto Hash::PKCS5_PBKDF2_HMAC(
     const Data& input,
     const Data& salt,
     const std::size_t iterations,
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const std::size_t bytes,
     Data& output) const noexcept -> bool
 {
@@ -315,7 +317,7 @@ auto Hash::PKCS5_PBKDF2_HMAC(
     const Secret& input,
     const Data& salt,
     const std::size_t iterations,
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const std::size_t bytes,
     Data& output) const noexcept -> bool
 {
@@ -337,7 +339,7 @@ auto Hash::PKCS5_PBKDF2_HMAC(
     const std::string& input,
     const Data& salt,
     const std::size_t iterations,
-    const proto::HashType type,
+    const opentxs::crypto::HashType type,
     const std::size_t bytes,
     Data& output) const noexcept -> bool
 {
@@ -371,9 +373,10 @@ auto Hash::sha_256_double(
     const std::size_t size,
     void* output) const noexcept -> bool
 {
-    auto temp = space(Provider::HashSize(proto::HASHTYPE_SHA256));
+    auto temp = space(Provider::HashSize(opentxs::crypto::HashType::Sha256));
 
-    if (false == digest(proto::HASHTYPE_SHA256, input, size, temp.data())) {
+    if (false ==
+        digest(opentxs::crypto::HashType::Sha256, input, size, temp.data())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Failed to calculate intermediate hash.")
             .Flush();
@@ -381,7 +384,8 @@ auto Hash::sha_256_double(
         return false;
     }
 
-    return digest(proto::HASHTYPE_SHA256, temp.data(), temp.size(), output);
+    return digest(
+        opentxs::crypto::HashType::Sha256, temp.data(), temp.size(), output);
 }
 
 auto Hash::sha_256_double_checksum(
@@ -389,7 +393,7 @@ auto Hash::sha_256_double_checksum(
     const std::size_t size,
     void* output) const noexcept -> bool
 {
-    auto temp = space(Provider::HashSize(proto::HASHTYPE_SHA256));
+    auto temp = space(Provider::HashSize(opentxs::crypto::HashType::Sha256));
 
     if (false == sha_256_double(input, size, temp.data())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(

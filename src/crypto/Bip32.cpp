@@ -306,7 +306,7 @@ auto Bip32::derive_private(
     }
 
     auto success = crypto_.Hash().HMAC(
-        proto::HASHTYPE_SHA512,
+        crypto::HashType::Sha512,
         node.ParentCode(),
         reader(data),
         preallocated(hash.size(), hash.data()));
@@ -374,7 +374,7 @@ auto Bip32::derive_public(
     }
 
     auto success = crypto_.Hash().HMAC(
-        proto::HASHTYPE_SHA512,
+        crypto::HashType::Sha512,
         node.ParentCode(),
         reader(data),
         preallocated(hash.size(), hash.data()));
@@ -550,8 +550,9 @@ auto Bip32::root_node(
     static const auto rootKey = std::string{"Bitcoin seed"};
     auto node = Space{};
 
-    if (false == crypto_.Hash().HMAC(
-                     proto::HASHTYPE_SHA512, rootKey, entropy, writer(node))) {
+    if (false ==
+        crypto_.Hash().HMAC(
+            crypto::HashType::Sha512, rootKey, entropy, writer(node))) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to instantiate root node")
             .Flush();
 

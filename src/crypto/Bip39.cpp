@@ -25,7 +25,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/HashType.hpp"
 #include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::crypto::implementation::Bip39::"
@@ -111,11 +111,11 @@ auto Bip39::entropy_to_words(
     auto digestOutput = opentxs::Data::Factory();
 
     if (false == crypto_.Hash().Digest(
-                     opentxs::proto::HashType::HASHTYPE_SHA256,
+                     opentxs::crypto::HashType::Sha256,
                      bytes,
                      digestOutput->WriteInto())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Digest(opentxs::proto::HashType::HASHTYPE_SHA256...) failed.")
+            ": Digest(opentxs::crypto::HashType::Sha256...) failed.")
             .Flush();
 
         return false;
@@ -284,7 +284,7 @@ auto Bip39::words_to_root(
         words,
         dataSalt,
         HmacIterationCount,
-        proto::HashType::HASHTYPE_SHA512,
+        crypto::HashType::Sha512,
         HmacOutputSizeBytes,
         dataOutput);
     bip32RootNode.Assign(dataOutput->Bytes());

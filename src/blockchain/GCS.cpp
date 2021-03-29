@@ -37,7 +37,6 @@
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/GCS.pb.h"
 #include "util/Container.hpp"
 
@@ -275,7 +274,7 @@ auto siphash(
     auto writer = preallocated(sizeof(output), &output);
 
     if (false == api.Crypto().Hash().HMAC(
-                     proto::HASHTYPE_SIPHASH24, key, item, writer)) {
+                     crypto::HashType::SipHash24, key, item, writer)) {
         throw std::runtime_error("siphash failed");
     }
 

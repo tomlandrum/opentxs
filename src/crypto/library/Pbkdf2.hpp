@@ -9,7 +9,6 @@
 #include <mutex>
 
 #include "internal/crypto/library/Pbkdf2.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs::crypto::implementation
 {
@@ -22,7 +21,7 @@ public:
         const void* salt,
         const std::size_t saltSize,
         const std::size_t iterations,
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const std::size_t bytes,
         void* output) const noexcept -> bool final;
 

@@ -20,8 +20,8 @@
 #include "opentxs/blockchain/FilterType.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/crypto/Bip44Type.hpp"
+#include "opentxs/crypto/HashType.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs::blockchain
 {
@@ -46,7 +46,7 @@ auto BlockHash(
         case Type::UnitTest:
         default: {
             return api.Crypto().Hash().Digest(
-                proto::HASHTYPE_SHA256D, input, output);
+                crypto::HashType::Sha256D, input, output);
         }
     }
 }
@@ -135,7 +135,7 @@ auto P2PMessageHash(
         case Type::UnitTest:
         default: {
             return api.Crypto().Hash().Digest(
-                proto::HASHTYPE_SHA256DC, input, output);
+                crypto::HashType::Sha256DC, input, output);
         }
     }
 }
@@ -189,7 +189,7 @@ auto PubkeyHash(
         case Type::UnitTest:
         default: {
             return api.Crypto().Hash().Digest(
-                proto::HASHTYPE_BITCOIN, input, output);
+                crypto::HashType::Bitcoin, input, output);
         }
     }
 }
@@ -215,7 +215,7 @@ auto ScriptHash(
         case Type::UnitTest:
         default: {
             return api.Crypto().Hash().Digest(
-                proto::HASHTYPE_BITCOIN, input, output);
+                crypto::HashType::Bitcoin, input, output);
         }
     }
 }

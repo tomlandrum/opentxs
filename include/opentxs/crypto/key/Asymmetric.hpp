@@ -21,6 +21,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
+#include "opentxs/crypto/HashType.hpp"
 #include "opentxs/crypto/Types.hpp"
 
 namespace opentxs
@@ -70,7 +71,7 @@ public:
     OPENTXS_EXPORT virtual std::unique_ptr<Asymmetric> asPublic()
         const noexcept = 0;
     OPENTXS_EXPORT virtual OTData CalculateHash(
-        const proto::HashType hashType,
+        const crypto::HashType hashType,
         const PasswordPrompt& reason) const noexcept = 0;
     OPENTXS_EXPORT virtual bool CalculateID(
         Identifier& theOutput) const noexcept = 0;
@@ -108,17 +109,18 @@ public:
     OPENTXS_EXPORT virtual identity::KeyRole Role() const noexcept = 0;
     OPENTXS_EXPORT virtual std::shared_ptr<proto::AsymmetricKey> Serialize()
         const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::HashType SigHashType() const noexcept = 0;
+    OPENTXS_EXPORT virtual crypto::HashType SigHashType() const noexcept = 0;
     OPENTXS_EXPORT virtual bool Sign(
         const GetPreimage input,
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const Identifier& credential,
         const PasswordPrompt& reason,
-        const proto::HashType hash = proto::HASHTYPE_ERROR) const noexcept = 0;
+        const crypto::HashType hash =
+            crypto::HashType::Error) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Sign(
         const ReadView preimage,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         const AllocateOutput output,
         const PasswordPrompt& reason) const noexcept = 0;
     OPENTXS_EXPORT virtual bool TransportKey(
@@ -127,7 +129,7 @@ public:
         const PasswordPrompt& reason) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Verify(
         const Data& plaintext,
-        const proto::Signature& sig) const noexcept = 0;
+        const proto::Signature& sig) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual VersionNumber Version() const noexcept = 0;
 
     OPENTXS_EXPORT virtual operator bool() const noexcept = 0;

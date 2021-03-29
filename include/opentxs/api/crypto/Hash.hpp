@@ -15,6 +15,7 @@
 
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Proto.hpp"
+#include "opentxs/crypto/Types.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
@@ -41,11 +42,11 @@ class Hash
 {
 public:
     OPENTXS_EXPORT virtual bool Digest(
-        const proto::HashType hashType,
+        const opentxs::crypto::HashType hashType,
         const ReadView data,
         const AllocateOutput destination) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Digest(
-        const proto::HashType hashType,
+        const opentxs::crypto::HashType hashType,
         const opentxs::network::zeromq::Frame& data,
         const AllocateOutput destination) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Digest(
@@ -53,7 +54,7 @@ public:
         const ReadView data,
         const AllocateOutput encodedDestination) const noexcept = 0;
     OPENTXS_EXPORT virtual bool HMAC(
-        const proto::HashType hashType,
+        const opentxs::crypto::HashType hashType,
         const ReadView key,
         const ReadView& data,
         const AllocateOutput digest) const noexcept = 0;
@@ -65,21 +66,21 @@ public:
         const Data& input,
         const Data& salt,
         const std::size_t iterations,
-        const proto::HashType hashType,
+        const opentxs::crypto::HashType hashType,
         const std::size_t bytes,
         Data& output) const noexcept = 0;
     OPENTXS_EXPORT virtual bool PKCS5_PBKDF2_HMAC(
         const Secret& input,
         const Data& salt,
         const std::size_t iterations,
-        const proto::HashType hashType,
+        const opentxs::crypto::HashType hashType,
         const std::size_t bytes,
         Data& output) const noexcept = 0;
     OPENTXS_EXPORT virtual bool PKCS5_PBKDF2_HMAC(
         const std::string& input,
         const Data& salt,
         const std::size_t iterations,
-        const proto::HashType hashType,
+        const opentxs::crypto::HashType hashType,
         const std::size_t bytes,
         Data& output) const noexcept = 0;
     OPENTXS_EXPORT virtual auto Scrypt(

@@ -86,21 +86,21 @@ public:
         const api::internal::Core& api,
         const ReadView plaintext,
         const key::Asymmetric& key,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         const AllocateOutput signature,
         const PasswordPrompt& reason) const -> bool final;
     auto SignDER(
         const api::internal::Core& api,
         const ReadView plaintext,
         const key::Asymmetric& key,
-        const proto::HashType hash,
+        const crypto::HashType hash,
         Space& signature,
         const PasswordPrompt& reason) const noexcept -> bool final;
     auto Verify(
         const Data& plaintext,
         const key::Asymmetric& theKey,
         const Data& signature,
-        const proto::HashType hashType) const -> bool final;
+        const crypto::HashType hashType) const -> bool final;
 
     void Init() final;
 
@@ -116,7 +116,7 @@ private:
     secp256k1_context* context_;
     const api::crypto::Util& ssl_;
 
-    auto hash(const proto::HashType type, const ReadView data) const
+    auto hash(const crypto::HashType type, const ReadView data) const
         noexcept(false) -> OTData;
     auto parsed_public_key(const ReadView bytes) const noexcept(false)
         -> ::secp256k1_pubkey;

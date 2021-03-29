@@ -15,7 +15,6 @@
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/RSA.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -58,9 +57,9 @@ public:
     auto Params() const noexcept -> ReadView final { return params_->Bytes(); }
     auto Serialize() const noexcept
         -> std::shared_ptr<proto::AsymmetricKey> final;
-    auto SigHashType() const noexcept -> proto::HashType final
+    auto SigHashType() const noexcept -> crypto::HashType final
     {
-        return proto::HASHTYPE_SHA256;
+        return crypto::HashType::Sha256;
     }
 
     RSA(const api::internal::Core& api,

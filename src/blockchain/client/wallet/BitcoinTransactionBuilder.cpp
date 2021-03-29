@@ -59,7 +59,6 @@
 #include "opentxs/protobuf/BlockchainTransactionOutput.pb.h"
 #include "opentxs/protobuf/BlockchainTransactionProposedNotification.pb.h"
 #include "opentxs/protobuf/BlockchainTransactionProposedOutput.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "util/ScopeGuard.hpp"
 
@@ -824,9 +823,9 @@ private:
 
         return pKey;
     }
-    auto hash_type() const noexcept -> proto::HashType
+    auto hash_type() const noexcept -> crypto::HashType
     {
-        return proto::HASHTYPE_SHA256D;
+        return crypto::HashType::Sha256D;
     }
     auto init_bip143(Bip143& bip143) const noexcept -> bool
     {
@@ -843,7 +842,7 @@ private:
         auto& output = bip143.value();
         auto cb = [&](const auto& preimage, auto& output) -> bool {
             return api_.Crypto().Hash().Digest(
-                proto::HASHTYPE_SHA256D,
+                crypto::HashType::Sha256D,
                 reader(preimage),
                 preallocated(output.size(), output.data()));
         };

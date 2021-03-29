@@ -21,7 +21,7 @@
 #include "opentxs/blockchain/Blockchain.hpp"
 #endif  // OT_BLOCKCHAIN
 #include "opentxs/core/Log.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/HashType.hpp"
 
 namespace opentxs
 {
@@ -32,7 +32,7 @@ auto blockchain_thread_item_id(
 {
     auto preimage = std::string{};
     const auto hashed = crypto.Hash().HMAC(
-        proto::HASHTYPE_SHA256,
+        crypto::HashType::Sha256,
         ReadView{reinterpret_cast<const char*>(&chain), sizeof(chain)},
         txid.Bytes(),
         writer(preimage));

@@ -88,7 +88,6 @@
 #include "opentxs/protobuf/Check.hpp"
 #endif  // OT_BLOCKCHAIN
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "opentxs/protobuf/StorageThread.pb.h"
 #include "opentxs/protobuf/StorageThreadItem.pb.h"
@@ -1178,7 +1177,7 @@ auto Blockchain::IndexItem(const ReadView bytes) const noexcept -> PatternID
     auto output = PatternID{};
 #if OT_BLOCKCHAIN
     const auto hashed = api_.Crypto().Hash().HMAC(
-        proto::HASHTYPE_SIPHASH24,
+        opentxs::crypto::HashType::SipHash24,
         db_.HashKey(),
         bytes,
         preallocated(sizeof(output), &output));
@@ -1710,9 +1709,10 @@ auto Blockchain::PubkeyHash(
 
     auto output = Data::Factory();
 
-    if (false ==
-        api_.Crypto().Hash().Digest(
-            proto::HASHTYPE_BITCOIN, pubkey.Bytes(), output->WriteInto())) {
+    if (false == api_.Crypto().Hash().Digest(
+                     opentxs::crypto::HashType::Bitcoin,
+                     pubkey.Bytes(),
+                     output->WriteInto())) {
         throw std::runtime_error("Unable to calculate hash.");
     }
 

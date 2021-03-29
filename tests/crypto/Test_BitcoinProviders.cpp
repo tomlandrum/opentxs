@@ -431,7 +431,9 @@ public:
 
             EXPECT_TRUE(input->DecodeHex(hash));
             EXPECT_TRUE(crypto_.Hash().Digest(
-                ot::proto::HASHTYPE_RIPEMD160, preimage, output->WriteInto()));
+                ot::crypto::HashType::Ripemd160,
+                preimage,
+                output->WriteInto()));
             EXPECT_EQ(output.get(), input.get());
         }
 

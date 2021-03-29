@@ -15,6 +15,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
+#include "opentxs/crypto/HashType.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/identity/credential/Base.hpp"
@@ -43,7 +44,7 @@ public:
         proto::Signature& signature,
         const PasswordPrompt& reason,
         identity::KeyRole key = identity::KeyRole::Sign,
-        const proto::HashType hash = proto::HASHTYPE_ERROR) const = 0;
+        const crypto::HashType hash = crypto::HashType::Error) const = 0;
 
     OPENTXS_EXPORT ~Key() override = default;
 
