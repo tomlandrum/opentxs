@@ -15,8 +15,9 @@ namespace opentxs
 namespace identity
 {
 enum class CredentialType : std::uint8_t {
-    Legacy = 0,
-    HD = 1,
+    Error = 0,
+    Legacy = 1,
+    HD = 2,
 };
 }  // namespace identity
 }  // namespace opentxs

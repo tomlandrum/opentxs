@@ -75,13 +75,16 @@ private:
     using SourceProofTypeReverseMap =
         std::map<proto::SourceProofType, identity::SourceProofType>;
 
-    static const SourceProofTypeMap sourceprooftype_map_;
-    static const SourceProofTypeReverseMap sourceprooftype_reverse_map_;
     static const VersionConversionMap credential_to_master_params_;
 
     const proto::SourceProof source_proof_;
 
     static auto source_proof(const NymParameters& params) -> proto::SourceProof;
+    static auto sourceprooftype_map() noexcept -> const SourceProofTypeMap&;
+    static auto translate(const identity::SourceProofType in) noexcept
+        -> proto::SourceProofType;
+    static auto translate(const proto::SourceProofType in) noexcept
+        -> identity::SourceProofType;
 
     auto serialize(
         const Lock& lock,

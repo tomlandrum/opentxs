@@ -20,6 +20,12 @@ enum class SymmetricKeyType : std::uint8_t {
     ECDH = 2,
     Argon2 = 3,
 };
+
+constexpr auto value(const SymmetricKeyType in) noexcept
+{
+    return static_cast<std::uint8_t>(in);
+}
+
 }  // namespace crypto
 }  // namespace opentxs
 #endif

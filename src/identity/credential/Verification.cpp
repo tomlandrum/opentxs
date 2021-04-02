@@ -104,13 +104,6 @@ auto Verification::VerificationID(
 
 namespace opentxs::identity::credential::implementation
 {
-const Verification::KeyModeMap Verification::keymode_map_{
-    {identity::KeyMode::Error, proto::KEYMODE_ERROR},
-    {identity::KeyMode::Null, proto::KEYMODE_NULL},
-    {identity::KeyMode::Private, proto::KEYMODE_PRIVATE},
-    {identity::KeyMode::Public, proto::KEYMODE_PUBLIC},
-};
-
 Verification::Verification(
     const api::internal::Core& api,
     const identity::internal::Authority& parent,
@@ -173,11 +166,9 @@ auto Verification::serialize(
     -> std::shared_ptr<Base::SerializedType>
 {
     auto serializedCredential = Base::serialize(lock, asPrivate, asSigned);
-    try {
-        serializedCredential->set_mode(
-            Base::keymode_map_.at(identity::KeyMode::Null));
-    } catch (...) {
-    }
+    serializedCredential->set_mode(
+        opentxs::identity::credential::internal::translate(
+            identity::KeyMode::Null));
     serializedCredential->clear_signature();  // this fixes a bug, but shouldn't
 
     if (asSigned) {

@@ -132,15 +132,8 @@ public:
     ~Sodium() final = default;
 
 private:
-    using SymmetricModeMap =
-        std::map<opentxs::crypto::SymmetricMode, proto::SymmetricMode>;
-    using SymmetricModeReverseMap =
-        std::map<proto::SymmetricMode, opentxs::crypto::SymmetricMode>;
-
     static const opentxs::crypto::SymmetricMode DEFAULT_MODE{
         opentxs::crypto::SymmetricMode::ChaCha20Poly1305};
-    static const SymmetricModeMap symmetricmode_map_;
-    static const SymmetricModeReverseMap symmetricmode_reverse_map_;
 
     auto Decrypt(
         const proto::Ciphertext& ciphertext,

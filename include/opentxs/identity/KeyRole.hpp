@@ -15,9 +15,10 @@ namespace opentxs
 namespace identity
 {
 enum class KeyRole : std::uint8_t {
-    Auth = 0,
-    Encrypt = 1,
-    Sign = 2,
+    Error = 0,
+    Auth = 1,
+    Encrypt = 2,
+    Sign = 3,
 };
 }  // namespace identity
 }  // namespace opentxs

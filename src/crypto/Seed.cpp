@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <utility>
 
+#include "internal/crypto/Crypto.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -262,8 +263,9 @@ struct Seed::Imp {
     {
         const auto& session =
             (3 > version_) ? encrypted_words_ : encrypted_entropy_;
-        const auto key =
-            symmetric.Key(session.key(), translate(session.mode()));
+        const auto key = symmetric.Key(
+            session.key(),
+            opentxs::crypto::internal::translate(session.mode()));
 
         if (false == key.get()) {
             throw std::runtime_error{"Failed to get decryption key"};
@@ -391,15 +393,6 @@ private:
 
         return map;
     }
-    static auto symmetricmode_map() noexcept -> const SymmetricModeMap&
-    {
-        static const auto map = SymmetricModeMap{
-            {SymmetricMode::Error, proto::SMODE_ERROR},
-            {SymmetricMode::ChaCha20Poly1305, proto::SMODE_CHACHA20POLY1305},
-        };
-
-        return map;
-    }
     static auto translate(const SeedStyle in) noexcept -> proto::SeedType
     {
         try {
@@ -446,33 +439,6 @@ private:
         } catch (...) {
 
             return Language::none;
-        }
-    }
-    static auto translate(const SymmetricMode in) noexcept
-        -> proto::SymmetricMode
-    {
-        try {
-
-            return symmetricmode_map().at(in);
-        } catch (...) {
-
-            return proto::SMODE_ERROR;
-        }
-    }
-    static auto translate(const proto::SymmetricMode in) noexcept
-        -> crypto::SymmetricMode
-    {
-        static const auto map = reverse_arbitrary_map<
-            crypto::SymmetricMode,
-            proto::SymmetricMode,
-            SymmetricModeReverseMap>(symmetricmode_map());
-
-        try {
-
-            return map.at(in);
-        } catch (...) {
-
-            return SymmetricMode::Error;
         }
     }
     static auto type_map() noexcept -> const TypeMap&

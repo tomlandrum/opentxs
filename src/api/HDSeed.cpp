@@ -16,6 +16,7 @@
 #include "internal/api/Factory.hpp"
 #include "internal/api/crypto/Crypto.hpp"
 #include "internal/crypto/key/Factory.hpp"
+#include "internal/identity/credential/Credential.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Context.hpp"
@@ -45,7 +46,6 @@
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
-#include "util/Container.hpp"
 #include "util/HDIndex.hpp"  // IWYU pragma: keep
 
 #define OT_METHOD "opentxs::api::implementation::HDSeed::"
@@ -69,20 +69,6 @@ auto HDSeed(
 
 namespace opentxs::api::implementation
 {
-const HDSeed::KeyRoleMap HDSeed::keyrole_map_{
-    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
-    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
-    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
-};
-const HDSeed::KeyRoleReverseMap HDSeed::keyrole_reverse_map_{
-    reverse_map(keyrole_map_)};
-const HDSeed::SymmetricModeMap HDSeed::symmetricmode_map_{
-    {opentxs::crypto::SymmetricMode::Error, proto::SMODE_ERROR},
-    {opentxs::crypto::SymmetricMode::ChaCha20Poly1305,
-     proto::SMODE_CHACHA20POLY1305},
-};
-const HDSeed::SymmetricModeReverseMap HDSeed::symmetricmode_reverse_map_{
-    reverse_map(symmetricmode_map_)};
 HDSeed::HDSeed(
     const api::Factory& factory,
     [[maybe_unused]] const api::crypto::internal::Asymmetric& asymmetric,
@@ -333,7 +319,7 @@ auto HDSeed::GetPaymentCode(
         api.Factory().Data(key.PublicKey()),
         path,
         key.Parent(),
-        keyrole_map_.at(key.Role()),
+        opentxs::identity::credential::internal::translate(key.Role()),
         key.Version(),
         reason);
 #else

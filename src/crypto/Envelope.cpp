@@ -19,6 +19,7 @@
 
 #include "2_Factory.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/crypto/Crypto.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Core.hpp"
@@ -321,14 +322,9 @@ auto Envelope::read_dh(const api::Core& api, const SerializedType& rhs) noexcept
 {
     auto output = DHMap{};
 
-    try {
-        for (const auto& key : rhs.dhkey()) {
-            auto& set =
-                output[crypto::key::Asymmetric::asymmetrickeytype_reverse_map_
-                           .at(key.type())];
-            set.emplace_back(api.Factory().AsymmetricKey(key));
-        }
-    } catch (...) {
+    for (const auto& key : rhs.dhkey()) {
+        auto& set = output[opentxs::crypto::internal::translate(key.type())];
+        set.emplace_back(api.Factory().AsymmetricKey(key));
     }
 
     return output;
@@ -339,17 +335,13 @@ auto Envelope::read_sk(const api::Core& api, const SerializedType& rhs) noexcept
 {
     auto output = SessionKeys{};
 
-    try {
-        for (const auto& tagged : rhs.sessionkey()) {
-            output.emplace_back(SessionKey{
-                tagged.tag(),
-                crypto::key::Asymmetric::asymmetrickeytype_reverse_map_.at(
-                    tagged.type()),
-                api.Symmetric().Key(
-                    tagged.key(),
-                    opentxs::crypto::SymmetricMode::ChaCha20Poly1305)});
-        }
-    } catch (...) {
+    for (const auto& tagged : rhs.sessionkey()) {
+        output.emplace_back(SessionKey{
+            tagged.tag(),
+            opentxs::crypto::internal::translate(tagged.type()),
+            api.Symmetric().Key(
+                tagged.key(),
+                opentxs::crypto::SymmetricMode::ChaCha20Poly1305)});
     }
 
     return output;
@@ -520,8 +512,7 @@ auto Envelope::Serialize() const noexcept -> SerializedType
         auto& tagged = *output.add_sessionkey();
         tagged.set_version(tagged_key_version_);
         tagged.set_tag(tag);
-        tagged.set_type(
-            crypto::key::Asymmetric::asymmetrickeytype_map_.at(type));
+        tagged.set_type(opentxs::crypto::internal::translate(type));
         key->Serialize(*tagged.mutable_key());
     }
 

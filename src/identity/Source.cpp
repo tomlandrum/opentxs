@@ -99,6 +99,7 @@ auto Factory::NymIDSource(
                         reason);
                 } break;
 #endif  // OT_CRYPTO_WITH_BIP32
+                case identity::CredentialType::Error:
                 default: {
                     throw std::runtime_error("Unsupported credential type");
                 }
@@ -113,6 +114,7 @@ auto Factory::NymIDSource(
             }
 
             return new ReturnType{api.Factory(), params};
+        case identity::SourceType::Error:
         default: {
             LogOutput("opentxs::Factory::")(__FUNCTION__)(
                 ": Unsupported source type.")
@@ -135,12 +137,6 @@ auto Factory::NymIDSource(
 
 namespace opentxs::identity::implementation
 {
-const Source::SourceTypeMap Source::sourcetype_map_{
-    {identity::SourceType::PubKey, proto::SOURCETYPE_PUBKEY},
-    {identity::SourceType::Bip47, proto::SOURCETYPE_BIP47},
-};
-const Source::SourceTypeReverseMap Source::sourcetype_reverse_map_{
-    reverse_map(sourcetype_map_)};
 const VersionConversionMap Source::key_to_source_version_{
     {1, 1},
     {2, 2},
@@ -149,9 +145,9 @@ const VersionConversionMap Source::key_to_source_version_{
 
 Source::Source(
     const api::Factory& factory,
-    const proto::NymIDSource& serialized) noexcept(false)
+    const proto::NymIDSource& serialized) noexcept
     : factory_(factory)
-    , type_(sourcetype_reverse_map_.at(serialized.type()))
+    , type_(translate(serialized.type()))
     , pubkey_(deserialize_pubkey(factory, type_, serialized))
     , payment_code_(deserialize_paymentcode(factory, type_, serialized))
     , version_(serialized.version())
@@ -269,30 +265,62 @@ auto Source::NymID() const noexcept -> OTNymID
 auto Source::Serialize() const noexcept -> std::shared_ptr<proto::NymIDSource>
 {
     auto source = std::make_shared<proto::NymIDSource>();
-    try {
-        source->set_version(version_);
-        source->set_type(sourcetype_map_.at(type_));
+    source->set_version(version_);
+    source->set_type(translate(type_));
 
-        switch (type_) {
-            case identity::SourceType::PubKey: {
-                OT_ASSERT(pubkey_.get())
+    switch (type_) {
+        case identity::SourceType::PubKey: {
+            OT_ASSERT(pubkey_.get())
 
-                auto key = pubkey_->Serialize();
-                key->set_role(proto::KEYROLE_SIGN);
-                *(source->mutable_key()) = *key;
+            auto key = pubkey_->Serialize();
+            key->set_role(proto::KEYROLE_SIGN);
+            *(source->mutable_key()) = *key;
 
-            } break;
-            case identity::SourceType::Bip47: {
-                *(source->mutable_paymentcode()) = payment_code_->Serialize();
+        } break;
+        case identity::SourceType::Bip47: {
+            *(source->mutable_paymentcode()) = payment_code_->Serialize();
 
-            } break;
-            default: {
-            }
+        } break;
+        default: {
         }
-    } catch (...) {
     }
 
     return source;
+}
+
+auto Source::sourcetype_map() noexcept -> const SourceTypeMap&
+{
+    static const auto map = SourceTypeMap{
+        {identity::SourceType::Error, proto::SOURCETYPE_ERROR},
+        {identity::SourceType::PubKey, proto::SOURCETYPE_PUBKEY},
+        {identity::SourceType::Bip47, proto::SOURCETYPE_BIP47},
+    };
+
+    return map;
+}
+auto Source::translate(const identity::SourceType in) noexcept
+    -> proto::SourceType
+{
+    try {
+        return sourcetype_map().at(in);
+    } catch (...) {
+        return proto::SOURCETYPE_ERROR;
+    }
+}
+
+auto Source::translate(const proto::SourceType in) noexcept
+    -> identity::SourceType
+{
+    static const auto map = reverse_arbitrary_map<
+        identity::SourceType,
+        proto::SourceType,
+        SourceTypeReverseMap>(sourcetype_map());
+
+    try {
+        return map.at(in);
+    } catch (...) {
+        return identity::SourceType::Error;
+    }
 }
 
 // This function assumes that all internal verification checks are complete

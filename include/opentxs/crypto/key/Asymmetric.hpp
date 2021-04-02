@@ -54,14 +54,7 @@ namespace key
 class Asymmetric
 {
 public:
-    using AsymmetricKeyTypeMap =
-        std::map<crypto::AsymmetricKeyType, proto::AsymmetricKeyType>;
-    using AsymmetricKeyTypeReverseMap =
-        std::map<proto::AsymmetricKeyType, crypto::AsymmetricKeyType>;
     using Serialized = proto::AsymmetricKey;
-
-    static const AsymmetricKeyTypeMap asymmetrickeytype_map_;
-    static const AsymmetricKeyTypeReverseMap asymmetrickeytype_reverse_map_;
 
     OPENTXS_EXPORT static const VersionNumber DefaultVersion;
     OPENTXS_EXPORT static const VersionNumber MaxVersion;
@@ -129,7 +122,7 @@ public:
         const PasswordPrompt& reason) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Verify(
         const Data& plaintext,
-        const proto::Signature& sig) const noexcept(false) = 0;
+        const proto::Signature& sig) const noexcept = 0;
     OPENTXS_EXPORT virtual VersionNumber Version() const noexcept = 0;
 
     OPENTXS_EXPORT virtual operator bool() const noexcept = 0;

@@ -26,7 +26,6 @@
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/iterator/Bidirectional.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-//#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {

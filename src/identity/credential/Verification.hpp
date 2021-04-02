@@ -56,10 +56,6 @@ public:
     ~Verification() final = default;
 
 private:
-    using KeyModeMap = std::map<identity::KeyMode, proto::KeyMode>;
-
-    static const KeyModeMap keymode_map_;
-
     friend opentxs::Factory;
 
     const proto::VerificationSet data_;

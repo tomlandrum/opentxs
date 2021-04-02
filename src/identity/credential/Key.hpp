@@ -131,11 +131,6 @@ protected:
         const std::string& masterID) noexcept(false);
 
 private:
-    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
-    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
-
-    static const KeyRoleMap keyrole_map_;
-    static const KeyRoleReverseMap keyrole_reverse_map_;
     static const VersionConversionMap credential_subversion_;
     static const VersionConversionMap subversion_to_key_version_;
 

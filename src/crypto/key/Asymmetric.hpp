@@ -132,8 +132,8 @@ public:
         Data& publicKey,
         Secret& privateKey,
         const PasswordPrompt& reason) const noexcept -> bool override;
-    auto Verify(const Data& plaintext, const proto::Signature& sig) const
-        noexcept(false) -> bool final;
+    auto Verify(const Data& plaintext, const proto::Signature& sig)
+        const noexcept -> bool final;
     auto Version() const noexcept -> VersionNumber final { return version_; }
 
     operator bool() const noexcept override;
@@ -146,11 +146,6 @@ protected:
 
     using EncryptedKey = std::unique_ptr<proto::Ciphertext>;
     using EncryptedExtractor = std::function<EncryptedKey(Data&, Secret&)>;
-    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
-    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
-
-    static const KeyRoleMap keyrole_map_;
-    static const KeyRoleReverseMap keyrole_reverse_map_;
 
     const api::internal::Core& api_;
     const crypto::AsymmetricProvider& provider_;
@@ -236,8 +231,8 @@ protected:
         const crypto::AsymmetricProvider& engine,
         const proto::AsymmetricKey& serializedKey,
         EncryptedExtractor) noexcept(false);
-    Asymmetric(const Asymmetric& rhs) noexcept(false);
-    Asymmetric(const Asymmetric& rhs, const ReadView newPublic) noexcept(false);
+    Asymmetric(const Asymmetric& rhs) noexcept;
+    Asymmetric(const Asymmetric& rhs, const ReadView newPublic) noexcept;
     Asymmetric(
         const Asymmetric& rhs,
         OTData&& newPublicKey,
@@ -249,12 +244,18 @@ private:
     using SignatureRoleMap =
         std::map<crypto::SignatureRole, proto::SignatureRole>;
 
-    static const HashTypeMap hashtype_map_;
-    static const HashTypeReverseMap hashtype_reverse_map_;
     static const std::map<crypto::SignatureRole, VersionNumber> sig_version_;
-    static const SignatureRoleMap signaturerole_map_;
 
     auto SerializeKeyToData(const proto::AsymmetricKey& rhs) const -> OTData;
+
+    static auto hashtype_map() noexcept -> const HashTypeMap&;
+    static auto signaturerole_map() noexcept -> const SignatureRoleMap&;
+    static auto translate(const crypto::SignatureRole in) noexcept
+        -> proto::SignatureRole;
+    static auto translate(const crypto::HashType in) noexcept
+        -> proto::HashType;
+    static auto translate(const proto::HashType in) noexcept
+        -> crypto::HashType;
 
     Asymmetric() = delete;
     Asymmetric(Asymmetric&&) = delete;

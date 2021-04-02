@@ -85,14 +85,12 @@ public:
         const ReadView publicKey,
         const PasswordPrompt& reason,
         const identity::KeyRole role,
-        const VersionNumber version) const noexcept(false)
-        -> Secp256k1Key final;
+        const VersionNumber version) const noexcept -> Secp256k1Key final;
     auto InstantiateSecp256k1Key(
         const Secret& privateKey,
         const PasswordPrompt& reason,
         const identity::KeyRole role,
-        const VersionNumber version) const noexcept(false)
-        -> Secp256k1Key final;
+        const VersionNumber version) const noexcept -> Secp256k1Key final;
     auto NewSecp256k1Key(
         const std::string& seedID,
         const Secret& seed,
@@ -101,7 +99,7 @@ public:
         const identity::KeyRole role = identity::KeyRole::Sign,
         const VersionNumber version =
             opentxs::crypto::key::Secp256k1::DefaultVersion) const
-        noexcept(false) -> Secp256k1Key final;
+        -> Secp256k1Key final;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #endif  // OT_CRYPTO_WITH_BIP32
     auto NewKey(
@@ -115,12 +113,8 @@ public:
     ~Asymmetric() final = default;
 
 private:
-    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
-    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
     using TypeMap = std::map<EcdsaCurve, opentxs::crypto::AsymmetricKeyType>;
 
-    static const KeyRoleMap keyrole_map_;
-    static const KeyRoleReverseMap keyrole_reverse_map_;
     static const VersionNumber serialized_path_version_;
     static const TypeMap curve_to_key_type_;
 

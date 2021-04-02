@@ -72,7 +72,7 @@ struct hash<Outpoint> {
         auto out = std::size_t{};
         const auto bytes = data.Bytes();
         api.HMAC(
-            opentxs::proto::HASHTYPE_SIPHASH24,
+            opentxs::crypto::HashType::SipHash24,
             {key.data(), key.size()},
             {std::next(bytes.data(), 24), 12u},
             opentxs::preallocated(sizeof(out), &out));

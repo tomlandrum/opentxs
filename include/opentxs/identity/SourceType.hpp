@@ -15,8 +15,9 @@ namespace opentxs
 namespace identity
 {
 enum class SourceType : std::uint8_t {
-    PubKey = 0,
-    Bip47 = 1,
+    Error = 0,
+    PubKey = 1,
+    Bip47 = 2,
 };
 }  // namespace identity
 }  // namespace opentxs

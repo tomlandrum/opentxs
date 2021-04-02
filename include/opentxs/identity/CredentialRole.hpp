@@ -15,11 +15,18 @@ namespace opentxs
 namespace identity
 {
 enum class CredentialRole : std::uint8_t {
-    MasterKey = 0,
-    ChildKey = 1,
-    Contact = 2,
-    Verify = 3,
+    Error = 0,
+    MasterKey = 1,
+    ChildKey = 2,
+    Contact = 3,
+    Verify = 4,
 };
+
+constexpr auto value(const CredentialRole in) noexcept
+{
+    return static_cast<std::uint8_t>(in);
+}
+
 }  // namespace identity
 }  // namespace opentxs
 #endif

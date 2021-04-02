@@ -36,21 +36,11 @@
 #include "opentxs/protobuf/ChildCredentialParameters.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
-#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::identity::credential::implementation::Base::"
 
 namespace opentxs::identity::credential::implementation
 {
-const Base::KeyModeMap Base::keymode_map_{
-    {identity::KeyMode::Error, proto::KEYMODE_ERROR},
-    {identity::KeyMode::Null, proto::KEYMODE_NULL},
-    {identity::KeyMode::Private, proto::KEYMODE_PRIVATE},
-    {identity::KeyMode::Public, proto::KEYMODE_PUBLIC},
-};
-const Base::KeyModeReverseMap Base::keymode_reverse_map_{
-    reverse_map(keymode_map_)};
-
 Base::Base(
     const api::internal::Core& api,
     const identity::internal::Authority& parent,
@@ -89,9 +79,12 @@ Base::Base(
     , source_(source)
     , nym_id_(source.NymID()->str())
     , master_id_(masterID)
-    , type_(credentialtype_reverse_map_.at(serialized.type()))
-    , role_(credentialrole_reverse_map_.at(serialized.role()))
-    , mode_(keymode_reverse_map_.at(serialized.mode()))
+    , type_(
+          opentxs::identity::credential::internal::translate(serialized.type()))
+    , role_(
+          opentxs::identity::credential::internal::translate(serialized.role()))
+    , mode_(
+          opentxs::identity::credential::internal::translate(serialized.mode()))
 {
     if (serialized.nymid() != nym_id_) {
         throw std::runtime_error(
@@ -209,18 +202,12 @@ auto Base::isValid(
 
     credential = serialize(lock, serializationMode, WITH_SIGNATURES);
 
-    auto isValid{false};
-    try {
-        isValid = proto::Validate<proto::Credential>(
-            *credential,
-            VERBOSE,
-            keymode_map_.at(mode_),
-            credentialrole_map_.at(role_),
-            true);  // with signatures
-    } catch (...) {
-    }
-
-    return isValid;
+    return proto::Validate<proto::Credential>(
+        *credential,
+        VERBOSE,
+        opentxs::identity::credential::internal::translate(mode_),
+        opentxs::identity::credential::internal::translate(role_),
+        true);  // with signatures
 }
 
 auto Base::MasterSignature() const -> Base::Signature
@@ -259,8 +246,8 @@ auto Base::Save() const -> bool
 
     if (!isValid(lock, serializedProto)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Unable to save serialized credential. Type (")(
-            static_cast<int>(role_))("), version ")(version_)
+            ": Unable to save serialized credential. Type (")(value(role_))(
+            "), version ")(version_)
             .Flush();
 
         return false;
@@ -302,65 +289,59 @@ auto Base::serialize(
     -> std::shared_ptr<Base::SerializedType>
 {
     auto serializedCredential = std::make_shared<proto::Credential>();
-    try {
-        serializedCredential->set_version(version_);
-        serializedCredential->set_type(credentialtype_map_.at((type_)));
-        serializedCredential->set_role(credentialrole_map_.at(role_));
+    serializedCredential->set_version(version_);
+    serializedCredential->set_type(
+        opentxs::identity::credential::internal::translate((type_)));
+    serializedCredential->set_role(
+        opentxs::identity::credential::internal::translate(role_));
 
-        if (identity::CredentialRole::MasterKey != role_) {
-            std::unique_ptr<proto::ChildCredentialParameters> parameters;
-            parameters.reset(new proto::ChildCredentialParameters);
+    if (identity::CredentialRole::MasterKey != role_) {
+        std::unique_ptr<proto::ChildCredentialParameters> parameters;
+        parameters.reset(new proto::ChildCredentialParameters);
 
-            parameters->set_version(1);
-            parameters->set_masterid(master_id_);
-            serializedCredential->set_allocated_childdata(parameters.release());
-        }
-
-        if (asPrivate) {
-            if (identity::KeyMode::Private == mode_) {
-                serializedCredential->set_mode(keymode_map_.at(mode_));
-            } else {
-                LogOutput(OT_METHOD)(__FUNCTION__)(
-                    ": Can't serialize a public credential as a private "
-                    "credential.")
-                    .Flush();
-            }
-        } else {
-            serializedCredential->set_mode(
-                keymode_map_.at(identity::KeyMode::Public));
-        }
-
-        if (asSigned) {
-            if (asPrivate) {
-                auto privateSig = SelfSignature(PRIVATE_VERSION);
-
-                if (privateSig) {
-                    *serializedCredential->add_signature() = *privateSig;
-                }
-            }
-
-            auto publicSig = SelfSignature(PUBLIC_VERSION);
-
-            if (publicSig) {
-                *serializedCredential->add_signature() = *publicSig;
-            }
-
-            auto sourceSig = SourceSignature();
-
-            if (sourceSig) {
-                *serializedCredential->add_signature() = *sourceSig;
-            }
-        } else {
-            serializedCredential->clear_signature();  // just in case...
-        }
-
-        serializedCredential->set_id(id(lock)->str());
-        serializedCredential->set_nymid(nym_id_);
-    } catch (...) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Problem serializing a credential.")
-            .Flush();
+        parameters->set_version(1);
+        parameters->set_masterid(master_id_);
+        serializedCredential->set_allocated_childdata(parameters.release());
     }
+
+    if (asPrivate) {
+        if (identity::KeyMode::Private == mode_) {
+            serializedCredential->set_mode(
+                opentxs::identity::credential::internal::translate(mode_));
+        } else {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Can't serialize a public credential as a private "
+                "credential.")
+                .Flush();
+        }
+    } else {
+        serializedCredential->set_mode(
+            opentxs::identity::credential::internal::translate(
+                identity::KeyMode::Public));
+    }
+
+    if (asSigned) {
+        if (asPrivate) {
+            auto privateSig = SelfSignature(PRIVATE_VERSION);
+
+            if (privateSig) {
+                *serializedCredential->add_signature() = *privateSig;
+            }
+        }
+
+        auto publicSig = SelfSignature(PUBLIC_VERSION);
+
+        if (publicSig) { *serializedCredential->add_signature() = *publicSig; }
+
+        auto sourceSig = SourceSignature();
+
+        if (sourceSig) { *serializedCredential->add_signature() = *sourceSig; }
+    } else {
+        serializedCredential->clear_signature();  // just in case...
+    }
+
+    serializedCredential->set_id(id(lock)->str());
+    serializedCredential->set_nymid(nym_id_);
 
     return serializedCredential;
 }

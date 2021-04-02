@@ -16,6 +16,8 @@
 
 #include "crypto/key/Null.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/crypto/Crypto.hpp"
+#include "internal/identity/credential/Credential.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -49,16 +51,6 @@ template class opentxs::Pimpl<opentxs::crypto::key::Asymmetric>;
 
 namespace opentxs::crypto::key
 {
-const Asymmetric::AsymmetricKeyTypeMap Asymmetric::asymmetrickeytype_map_{
-    {AsymmetricKeyType::Null, proto::AKEYTYPE_NULL},
-    {AsymmetricKeyType::Legacy, proto::AKEYTYPE_LEGACY},
-    {AsymmetricKeyType::Secp256k1, proto::AKEYTYPE_SECP256K1},
-    {AsymmetricKeyType::ED25519, proto::AKEYTYPE_ED25519},
-};
-const Asymmetric::AsymmetricKeyTypeReverseMap
-    Asymmetric::asymmetrickeytype_reverse_map_{
-        reverse_map(asymmetrickeytype_map_)};
-
 const VersionNumber Asymmetric::DefaultVersion{2};
 const VersionNumber Asymmetric::MaxVersion{2};
 
@@ -70,30 +62,6 @@ auto Asymmetric::Factory() noexcept -> OTAsymmetricKey
 
 namespace opentxs::crypto::key::implementation
 {
-const Asymmetric::HashTypeMap Asymmetric::hashtype_map_{
-    {crypto::HashType::Error, proto::HASHTYPE_ERROR},
-    {crypto::HashType::None, proto::HASHTYPE_NONE},
-    {crypto::HashType::Sha256, proto::HASHTYPE_SHA256},
-    {crypto::HashType::Sha512, proto::HASHTYPE_SHA512},
-    {crypto::HashType::Blake2b160, proto::HASHTYPE_BLAKE2B160},
-    {crypto::HashType::Blake2b256, proto::HASHTYPE_BLAKE2B256},
-    {crypto::HashType::Blake2b512, proto::HASHTYPE_BLAKE2B512},
-    {crypto::HashType::Ripemd160, proto::HASHTYPE_RIPEMD160},
-    {crypto::HashType::Sha1, proto::HASHTYPE_SHA1},
-    {crypto::HashType::Sha256D, proto::HASHTYPE_SHA256D},
-    {crypto::HashType::Sha256DC, proto::HASHTYPE_SHA256DC},
-    {crypto::HashType::Bitcoin, proto::HASHTYPE_BITCOIN},
-    {crypto::HashType::SipHash24, proto::HASHTYPE_SIPHASH24},
-};
-const Asymmetric::HashTypeReverseMap Asymmetric::hashtype_reverse_map_{
-    reverse_map(hashtype_map_)};
-const Asymmetric::KeyRoleMap Asymmetric::keyrole_map_{
-    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
-    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
-    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
-};
-const Asymmetric::KeyRoleReverseMap Asymmetric::keyrole_reverse_map_{
-    reverse_map(keyrole_map_)};
 const std::map<crypto::SignatureRole, VersionNumber> Asymmetric::sig_version_{
     {SignatureRole::PublicCredential, 1},
     {SignatureRole::PrivateCredential, 1},
@@ -107,20 +75,6 @@ const std::map<crypto::SignatureRole, VersionNumber> Asymmetric::sig_version_{
     {SignatureRole::Account, 2},
     {SignatureRole::ServerRequest, 3},
     {SignatureRole::ServerReply, 3},
-};
-const Asymmetric::SignatureRoleMap Asymmetric::signaturerole_map_{
-    {SignatureRole::PublicCredential, proto::SIGROLE_PUBCREDENTIAL},
-    {SignatureRole::PrivateCredential, proto::SIGROLE_PRIVCREDENTIAL},
-    {SignatureRole::NymIDSource, proto::SIGROLE_NYMIDSOURCE},
-    {SignatureRole::Claim, proto::SIGROLE_CLAIM},
-    {SignatureRole::ServerContract, proto::SIGROLE_SERVERCONTRACT},
-    {SignatureRole::UnitDefinition, proto::SIGROLE_UNITDEFINITION},
-    {SignatureRole::PeerRequest, proto::SIGROLE_PEERREQUEST},
-    {SignatureRole::PeerReply, proto::SIGROLE_PEERREPLY},
-    {SignatureRole::Context, proto::SIGROLE_CONTEXT},
-    {SignatureRole::Account, proto::SIGROLE_ACCOUNT},
-    {SignatureRole::ServerRequest, proto::SIGROLE_SERVERREQUEST},
-    {SignatureRole::ServerReply, proto::SIGROLE_SERVERREPLY},
 };
 
 Asymmetric::Asymmetric(
@@ -137,7 +91,7 @@ Asymmetric::Asymmetric(
     , provider_(engine)
     , version_(version)
     , type_(keyType)
-    , role_(keyrole_reverse_map_.at(role))
+    , role_(opentxs::identity::credential::internal::translate(role))
     , has_public_(hasPublic)
     , has_private_(hasPrivate)
     , m_pMetadata(new OTSignatureMetadata(api_))
@@ -185,7 +139,7 @@ Asymmetric::Asymmetric(
     : Asymmetric(
           api,
           engine,
-          asymmetrickeytype_reverse_map_.at(serialized.type()),
+          opentxs::crypto::internal::translate(serialized.type()),
           serialized.role(),
           true,
           proto::KEYMODE_PRIVATE == serialized.mode(),
@@ -196,12 +150,12 @@ Asymmetric::Asymmetric(
 {
 }
 
-Asymmetric::Asymmetric(const Asymmetric& rhs) noexcept(false)
+Asymmetric::Asymmetric(const Asymmetric& rhs) noexcept
     : Asymmetric(
           rhs.api_,
           rhs.provider_,
           rhs.type_,
-          keyrole_map_.at(rhs.role_),
+          opentxs::identity::credential::internal::translate(rhs.role_),
           rhs.has_public_,
           rhs.has_private_,
           rhs.version_,
@@ -218,14 +172,12 @@ Asymmetric::Asymmetric(const Asymmetric& rhs) noexcept(false)
 {
 }
 
-Asymmetric::Asymmetric(
-    const Asymmetric& rhs,
-    const ReadView newPublic) noexcept(false)
+Asymmetric::Asymmetric(const Asymmetric& rhs, const ReadView newPublic) noexcept
     : Asymmetric(
           rhs.api_,
           rhs.provider_,
           rhs.type_,
-          keyrole_map_.at(rhs.role_),
+          opentxs::identity::credential::internal::translate(rhs.role_),
           true,
           false,
           rhs.version_,
@@ -467,7 +419,11 @@ auto Asymmetric::generate_key(
     const AllocateOutput params) noexcept(false) -> void
 {
     const auto generated = provider.RandomKeypair(
-        privateKey, publicKey, keyrole_reverse_map_.at(role), options, params);
+        privateKey,
+        publicKey,
+        opentxs::identity::credential::internal::translate(role),
+        options,
+        params);
 
     if (false == generated) {
         throw std::runtime_error("Failed to generate key");
@@ -561,22 +517,40 @@ auto Asymmetric::hasCapability(const NymCapability& capability) const noexcept
     return false;
 }
 
+auto Asymmetric::hashtype_map() noexcept -> const HashTypeMap&
+{
+    static const auto map = HashTypeMap{
+        {crypto::HashType::Error, proto::HASHTYPE_ERROR},
+        {crypto::HashType::None, proto::HASHTYPE_NONE},
+        {crypto::HashType::Sha256, proto::HASHTYPE_SHA256},
+        {crypto::HashType::Sha512, proto::HASHTYPE_SHA512},
+        {crypto::HashType::Blake2b160, proto::HASHTYPE_BLAKE2B160},
+        {crypto::HashType::Blake2b256, proto::HASHTYPE_BLAKE2B256},
+        {crypto::HashType::Blake2b512, proto::HASHTYPE_BLAKE2B512},
+        {crypto::HashType::Ripemd160, proto::HASHTYPE_RIPEMD160},
+        {crypto::HashType::Sha1, proto::HASHTYPE_SHA1},
+        {crypto::HashType::Sha256D, proto::HASHTYPE_SHA256D},
+        {crypto::HashType::Sha256DC, proto::HASHTYPE_SHA256DC},
+        {crypto::HashType::Bitcoin, proto::HASHTYPE_BITCOIN},
+        {crypto::HashType::SipHash24, proto::HASHTYPE_SIPHASH24},
+    };
+
+    return map;
+}
+
 auto Asymmetric::NewSignature(
     const Identifier& credentialID,
     const crypto::SignatureRole role,
     const crypto::HashType hash) const -> proto::Signature
 {
     proto::Signature output{};
-    try {
-        output.set_version(sig_version_.at(role));
-        output.set_credentialid(credentialID.str());
-        output.set_role(signaturerole_map_.at(role));
-        output.set_hashtype(
-            (crypto::HashType::Error == hash) ? hashtype_map_.at(SigHashType())
-                                              : hashtype_map_.at(hash));
-        output.clear_signature();
-    } catch (...) {
-    }
+    output.set_version(sig_version_.at(role));
+    output.set_credentialid(credentialID.str());
+    output.set_role(translate(role));
+    output.set_hashtype(
+        (crypto::HashType::Error == hash) ? translate(SigHashType())
+                                          : translate(hash));
+    output.clear_signature();
 
     return output;
 }
@@ -617,22 +591,19 @@ auto Asymmetric::Serialize() const noexcept
 
     auto& output = *pOutput;
 
-    try {
-        output.set_version(version_);
-        output.set_role(keyrole_map_.at(role_));
-        output.set_type(static_cast<proto::AsymmetricKeyType>(type_));
-        output.set_key(key_->data(), key_->size());
+    output.set_version(version_);
+    output.set_role(opentxs::identity::credential::internal::translate(role_));
+    output.set_type(static_cast<proto::AsymmetricKeyType>(type_));
+    output.set_key(key_->data(), key_->size());
 
-        if (has_private_) {
-            output.set_mode(proto::KEYMODE_PRIVATE);
+    if (has_private_) {
+        output.set_mode(proto::KEYMODE_PRIVATE);
 
-            if (encrypted_key_) {
-                *output.mutable_encryptedkey() = *encrypted_key_;
-            }
-        } else {
-            output.set_mode(proto::KEYMODE_PUBLIC);
+        if (encrypted_key_) {
+            *output.mutable_encryptedkey() = *encrypted_key_;
         }
-    } catch (...) {
+    } else {
+        output.set_mode(proto::KEYMODE_PUBLIC);
     }
 
     return pOutput;
@@ -689,6 +660,61 @@ auto Asymmetric::Sign(
     return success;
 }
 
+auto Asymmetric::signaturerole_map() noexcept -> const SignatureRoleMap&
+{
+    static const auto map = Asymmetric::SignatureRoleMap{
+        {SignatureRole::PublicCredential, proto::SIGROLE_PUBCREDENTIAL},
+        {SignatureRole::PrivateCredential, proto::SIGROLE_PRIVCREDENTIAL},
+        {SignatureRole::NymIDSource, proto::SIGROLE_NYMIDSOURCE},
+        {SignatureRole::Claim, proto::SIGROLE_CLAIM},
+        {SignatureRole::ServerContract, proto::SIGROLE_SERVERCONTRACT},
+        {SignatureRole::UnitDefinition, proto::SIGROLE_UNITDEFINITION},
+        {SignatureRole::PeerRequest, proto::SIGROLE_PEERREQUEST},
+        {SignatureRole::PeerReply, proto::SIGROLE_PEERREPLY},
+        {SignatureRole::Context, proto::SIGROLE_CONTEXT},
+        {SignatureRole::Account, proto::SIGROLE_ACCOUNT},
+        {SignatureRole::ServerRequest, proto::SIGROLE_SERVERREQUEST},
+        {SignatureRole::ServerReply, proto::SIGROLE_SERVERREPLY},
+    };
+
+    return map;
+}
+
+auto Asymmetric::translate(const crypto::SignatureRole in) noexcept
+    -> proto::SignatureRole
+{
+    try {
+        return signaturerole_map().at(in);
+    } catch (...) {
+        return proto::SIGROLE_ERROR;
+    }
+}
+
+auto Asymmetric::translate(const crypto::HashType in) noexcept
+    -> proto::HashType
+{
+    try {
+        return hashtype_map().at(in);
+    } catch (...) {
+        return proto::HASHTYPE_ERROR;
+    }
+}
+
+auto Asymmetric::translate(const proto::HashType in) noexcept
+    -> crypto::HashType
+{
+    static const auto map = reverse_arbitrary_map<
+        crypto::HashType,
+        proto::HashType,
+        HashTypeReverseMap>(hashtype_map());
+
+    try {
+        return map.at(in);
+    } catch (...) {
+        return crypto::HashType::Error;
+    }
+}
+
 auto Asymmetric::TransportKey(
     Data& publicKey,
     Secret& privateKey,
@@ -703,7 +729,7 @@ auto Asymmetric::TransportKey(
 }
 
 auto Asymmetric::Verify(const Data& plaintext, const proto::Signature& sig)
-    const noexcept(false) -> bool
+    const noexcept -> bool
 {
     if (false == HasPublic()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Missing public key").Flush();
@@ -715,7 +741,7 @@ auto Asymmetric::Verify(const Data& plaintext, const proto::Signature& sig)
     signature->Assign(sig.signature().c_str(), sig.signature().size());
 
     return engine().Verify(
-        plaintext, *this, signature, hashtype_reverse_map_.at(sig.hashtype()));
+        plaintext, *this, signature, translate(sig.hashtype()));
 }
 
 Asymmetric::~Asymmetric()

@@ -11,8 +11,6 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/api/Editor.hpp"
-#include "opentxs/identity/Types.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/StorageCredentials.pb.h"
 #include "storage/tree/Node.hpp"
 
@@ -44,12 +42,6 @@ namespace storage
 class Credentials final : public Node
 {
 private:
-    using KeyModeMap = std::map<identity::KeyMode, proto::KeyMode>;
-    using KeyModeReverseMap = std::map<proto::KeyMode, identity::KeyMode>;
-
-    static const KeyModeMap keymode_map_;
-    static const KeyModeReverseMap keymode_reverse_map_;
-
     friend Tree;
 
     auto check_existing(const bool incoming, Metadata& metadata) const -> bool;

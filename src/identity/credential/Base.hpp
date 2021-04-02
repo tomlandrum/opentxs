@@ -59,11 +59,6 @@ class Base : virtual public credential::internal::Base,
 {
 public:
     using SerializedType = proto::Credential;
-    using KeyModeMap = std::map<identity::KeyMode, proto::KeyMode>;
-    using KeyModeReverseMap = std::map<proto::KeyMode, identity::KeyMode>;
-
-    static const KeyModeMap keymode_map_;
-    static const KeyModeReverseMap keymode_reverse_map_;
 
     auto asString(const bool asPrivate = false) const -> std::string final;
     auto CredentialID() const -> const Identifier& final { return id_.get(); }

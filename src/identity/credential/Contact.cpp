@@ -221,11 +221,8 @@ auto Contact::serialize(
     -> std::shared_ptr<Base::SerializedType>
 {
     auto serializedCredential = Base::serialize(lock, asPrivate, asSigned);
-    try {
-        serializedCredential->set_mode(
-            Base::keymode_map_.at(identity::KeyMode::Null));
-    } catch (...) {
-    }
+    serializedCredential->set_mode(
+        internal::translate(identity::KeyMode::Null));
     serializedCredential->clear_signature();  // this fixes a bug, but shouldn't
 
     if (asSigned) {

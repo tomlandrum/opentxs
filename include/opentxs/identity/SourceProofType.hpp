@@ -15,8 +15,9 @@ namespace opentxs
 namespace identity
 {
 enum class SourceProofType : std::uint8_t {
-    SelfSignature = 0,
-    Signature = 1,
+    Error = 0,
+    SelfSignature = 1,
+    Signature = 2,
 };
 }  // namespace identity
 }  // namespace opentxs

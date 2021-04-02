@@ -18,6 +18,7 @@
 #include "crypto/key/SymmetricNull.hpp"
 #include "internal/api/Api.hpp"
 #include "internal/crypto/key/Factory.hpp"
+#include "internal/crypto/Crypto.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Data.hpp"
@@ -145,23 +146,6 @@ auto Symmetric::Factory() -> OTSymmetricKey
 
 namespace opentxs::crypto::key::implementation
 {
-const Symmetric::SymmetricKeyTypeMap Symmetric::symmetrickeytype_map_{
-    {crypto::SymmetricKeyType::Error, proto::SKEYTYPE_ERROR},
-    {crypto::SymmetricKeyType::Raw, proto::SKEYTYPE_RAW},
-    {crypto::SymmetricKeyType::ECDH, proto::SKEYTYPE_ECDH},
-    {crypto::SymmetricKeyType::Argon2, proto::SKEYTYPE_ARGON2},
-};
-const Symmetric::SymmetricKeyTypeReverseMap
-    Symmetric::symmetrickeytype_reverse_map_{
-        reverse_map(symmetrickeytype_map_)};
-const Symmetric::SymmetricModeMap Symmetric::symmetricmode_map_{
-    {opentxs::crypto::SymmetricMode::Error, proto::SMODE_ERROR},
-    {opentxs::crypto::SymmetricMode::ChaCha20Poly1305,
-     proto::SMODE_CHACHA20POLY1305},
-};
-const Symmetric::SymmetricModeReverseMap Symmetric::symmetricmode_reverse_map_{
-    reverse_map(symmetricmode_map_)};
-
 Symmetric::Symmetric(
     const api::internal::Core& api,
     const crypto::SymmetricProvider& engine,
@@ -208,12 +192,12 @@ Symmetric::Symmetric(
 Symmetric::Symmetric(
     const api::internal::Core& api,
     const crypto::SymmetricProvider& engine,
-    const proto::SymmetricKey serialized) noexcept(false)
+    const proto::SymmetricKey serialized)
     : Symmetric(
           api,
           engine,
           serialized.version(),
-          symmetrickeytype_reverse_map_.at(serialized.type()),
+          opentxs::crypto::internal::translate(serialized.type()),
           serialized.size(),
           new std::string(serialized.salt()),
           serialized.operations(),
@@ -460,17 +444,18 @@ auto Symmetric::encrypt(
 
     ciphertext.set_version(1);
 
-    try {
-        if (opentxs::crypto::SymmetricMode::Error == mode) {
-            ciphertext.set_mode(symmetricmode_map_.at(engine_.DefaultMode()));
-        } else {
-            ciphertext.set_mode(symmetricmode_map_.at(mode));
-        }
+    if (opentxs::crypto::SymmetricMode::Error == mode) {
+        ciphertext.set_mode(
+            opentxs::crypto::internal::translate(engine_.DefaultMode()));
+    } else {
+        ciphertext.set_mode(opentxs::crypto::internal::translate(mode));
+    }
 
     if ((0u == ivSize) || (nullptr == iv)) {
         const auto random = [&] {
             auto out = api_.Factory().Secret(0);
-            const auto size = engine_.IvSize(symmetricmode_reverse_map_.at(ciphertext.mode()));
+            const auto size = engine_.IvSize(
+                opentxs::crypto::internal::translate(ciphertext.mode()));
             out->Randomize(size);
 
             OT_ASSERT(out->size() == size);
@@ -481,9 +466,6 @@ auto Symmetric::encrypt(
         ciphertext.set_iv(random->data(), random->size());
     } else {
         ciphertext.set_iv(iv, ivSize);
-    }
-    } catch (...) {
-        return false;
     }
 
     ciphertext.set_text(text);
@@ -536,15 +518,12 @@ auto Symmetric::encrypt_key(
 
     OT_ASSERT(encrypted);
 
-    try {
-        encrypted->set_mode(symmetricmode_map_.at(engine_.DefaultMode()));
-        auto blankIV = api_.Factory().Secret(0);
-        blankIV->Randomize(
-            engine_.IvSize(symmetricmode_reverse_map_.at(encrypted->mode())));
-        encrypted->set_iv(blankIV->data(), blankIV->size());
-    } catch (...) {
-        return false;
-    }
+    encrypted->set_mode(
+        opentxs::crypto::internal::translate(engine_.DefaultMode()));
+    auto blankIV = api_.Factory().Secret(0);
+    blankIV->Randomize(engine_.IvSize(
+        opentxs::crypto::internal::translate(encrypted->mode())));
+    encrypted->set_iv(blankIV->data(), blankIV->size());
     encrypted->set_text(false);
     auto key = api_.Factory().Secret(0);
     get_password(lock, reason, key);
@@ -559,28 +538,25 @@ auto Symmetric::encrypt_key(
         if (!Allocate(api_, saltSize, *salt, true)) { return false; }
     }
 
-    try {
-        auto secondaryKey = Symmetric{
-            api_,
-            engine_,
-            key,
-            *salt,
-            engine_.KeySize(symmetricmode_reverse_map_.at(encrypted->mode())),
-            OT_SYMMETRIC_KEY_DEFAULT_OPERATIONS,
-            OT_SYMMETRIC_KEY_DEFAULT_DIFFICULTY};
+    auto secondaryKey = Symmetric{
+        api_,
+        engine_,
+        key,
+        *salt,
+        engine_.KeySize(
+            opentxs::crypto::internal::translate(encrypted->mode())),
+        OT_SYMMETRIC_KEY_DEFAULT_OPERATIONS,
+        OT_SYMMETRIC_KEY_DEFAULT_DIFFICULTY};
 
-        OT_ASSERT(secondaryKey.plaintext_key_.has_value());
+    OT_ASSERT(secondaryKey.plaintext_key_.has_value());
 
-        return engine_.Encrypt(
-            reinterpret_cast<const std::uint8_t*>(plaintextKey.data()),
-            plaintextKey.size(),
-            reinterpret_cast<const std::uint8_t*>(
-                secondaryKey.plaintext_key_.value()->data()),
-            secondaryKey.plaintext_key_.value()->size(),
-            *encrypted);
-    } catch (...) {
-        return false;
-    }
+    return engine_.Encrypt(
+        reinterpret_cast<const std::uint8_t*>(plaintextKey.data()),
+        plaintextKey.size(),
+        reinterpret_cast<const std::uint8_t*>(
+            secondaryKey.plaintext_key_.value()->data()),
+        secondaryKey.plaintext_key_.value()->size(),
+        *encrypted);
 }
 
 auto Symmetric::get_encrypted(const Lock& lock) const
@@ -693,11 +669,7 @@ auto Symmetric::serialize(const Lock& lock, proto::SymmetricKey& output) const
     OT_ASSERT(std::numeric_limits<std::uint32_t>::max() >= key_size_);
 
     output.set_version(version_);
-    try {
-        output.set_type(symmetrickeytype_map_.at(type_));
-    } catch (...) {
-        return false;
-    }
+    output.set_type(opentxs::crypto::internal::translate(type_));
     output.set_size(static_cast<std::uint32_t>(key_size_));
     *output.mutable_key() = *encrypted;
 
@@ -762,36 +734,32 @@ auto Symmetric::unlock(const Lock& lock, const opentxs::PasswordPrompt& reason)
         return false;
     }
 
-    try {
-        auto secondaryKey = Symmetric{
-            api_,
-            engine_,
-            key,
-            *salt,
-            engine_.KeySize(symmetricmode_reverse_map_.at(encrypted->mode())),
-            OT_SYMMETRIC_KEY_DEFAULT_OPERATIONS,
-            OT_SYMMETRIC_KEY_DEFAULT_DIFFICULTY};
+    auto secondaryKey = Symmetric{
+        api_,
+        engine_,
+        key,
+        *salt,
+        engine_.KeySize(
+            opentxs::crypto::internal::translate(encrypted->mode())),
+        OT_SYMMETRIC_KEY_DEFAULT_OPERATIONS,
+        OT_SYMMETRIC_KEY_DEFAULT_DIFFICULTY};
 
-        OT_ASSERT(secondaryKey.plaintext_key_.has_value());
+    OT_ASSERT(secondaryKey.plaintext_key_.has_value());
 
-        const auto output = engine_.Decrypt(
-            *encrypted,
-            reinterpret_cast<const std::uint8_t*>(
-                secondaryKey.plaintext_key_.value()->data()),
-            secondaryKey.plaintext_key_.value()->size(),
-            reinterpret_cast<std::uint8_t*>(plain.value()->data()));
+    const auto output = engine_.Decrypt(
+        *encrypted,
+        reinterpret_cast<const std::uint8_t*>(
+            secondaryKey.plaintext_key_.value()->data()),
+        secondaryKey.plaintext_key_.value()->size(),
+        reinterpret_cast<std::uint8_t*>(plain.value()->data()));
 
-        if (output) {
-            LogDetail(OT_METHOD)(__FUNCTION__)(": Key unlocked").Flush();
-        } else {
-            LogDetail(OT_METHOD)(__FUNCTION__)(": Failed to unlock key")
-                .Flush();
-        }
-
-        return output;
-    } catch (...) {
-        return false;
+    if (output) {
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Key unlocked").Flush();
+    } else {
+        LogDetail(OT_METHOD)(__FUNCTION__)(": Failed to unlock key").Flush();
     }
+
+    return output;
 }
 
 auto Symmetric::Unlock(const opentxs::PasswordPrompt& reason) const -> bool

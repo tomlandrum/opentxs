@@ -75,15 +75,13 @@ public:
         const PasswordPrompt& reason,
         const identity::KeyRole role = identity::KeyRole::Sign,
         const VersionNumber version =
-            opentxs::crypto::key::Secp256k1::DefaultVersion) const
-        noexcept(false) = 0;
+            opentxs::crypto::key::Secp256k1::DefaultVersion) const noexcept = 0;
     OPENTXS_EXPORT virtual Secp256k1Key InstantiateSecp256k1Key(
         const Secret& privateKey,
         const PasswordPrompt& reason,
         const identity::KeyRole role = identity::KeyRole::Sign,
         const VersionNumber version =
-            opentxs::crypto::key::Secp256k1::DefaultVersion) const
-        noexcept(false) = 0;
+            opentxs::crypto::key::Secp256k1::DefaultVersion) const noexcept = 0;
     OPENTXS_EXPORT virtual Secp256k1Key NewSecp256k1Key(
         const std::string& seedID,
         const Secret& seed,

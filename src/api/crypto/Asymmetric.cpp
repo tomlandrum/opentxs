@@ -14,6 +14,7 @@
 #include "internal/api/Api.hpp"
 #include "internal/api/crypto/Factory.hpp"
 #include "internal/crypto/key/Factory.hpp"
+#include "internal/identity/credential/Credential.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/crypto/Asymmetric.hpp"
@@ -58,14 +59,6 @@ auto AsymmetricAPI(const api::internal::Core& api) noexcept
 
 namespace opentxs::api::crypto::implementation
 {
-const Asymmetric::KeyRoleMap Asymmetric::keyrole_map_{
-    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
-    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
-    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
-};
-const Asymmetric::KeyRoleReverseMap Asymmetric::keyrole_reverse_map_{
-    reverse_map(keyrole_map_)};
-
 const VersionNumber Asymmetric::serialized_path_version_{1};
 
 const Asymmetric::TypeMap Asymmetric::curve_to_key_type_{
@@ -103,7 +96,7 @@ auto Asymmetric::instantiate_hd_key(
                 pubkey,
                 serialize_path(seedID, path),
                 parent,
-                keyrole_map_.at(role),
+                opentxs::identity::credential::internal::translate(role),
                 version,
                 reason);
         }
@@ -121,7 +114,7 @@ auto Asymmetric::instantiate_hd_key(
                 pubkey,
                 serialize_path(seedID, path),
                 parent,
-                keyrole_map_.at(role),
+                opentxs::identity::credential::internal::translate(role),
                 version,
                 reason);
         }
@@ -287,7 +280,7 @@ auto Asymmetric::InstantiateSecp256k1Key(
     const ReadView publicKey,
     const PasswordPrompt& reason,
     const identity::KeyRole role,
-    const VersionNumber version) const noexcept(false) -> Secp256k1Key
+    const VersionNumber version) const noexcept -> Secp256k1Key
 {
     static const auto blank = api_.Factory().Secret(0);
 
@@ -296,7 +289,7 @@ auto Asymmetric::InstantiateSecp256k1Key(
         api_.Crypto().SECP256K1(),
         blank,
         api_.Factory().Data(publicKey),
-        keyrole_map_.at(role),
+        opentxs::identity::credential::internal::translate(role),
         version,
         reason);
 }
@@ -305,7 +298,7 @@ auto Asymmetric::InstantiateSecp256k1Key(
     const Secret& priv,
     const PasswordPrompt& reason,
     const identity::KeyRole role,
-    const VersionNumber version) const noexcept(false) -> Secp256k1Key
+    const VersionNumber version) const noexcept -> Secp256k1Key
 {
     auto pub = api_.Factory().Data();
     const auto& ecdsa = api_.Crypto().SECP256K1();
@@ -318,7 +311,13 @@ auto Asymmetric::InstantiateSecp256k1Key(
     }
 
     return factory::Secp256k1Key(
-        api_, ecdsa, priv, pub, keyrole_map_.at(role), version, reason);
+        api_,
+        ecdsa,
+        priv,
+        pub,
+        opentxs::identity::credential::internal::translate(role),
+        version,
+        reason);
 }
 
 auto Asymmetric::NewSecp256k1Key(
@@ -327,7 +326,7 @@ auto Asymmetric::NewSecp256k1Key(
     const opentxs::crypto::Bip32::Path& derive,
     const PasswordPrompt& reason,
     const identity::KeyRole role,
-    const VersionNumber version) const noexcept(false) -> Secp256k1Key
+    const VersionNumber version) const -> Secp256k1Key
 {
     const auto serialized =
         api_.Crypto().BIP32().DeriveKey(EcdsaCurve::secp256k1, seed, derive);
@@ -341,7 +340,7 @@ auto Asymmetric::NewSecp256k1Key(
         pubkey,
         serialize_path(seedID, path),
         parent,
-        keyrole_map_.at(role),
+        opentxs::identity::credential::internal::translate(role),
         version,
         reason);
 }
@@ -360,7 +359,7 @@ auto Asymmetric::NewKey(
             return opentxs::factory::Ed25519Key(
                 api_,
                 api_.Crypto().ED25519(),
-                keyrole_map_.at(role),
+                opentxs::identity::credential::internal::translate(role),
                 version,
                 reason);
         }
@@ -370,7 +369,7 @@ auto Asymmetric::NewKey(
             return opentxs::factory::Secp256k1Key(
                 api_,
                 api_.Crypto().SECP256K1(),
-                keyrole_map_.at(role),
+                opentxs::identity::credential::internal::translate(role),
                 version,
                 reason);
         }

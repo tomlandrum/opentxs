@@ -24,6 +24,7 @@
 #include "internal/blockchain/p2p/P2P.hpp"
 #endif  // OT_BLOCKCHAIN
 #include "internal/crypto/key/Factory.hpp"
+#include "internal/identity/credential/Credential.hpp"
 #include "internal/network/zeromq/socket/Socket.hpp"
 #include "opentxs/OT.hpp"  // TODO remove
 #include "opentxs/Pimpl.hpp"
@@ -111,21 +112,12 @@
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 #include "opentxs/protobuf/verify/Envelope.hpp"
-#include "util/Container.hpp"
 #include "util/HDIndex.hpp"
 
 #define OT_METHOD "opentxs::api::implementation::Factory::"
 
 namespace opentxs::api::implementation
 {
-const Factory::KeyRoleMap Factory::keyrole_map_{
-    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
-    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
-    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
-};
-const Factory::KeyRoleReverseMap Factory::keyrole_reverse_map_{
-    reverse_map(keyrole_map_)};
-
 Factory::Factory(const api::internal::Core& api)
     : api::internal::Factory()
     , api_(api)
@@ -1224,7 +1216,8 @@ auto Factory::Keypair(
     try {
         return OTKeypair{factory::Keypair(
             api_,
-            keyrole_reverse_map_.at(serializedPrivkey.role()),
+            opentxs::identity::credential::internal::translate(
+                serializedPrivkey.role()),
             std::move(pPublicKey),
             std::move(pPrivateKey))};
     } catch (...) {
@@ -1247,7 +1240,8 @@ auto Factory::Keypair(const proto::AsymmetricKey& serializedPubkey) const
     try {
         return OTKeypair{factory::Keypair(
             api_,
-            keyrole_reverse_map_.at(serializedPubkey.role()),
+            opentxs::identity::credential::internal::translate(
+                serializedPubkey.role()),
             std::move(pPublicKey),
             std::make_unique<opentxs::crypto::key::implementation::Null>())};
     } catch (...) {

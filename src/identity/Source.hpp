@@ -72,8 +72,6 @@ private:
     using SourceTypeReverseMap =
         std::map<proto::SourceType, identity::SourceType>;
 
-    static const SourceTypeMap sourcetype_map_;
-    static const SourceTypeReverseMap sourcetype_reverse_map_;
     static const VersionConversionMap key_to_source_version_;
 
     const api::Factory& factory_;
@@ -94,12 +92,17 @@ private:
     static auto extract_key(
         const proto::Credential& credential,
         const proto::KeyRole role) -> std::unique_ptr<proto::AsymmetricKey>;
+    static auto sourcetype_map() noexcept -> const SourceTypeMap&;
+    static auto translate(const identity::SourceType in) noexcept
+        -> proto::SourceType;
+    static auto translate(const proto::SourceType in) noexcept
+        -> identity::SourceType;
 
     auto asData() const -> OTData;
 
     Source(
         const api::Factory& factory,
-        const proto::NymIDSource& serializedSource) noexcept(false);
+        const proto::NymIDSource& serializedSource) noexcept;
     Source(
         const api::Factory& factory,
         const NymParameters& nymParameters) noexcept(false);

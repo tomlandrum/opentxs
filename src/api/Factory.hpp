@@ -808,11 +808,6 @@ protected:
     Factory(const api::internal::Core& api);
 
 private:
-    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
-    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
-
-    static const KeyRoleMap keyrole_map_;
-    static const KeyRoleReverseMap keyrole_reverse_map_;
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
     auto instantiate_secp256k1(const ReadView key, const ReadView chaincode)
         const noexcept -> std::unique_ptr<opentxs::crypto::key::Secp256k1>;

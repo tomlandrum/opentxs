@@ -18,6 +18,12 @@ enum class SymmetricMode : std::uint8_t {
     Error = 0,
     ChaCha20Poly1305 = 1,
 };
+
+constexpr auto value(const SymmetricMode in) noexcept
+{
+    return static_cast<std::uint8_t>(in);
+}
+
 }  // namespace crypto
 }  // namespace opentxs
 #endif

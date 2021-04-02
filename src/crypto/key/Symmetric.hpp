@@ -22,7 +22,6 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/crypto/SymmetricKeyType.hpp"
-#include "opentxs/crypto/SymmetricMode.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 
 namespace opentxs
@@ -88,20 +87,6 @@ public:
     ~Symmetric() final = default;
 
 private:
-    using SymmetricKeyTypeMap =
-        std::map<crypto::SymmetricKeyType, proto::SymmetricKeyType>;
-    using SymmetricKeyTypeReverseMap =
-        std::map<proto::SymmetricKeyType, crypto::SymmetricKeyType>;
-    using SymmetricModeMap =
-        std::map<opentxs::crypto::SymmetricMode, proto::SymmetricMode>;
-    using SymmetricModeReverseMap =
-        std::map<proto::SymmetricMode, opentxs::crypto::SymmetricMode>;
-
-    static const SymmetricKeyTypeMap symmetrickeytype_map_;
-    static const SymmetricKeyTypeReverseMap symmetrickeytype_reverse_map_;
-    static const SymmetricModeMap symmetricmode_map_;
-    static const SymmetricModeReverseMap symmetricmode_reverse_map_;
-
     friend std::unique_ptr<crypto::key::Symmetric> opentxs::factory::
         SymmetricKey(
             const api::internal::Core&,
@@ -196,7 +181,7 @@ private:
         const std::uint64_t operations,
         const std::uint64_t difficulty,
         std::optional<OTSecret> plaintextKey,
-        proto::Ciphertext* encryptedKey) noexcept(false);
+        proto::Ciphertext* encryptedKey);
     Symmetric() = delete;
     Symmetric(const Symmetric&);
     auto operator=(const Symmetric&) -> Symmetric& = delete;

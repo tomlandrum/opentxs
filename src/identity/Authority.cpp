@@ -52,7 +52,6 @@
 #include "opentxs/protobuf/Verification.pb.h"
 #include "opentxs/protobuf/verify/Credential.hpp"
 #include "opentxs/protobuf/verify/VerifyContacts.hpp"
-#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::identity::implementation::Authority::"
 
@@ -119,13 +118,6 @@ auto Authority::NymToContactCredential(const VersionNumber nym) noexcept(false)
 
 namespace opentxs::identity::implementation
 {
-const Authority::KeyRoleMap Authority::keyrole_map_{
-    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
-    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
-    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
-};
-const Authority::KeyRoleReverseMap Authority::keyrole_reverse_map_{
-    reverse_map(keyrole_map_)};
 const VersionConversionMap Authority::authority_to_contact_{
     {1, 1},
     {2, 2},
@@ -620,7 +612,8 @@ auto Authority::get_keypair(
         if (is_revoked(id->str(), plistRevokedIDs)) { continue; }
 
         try {
-            return credential.GetKeypair(type, keyrole_reverse_map_.at(role));
+            return credential.GetKeypair(
+                type, opentxs::identity::credential::internal::translate(role));
         } catch (...) {
             continue;
         }

@@ -204,15 +204,11 @@ private:
         map<OTIdentifier, std::unique_ptr<credential::internal::Secondary>>;
     using KeyCredentialItem = std::
         pair<OTIdentifier, std::unique_ptr<credential::internal::Secondary>>;
-    using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
-    using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
     using VerificationCredentialMap = std::
         map<OTIdentifier, std::unique_ptr<credential::internal::Verification>>;
     using mapOfCredentials =
         std::map<std::string, std::unique_ptr<credential::internal::Base>>;
 
-    static const KeyRoleMap keyrole_map_;
-    static const KeyRoleReverseMap keyrole_reverse_map_;
     static const VersionConversionMap authority_to_contact_;
     static const VersionConversionMap authority_to_primary_;
     static const VersionConversionMap authority_to_secondary_;

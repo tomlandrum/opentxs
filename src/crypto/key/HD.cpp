@@ -19,6 +19,7 @@
 #include "crypto/key/EllipticCurve.hpp"
 #include "internal/api/Api.hpp"
 #include "internal/crypto/key/Factory.hpp"
+#include "internal/identity/credential/Credential.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -293,7 +294,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     pubkey,
                     path,
                     parent,
-                    Asymmetric::keyrole_map_.at(role_),
+                    opentxs::identity::credential::internal::translate(role_),
                     version_,
                     reason);
             }
@@ -308,7 +309,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     pubkey,
                     path,
                     parent,
-                    Asymmetric::keyrole_map_.at(role_),
+                    opentxs::identity::credential::internal::translate(role_),
                     version_,
                     reason);
             }

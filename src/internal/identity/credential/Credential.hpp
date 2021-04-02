@@ -18,21 +18,33 @@
 
 namespace opentxs::identity::credential::internal
 {
+using CredentialRoleMap =
+    std::map<identity::CredentialRole, proto::CredentialRole>;
+using CredentialRoleReverseMap =
+    std::map<proto::CredentialRole, identity::CredentialRole>;
+using CredentialTypeMap =
+    std::map<identity::CredentialType, proto::CredentialType>;
+using CredentialTypeReverseMap =
+    std::map<proto::CredentialType, identity::CredentialType>;
+using KeyModeMap = std::map<identity::KeyMode, proto::KeyMode>;
+using KeyModeReverseMap = std::map<proto::KeyMode, identity::KeyMode>;
+using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
+using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
+
+auto credentialrole_map() noexcept -> const CredentialRoleMap&;
+auto credentialtype_map() noexcept -> const CredentialTypeMap&;
+auto keymode_map() noexcept -> const KeyModeMap&;
+auto keyrole_map() noexcept -> const KeyRoleMap&;
+auto translate(identity::CredentialRole in) noexcept -> proto::CredentialRole;
+auto translate(identity::CredentialType in) noexcept -> proto::CredentialType;
+auto translate(identity::KeyMode in) noexcept -> proto::KeyMode;
+auto translate(identity::KeyRole in) noexcept -> proto::KeyRole;
+auto translate(proto::CredentialRole in) noexcept -> identity::CredentialRole;
+auto translate(proto::CredentialType in) noexcept -> identity::CredentialType;
+auto translate(proto::KeyMode in) noexcept -> identity::KeyMode;
+auto translate(proto::KeyRole in) noexcept -> identity::KeyRole;
+
 struct Base : virtual public identity::credential::Base {
-    using CredentialRoleMap =
-        std::map<identity::CredentialRole, proto::CredentialRole>;
-    using CredentialRoleReverseMap =
-        std::map<proto::CredentialRole, identity::CredentialRole>;
-    using CredentialTypeMap =
-        std::map<identity::CredentialType, proto::CredentialType>;
-    using CredentialTypeReverseMap =
-        std::map<proto::CredentialType, identity::CredentialType>;
-
-    static const CredentialRoleMap credentialrole_map_;
-    static const CredentialRoleReverseMap credentialrole_reverse_map_;
-    static const CredentialTypeMap credentialtype_map_;
-    static const CredentialTypeReverseMap credentialtype_reverse_map_;
-
     virtual void ReleaseSignatures(const bool onlyPrivate) = 0;
 
 #ifdef _MSC_VER

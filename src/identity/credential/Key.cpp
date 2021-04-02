@@ -34,19 +34,11 @@
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/KeyCredential.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
-#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::identity::credential::implementation::Key::"
 
 namespace opentxs::identity::credential::implementation
 {
-const Key::KeyRoleMap Key::keyrole_map_{
-    {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
-    {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
-    {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
-};
-const Key::KeyRoleReverseMap Key::keyrole_reverse_map_{
-    reverse_map(keyrole_map_)};
 const VersionConversionMap Key::credential_subversion_{
     {1, 1},
     {2, 1},
@@ -143,23 +135,17 @@ auto Key::addKeyCredentialtoSerializedCredential(
 
     if (auth && encrypt && sign) {
         if (addPrivate) {
-            try {
-                keyCredential->set_mode(
-                    Base::keymode_map_.at(identity::KeyMode::Private));
-            } catch (...) {
-                return false;
-            }
+            keyCredential->set_mode(
+                opentxs::identity::credential::internal::translate(
+                    identity::KeyMode::Private));
             credential->set_allocated_privatecredential(
                 keyCredential.release());
 
             return true;
         } else {
-            try {
-                keyCredential->set_mode(
-                    Base::keymode_map_.at(identity::KeyMode::Public));
-            } catch (...) {
-                return false;
-            }
+            keyCredential->set_mode(
+                opentxs::identity::credential::internal::translate(
+                    identity::KeyMode::Public));
             credential->set_allocated_publiccredential(keyCredential.release());
 
             return true;
@@ -381,7 +367,10 @@ auto Key::new_key(
 #endif  // OT_CRYPTO_SUPPORTED_KEY_RSA
 
             return api.Factory().Keypair(
-                revised, version, keyrole_reverse_map_.at(role), reason);
+                revised,
+                version,
+                opentxs::identity::credential::internal::translate(role),
+                reason);
         }
         case identity::CredentialType::HD:
 #if OT_CRYPTO_WITH_BIP32
@@ -399,10 +388,11 @@ auto Key::new_key(
                 params.Credset(),
                 params.CredIndex(),
                 curve,
-                keyrole_reverse_map_.at(role),
+                opentxs::identity::credential::internal::translate(role),
                 reason);
         }
 #endif  // OT_CRYPTO_WITH_BIP32
+        case identity::CredentialType::Error:
         default: {
             throw std::runtime_error("Unsupported credential type");
         }
@@ -493,6 +483,7 @@ auto Key::Sign(
         case (identity::KeyRole::Sign): {
             keyToUse = &signing_key_.get();
         } break;
+        case (identity::KeyRole::Error):
         case (identity::KeyRole::Encrypt):
         default: {
             LogOutput(": Can not sign with the specified key.").Flush();

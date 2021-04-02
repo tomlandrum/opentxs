@@ -87,13 +87,6 @@ auto Factory::PrimaryCredential(
 
 namespace opentxs::identity::credential::implementation
 {
-const Primary::SourceProofTypeMap Primary::sourceprooftype_map_ = {
-    {identity::SourceProofType::SelfSignature,
-     proto::SOURCEPROOFTYPE_SELF_SIGNATURE},
-    {identity::SourceProofType::Signature, proto::SOURCEPROOFTYPE_SIGNATURE},
-};
-const Primary::SourceProofTypeReverseMap Primary::sourceprooftype_reverse_map_{
-    reverse_map(Primary::sourceprooftype_map_)};
 const VersionConversionMap Primary::credential_to_master_params_{
     {1, 1},
     {2, 1},
@@ -186,15 +179,12 @@ auto Primary::serialize(
     OT_ASSERT(output);
 
     auto& serialized = *output;
-    try {
-        serialized.set_role(
-            credentialrole_map_.at(identity::CredentialRole::MasterKey));
-        auto& masterData = *serialized.mutable_masterdata();
-        masterData.set_version(credential_to_master_params_.at(version_));
-        *masterData.mutable_source() = *(source_.Serialize());
-        *masterData.mutable_sourceproof() = source_proof_;
-    } catch (...) {
-    }
+    serialized.set_role(opentxs::identity::credential::internal::translate(
+        identity::CredentialRole::MasterKey));
+    auto& masterData = *serialized.mutable_masterdata();
+    masterData.set_version(credential_to_master_params_.at(version_));
+    *masterData.mutable_source() = *(source_.Serialize());
+    *masterData.mutable_sourceproof() = source_proof_;
 
     return output;
 }
@@ -221,13 +211,48 @@ void Primary::sign(
 auto Primary::source_proof(const NymParameters& params) -> proto::SourceProof
 {
     auto output = proto::SourceProof{};
-    try {
-        output.set_version(1);
-        output.set_type(sourceprooftype_map_.at(params.SourceProofType()));
-    } catch (...) {
-    }
+    output.set_version(1);
+    output.set_type(translate(params.SourceProofType()));
 
     return output;
+}
+
+auto Primary::sourceprooftype_map() noexcept -> const SourceProofTypeMap&
+{
+    static const auto map = SourceProofTypeMap{
+        {identity::SourceProofType::Error, proto::SOURCEPROOFTYPE_ERROR},
+        {identity::SourceProofType::SelfSignature,
+         proto::SOURCEPROOFTYPE_SELF_SIGNATURE},
+        {identity::SourceProofType::Signature,
+         proto::SOURCEPROOFTYPE_SIGNATURE},
+    };
+
+    return map;
+}
+
+auto Primary::translate(const identity::SourceProofType in) noexcept
+    -> proto::SourceProofType
+{
+    try {
+        return sourceprooftype_map().at(in);
+    } catch (...) {
+        return proto::SOURCEPROOFTYPE_ERROR;
+    }
+}
+
+auto Primary::translate(const proto::SourceProofType in) noexcept
+    -> identity::SourceProofType
+{
+    static const auto map = reverse_arbitrary_map<
+        identity::SourceProofType,
+        proto::SourceProofType,
+        SourceProofTypeReverseMap>(sourceprooftype_map());
+
+    try {
+        return map.at(in);
+    } catch (...) {
+        return identity::SourceProofType::Error;
+    }
 }
 
 auto Primary::Verify(
@@ -236,20 +261,16 @@ auto Primary::Verify(
     const Identifier& masterID,
     const proto::Signature& masterSig) const -> bool
 {
-    auto isValid{false};
-    try {
-        isValid = proto::Validate<proto::Credential>(
+    if (!proto::Validate<proto::Credential>(
             credential,
             VERBOSE,
-            Base::keymode_map_.at(identity::KeyMode::Public),
-            credentialrole_map_.at(role),
-            false);
-    } catch (...) {
-    }
-
-    if (!isValid) {
+            opentxs::identity::credential::internal::translate(
+                identity::KeyMode::Public),
+            opentxs::identity::credential::internal::translate(role),
+            false)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid credential syntax.")
             .Flush();
+
         return false;
     }
 
