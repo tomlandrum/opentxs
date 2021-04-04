@@ -50,7 +50,6 @@
 #include "opentxs/otx/Request.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/ServerReply.pb.h"
 #include "opentxs/protobuf/ServerRequest.pb.h"
@@ -150,7 +149,7 @@ auto ServerConnection::async_socket(const Lock& lock) const -> OTZMQDealerSocket
     return output;
 }
 
-auto ServerConnection::ChangeAddressType(const proto::AddressType type) -> bool
+auto ServerConnection::ChangeAddressType(const core::AddressType type) -> bool
 {
     Lock lock(lock_);
     address_type_ = type;
@@ -198,7 +197,7 @@ auto ServerConnection::endpoint() const -> std::string
 {
     std::uint32_t port{0};
     std::string hostname{""};
-    proto::AddressType type{};
+    core::AddressType type{};
     const auto have =
         remote_contract_->ConnectInfo(hostname, port, type, address_type_);
 
@@ -217,13 +216,13 @@ auto ServerConnection::endpoint() const -> std::string
 }
 
 auto ServerConnection::form_endpoint(
-    proto::AddressType type,
+    core::AddressType type,
     std::string hostname,
     std::uint32_t port) const -> std::string
 {
     std::string output{};
 
-    if (proto::ADDRESSTYPE_INPROC == type) {
+    if (core::AddressType::Inproc == type) {
         output += "inproc://opentxs/notary/";
         output += hostname;
         output += ":";

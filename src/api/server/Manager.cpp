@@ -39,6 +39,7 @@
 #if OT_CASH
 #include "opentxs/blind/Mint.hpp"
 #endif  // OT_CASH
+#include "opentxs/core/AddressType.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Log.hpp"
@@ -50,7 +51,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "server/MessageProcessor.hpp"
 #include "server/Server.hpp"
 #include "server/ServerSettings.hpp"
@@ -567,7 +567,7 @@ void Manager::Start()
     server_.ActivateCron();
     std::string hostname{};
     std::uint32_t port{0};
-    proto::AddressType type{proto::ADDRESSTYPE_INPROC};
+    core::AddressType type{core::AddressType::Inproc};
     const auto connectInfo = server_.GetConnectInfo(type, hostname, port);
 
     OT_ASSERT(connectInfo);
@@ -575,7 +575,7 @@ void Manager::Start()
     auto pubkey = Data::Factory();
     auto privateKey = server_.TransportKey(pubkey);
     message_processor_.init(
-        (proto::ADDRESSTYPE_INPROC == type), port, privateKey);
+        (core::AddressType::Inproc == type), port, privateKey);
     message_processor_.Start();
 #if OT_CASH
     ScanMints();

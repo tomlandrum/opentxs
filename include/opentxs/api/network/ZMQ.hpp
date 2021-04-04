@@ -15,7 +15,7 @@
 #include <string>
 
 #include "opentxs/Types.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
+#include "opentxs/core/Types.hpp"
 
 namespace opentxs
 {
@@ -43,7 +43,7 @@ class ZMQ
 public:
     OPENTXS_EXPORT virtual const opentxs::network::zeromq::Context& Context()
         const = 0;
-    OPENTXS_EXPORT virtual proto::AddressType DefaultAddressType() const = 0;
+    OPENTXS_EXPORT virtual core::AddressType DefaultAddressType() const = 0;
     OPENTXS_EXPORT virtual std::chrono::seconds KeepAlive() const = 0;
     OPENTXS_EXPORT virtual void KeepAlive(
         const std::chrono::seconds duration) const = 0;

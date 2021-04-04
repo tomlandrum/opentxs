@@ -16,7 +16,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/core/contract/Signable.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
+#include "opentxs/core/Types.hpp"
 
 namespace opentxs
 {
@@ -95,7 +95,7 @@ public:
         const std::string& str_thousand,
         const std::string& str_decimal) const = 0;
     OPENTXS_EXPORT virtual std::string TLA() const = 0;
-    OPENTXS_EXPORT virtual proto::UnitType Type() const = 0;
+    OPENTXS_EXPORT virtual core::UnitType Type() const = 0;
     OPENTXS_EXPORT virtual proto::ContactItemType UnitOfAccount() const = 0;
     OPENTXS_EXPORT virtual bool VisitAccountRecords(
         const std::string& dataFolder,

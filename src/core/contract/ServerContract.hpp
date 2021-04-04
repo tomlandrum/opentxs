@@ -20,7 +20,6 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
 
 namespace opentxs
@@ -55,8 +54,8 @@ public:
     auto ConnectInfo(
         std::string& strHostname,
         std::uint32_t& nPort,
-        proto::AddressType& actual,
-        const proto::AddressType& preferred) const -> bool final;
+        core::AddressType& actual,
+        const core::AddressType& preferred) const -> bool final;
     auto Contract() const -> proto::ServerContract final;
     auto EffectiveName() const -> std::string final;
     auto Name() const -> std::string final { return name_; }

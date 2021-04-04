@@ -30,6 +30,7 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
@@ -39,7 +40,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"             // IWYU pragma: keep
 #include "opentxs/protobuf/ServerContract.pb.h"  // IWYU pragma: keep
 
@@ -337,7 +337,7 @@ TEST_F(Test_DepositCheques, issue_dollars)
         UNIT_DEFINITION_UNIT_OF_ACCOUNT,
         reasonI);
 
-    EXPECT_EQ(proto::UNITTYPE_CURRENCY, contract->Type());
+    EXPECT_EQ(core::UnitType::Currency, contract->Type());
     EXPECT_TRUE(unit_id_->empty());
 
     unit_id_->Assign(contract->ID());

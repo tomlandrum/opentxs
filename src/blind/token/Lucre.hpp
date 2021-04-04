@@ -20,7 +20,6 @@
 #include "opentxs/blind/Token.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Token.pb.h"
 
 namespace opentxs
@@ -117,7 +116,7 @@ private:
         const api::internal::Core& api,
         Purse& purse,
         const VersionNumber version,
-        const proto::TokenState state,
+        const blind::TokenState state,
         const std::uint64_t series,
         const Denomination value,
         const Time validFrom,

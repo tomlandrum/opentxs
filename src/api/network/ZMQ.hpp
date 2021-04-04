@@ -18,10 +18,10 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/api/network/ZMQ.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/network/ServerConnection.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 
 namespace opentxs
 {
@@ -43,7 +43,7 @@ class ZMQ final : virtual public opentxs::api::network::ZMQ
 {
 public:
     auto Context() const -> const opentxs::network::zeromq::Context& final;
-    auto DefaultAddressType() const -> proto::AddressType final;
+    auto DefaultAddressType() const -> core::AddressType final;
     auto KeepAlive() const -> std::chrono::seconds final;
     void KeepAlive(const std::chrono::seconds duration) const final;
     auto Linger() const -> std::chrono::seconds final;

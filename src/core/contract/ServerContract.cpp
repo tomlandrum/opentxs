@@ -18,6 +18,7 @@
 #include "core/contract/Signable.hpp"
 #include "internal/api/Api.hpp"
 #include "internal/core/contract/Contract.hpp"
+#include "internal/core/Core.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/Wallet.hpp"
@@ -25,11 +26,11 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/ListenAddress.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
@@ -70,8 +71,8 @@ auto Factory::ServerContract(
         std::back_inserter(list),
         [](const auto& in) -> contract::Server::Endpoint {
             return {
-                static_cast<proto::AddressType>(std::get<0>(in)),
-                static_cast<proto::ProtocolVersion>(std::get<1>(in)),
+                static_cast<core::AddressType>(std::get<0>(in)),
+                static_cast<core::ProtocolVersion>(std::get<1>(in)),
                 std::get<2>(in),
                 std::get<3>(in),
                 std::get<4>(in)};
@@ -219,8 +220,8 @@ auto Server::extract_endpoints(const proto::ServerContract& serialized) noexcept
         // WARNING: preserve the order of this list, or signature verfication
         // will fail!
         output.emplace_back(contract::Server::Endpoint{
-            listen.type(),
-            listen.protocol(),
+            core::internal::translate(listen.type()),
+            core::internal::translate(listen.protocol()),
             listen.host(),
             listen.port(),
             listen.version()});
@@ -237,8 +238,8 @@ auto Server::GetID(const Lock& lock) const -> OTIdentifier
 auto Server::ConnectInfo(
     std::string& strHostname,
     std::uint32_t& nPort,
-    proto::AddressType& actual,
-    const proto::AddressType& preferred) const -> bool
+    core::AddressType& actual,
+    const core::AddressType& preferred) const -> bool
 {
     if (0 < listen_params_.size()) {
         for (auto& endpoint : listen_params_) {
@@ -313,8 +314,8 @@ auto Server::IDVersion(const Lock& lock) const -> proto::ServerContract
         const auto& url = std::get<2>(endpoint);
         const auto& port = std::get<3>(endpoint);
         addr.set_version(version);
-        addr.set_type(type);
-        addr.set_protocol(protocol);
+        addr.set_type(core::internal::translate(type));
+        addr.set_protocol(core::internal::translate(protocol));
         addr.set_host(url);
         addr.set_port(port);
     }

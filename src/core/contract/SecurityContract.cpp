@@ -12,10 +12,10 @@
 
 #include "2_Factory.hpp"
 #include "core/contract/UnitDefinition.hpp"
+#include "internal/core/Core.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/EquityParams.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
@@ -117,7 +117,7 @@ Security::Security(const Security& rhs)
 auto Security::IDVersion(const Lock& lock) const -> proto::UnitDefinition
 {
     auto contract = Unit::IDVersion(lock);
-    contract.set_type(Type());
+    contract.set_type(core::internal::translate(Type()));
     auto& security = *contract.mutable_security();
     security.set_version(1);
     security.set_type(proto::EQUITYTYPE_SHARES);

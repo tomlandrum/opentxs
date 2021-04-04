@@ -18,6 +18,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Flag.hpp"
+#include "opentxs/core/AddressType.hpp"
 #include "opentxs/core/Lockable.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
@@ -28,7 +29,6 @@
 #include "opentxs/network/zeromq/socket/Dealer.hpp"
 #include "opentxs/network/zeromq/socket/Push.hpp"
 #include "opentxs/network/zeromq/socket/Request.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 
 namespace opentxs
 {
@@ -88,7 +88,7 @@ class ServerConnection final
       Lockable
 {
 public:
-    auto ChangeAddressType(const proto::AddressType type) -> bool final;
+    auto ChangeAddressType(const core::AddressType type) -> bool final;
     auto ClearProxy() -> bool final;
     auto EnableProxy() -> bool final;
     auto Send(
@@ -107,7 +107,7 @@ private:
     const api::internal::Core& api_;
     const zeromq::socket::Publish& updates_;
     const OTServerID server_id_;
-    proto::AddressType address_type_{proto::ADDRESSTYPE_ERROR};
+    core::AddressType address_type_{core::AddressType::Error};
     OTServerContract remote_contract_;
     std::thread thread_;
     OTZMQListenCallback callback_;
@@ -128,7 +128,7 @@ private:
     auto clone() const -> ServerConnection* final { return nullptr; }
     auto endpoint() const -> std::string;
     auto form_endpoint(
-        proto::AddressType type,
+        core::AddressType type,
         std::string hostname,
         std::uint32_t port) const -> std::string;
     auto get_timeout() -> Time;

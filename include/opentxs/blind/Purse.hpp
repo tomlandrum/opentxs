@@ -16,8 +16,8 @@
 #if OT_CASH
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.hpp"
+#include "opentxs/blind/Types.hpp"
 #include "opentxs/iterator/Bidirectional.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 
 namespace opentxs
 {
@@ -88,8 +88,8 @@ public:
     OPENTXS_EXPORT virtual const identifier::Server& Notary() const = 0;
     OPENTXS_EXPORT virtual proto::Purse Serialize() const = 0;
     OPENTXS_EXPORT virtual std::size_t size() const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::PurseType State() const = 0;
-    OPENTXS_EXPORT virtual proto::CashType Type() const = 0;
+    OPENTXS_EXPORT virtual blind::PurseType State() const = 0;
+    OPENTXS_EXPORT virtual blind::CashType Type() const = 0;
     OPENTXS_EXPORT virtual const identifier::UnitDefinition& Unit() const = 0;
     OPENTXS_EXPORT virtual bool Unlock(
         const identity::Nym& nym,

@@ -11,6 +11,7 @@
 #include "2_Factory.hpp"
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
 #include "internal/api/client/Client.hpp"
+#include "internal/blind/Blind.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
@@ -22,7 +23,9 @@
 #include "opentxs/api/server/Manager.hpp"
 #include "opentxs/blind/Mint.hpp"
 #include "opentxs/blind/Purse.hpp"
+#include "opentxs/blind/PurseType.hpp"
 #include "opentxs/blind/Token.hpp"
+#include "opentxs/blind/TokenState.hpp"
 #include "opentxs/client/OTAPI_Exec.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
@@ -31,7 +34,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Purse.pb.h"
 #include "opentxs/protobuf/Token.pb.h"
@@ -165,7 +167,7 @@ TEST_F(Test_Basic, requestPurse)
         *alice_,
         server_id_,
         *bob_,
-        ot::proto::CASHTYPE_LUCRE,
+        ot::blind::CashType::Lucre,
         *mint_,
         REQUEST_PURSE_VALUE,
         reason_));
@@ -182,8 +184,8 @@ TEST_F(Test_Basic, requestPurse)
         ot::Clock::to_time_t(purse.LatestValidFrom()),
         ot::Clock::to_time_t(valid_from_));
     EXPECT_EQ(server_id_, purse.Notary());
-    EXPECT_EQ(purse.State(), ot::proto::PURSETYPE_REQUEST);
-    EXPECT_EQ(purse.Type(), ot::proto::CASHTYPE_LUCRE);
+    EXPECT_EQ(purse.State(), ot::blind::PurseType::Request);
+    EXPECT_EQ(purse.Type(), ot::blind::CashType::Lucre);
     EXPECT_EQ(unit_id_, purse.Unit());
     EXPECT_EQ(purse.Value(), REQUEST_PURSE_VALUE);
     ASSERT_EQ(purse.size(), 2);
@@ -192,8 +194,8 @@ TEST_F(Test_Basic, requestPurse)
 
     EXPECT_EQ(server_id_, token1.Notary());
     EXPECT_EQ(token1.Series(), 0);
-    EXPECT_EQ(token1.State(), ot::proto::TOKENSTATE_BLINDED);
-    EXPECT_EQ(token1.Type(), ot::proto::CASHTYPE_LUCRE);
+    EXPECT_EQ(token1.State(), ot::blind::TokenState::Blinded);
+    EXPECT_EQ(token1.Type(), ot::blind::CashType::Lucre);
     EXPECT_EQ(unit_id_, token1.Unit());
     EXPECT_EQ(
         ot::Clock::to_time_t(token1.ValidFrom()),
@@ -207,8 +209,8 @@ TEST_F(Test_Basic, requestPurse)
 
     EXPECT_EQ(server_id_, token2.Notary());
     EXPECT_EQ(token2.Series(), 0);
-    EXPECT_EQ(token2.State(), ot::proto::TOKENSTATE_BLINDED);
-    EXPECT_EQ(token2.Type(), ot::proto::CASHTYPE_LUCRE);
+    EXPECT_EQ(token2.State(), ot::blind::TokenState::Blinded);
+    EXPECT_EQ(token2.Type(), ot::blind::CashType::Lucre);
     EXPECT_EQ(unit_id_, token2.Unit());
     EXPECT_EQ(
         ot::Clock::to_time_t(token2.ValidFrom()),
@@ -227,8 +229,12 @@ TEST_F(Test_Basic, serialize)
 
     EXPECT_TRUE(ot::proto::Validate(serialized_, false));
     EXPECT_EQ(serialized_.version(), 1);
-    EXPECT_EQ(serialized_.type(), ot::proto::CASHTYPE_LUCRE);
-    EXPECT_EQ(serialized_.state(), ot::proto::PURSETYPE_REQUEST);
+    EXPECT_EQ(
+        ot::blind::internal::translate(serialized_.type()),
+        ot::blind::CashType::Lucre);
+    EXPECT_EQ(
+        ot::blind::internal::translate(serialized_.state()),
+        ot::blind::PurseType::Request);
     EXPECT_EQ(serialized_.notary(), server_id_->str());
     EXPECT_EQ(serialized_.mint(), unit_id_->str());
     EXPECT_EQ(serialized_.totalvalue(), REQUEST_PURSE_VALUE);
@@ -239,8 +245,12 @@ TEST_F(Test_Basic, serialize)
     auto& token1 = serialized_.token(0);
 
     EXPECT_EQ(token1.version(), 1);
-    EXPECT_EQ(token1.type(), ot::proto::CASHTYPE_LUCRE);
-    EXPECT_EQ(token1.state(), ot::proto::TOKENSTATE_BLINDED);
+    EXPECT_EQ(
+        ot::blind::internal::translate(token1.type()),
+        ot::blind::CashType::Lucre);
+    EXPECT_EQ(
+        opentxs::blind::internal::translate(token1.state()),
+        ot::blind::TokenState::Blinded);
     EXPECT_EQ(token1.notary(), server_id_->str());
     EXPECT_EQ(token1.mint(), unit_id_->str());
     EXPECT_EQ(token1.series(), 0);
@@ -251,8 +261,12 @@ TEST_F(Test_Basic, serialize)
     auto& token2 = serialized_.token(1);
 
     EXPECT_EQ(token2.version(), 1);
-    EXPECT_EQ(token2.type(), ot::proto::CASHTYPE_LUCRE);
-    EXPECT_EQ(token2.state(), ot::proto::TOKENSTATE_BLINDED);
+    EXPECT_EQ(
+        ot::blind::internal::translate(token2.type()),
+        ot::blind::CashType::Lucre);
+    EXPECT_EQ(
+        opentxs::blind::internal::translate(token2.state()),
+        ot::blind::TokenState::Blinded);
     EXPECT_EQ(token2.notary(), server_id_->str());
     EXPECT_EQ(token2.mint(), unit_id_->str());
     EXPECT_EQ(token2.series(), 0);
@@ -278,8 +292,8 @@ TEST_F(Test_Basic, deserialize)
         ot::Clock::to_time_t(purse.LatestValidFrom()),
         ot::Clock::to_time_t(valid_from_));
     EXPECT_EQ(server_id_, purse.Notary());
-    EXPECT_EQ(purse.State(), ot::proto::PURSETYPE_REQUEST);
-    EXPECT_EQ(purse.Type(), ot::proto::CASHTYPE_LUCRE);
+    EXPECT_EQ(purse.State(), ot::blind::PurseType::Request);
+    EXPECT_EQ(purse.Type(), ot::blind::CashType::Lucre);
     EXPECT_EQ(unit_id_, purse.Unit());
     EXPECT_EQ(purse.Value(), REQUEST_PURSE_VALUE);
     ASSERT_EQ(purse.size(), 2);
@@ -288,8 +302,8 @@ TEST_F(Test_Basic, deserialize)
 
     EXPECT_EQ(server_id_, token1.Notary());
     EXPECT_EQ(token1.Series(), 0);
-    EXPECT_EQ(token1.State(), ot::proto::TOKENSTATE_BLINDED);
-    EXPECT_EQ(token1.Type(), ot::proto::CASHTYPE_LUCRE);
+    EXPECT_EQ(token1.State(), ot::blind::TokenState::Blinded);
+    EXPECT_EQ(token1.Type(), ot::blind::CashType::Lucre);
     EXPECT_EQ(unit_id_, token1.Unit());
     EXPECT_EQ(
         ot::Clock::to_time_t(token1.ValidFrom()),
@@ -303,8 +317,8 @@ TEST_F(Test_Basic, deserialize)
 
     EXPECT_EQ(server_id_, token2.Notary());
     EXPECT_EQ(token2.Series(), 0);
-    EXPECT_EQ(token2.State(), ot::proto::TOKENSTATE_BLINDED);
-    EXPECT_EQ(token2.Type(), ot::proto::CASHTYPE_LUCRE);
+    EXPECT_EQ(token2.State(), ot::blind::TokenState::Blinded);
+    EXPECT_EQ(token2.Type(), ot::blind::CashType::Lucre);
     EXPECT_EQ(unit_id_, token2.Unit());
     EXPECT_EQ(
         ot::Clock::to_time_t(token2.ValidFrom()),
@@ -352,7 +366,7 @@ TEST_F(Test_Basic, sign)
         const auto signature = mint.SignToken(bob, token, reason_);
 
         EXPECT_TRUE(signature);
-        EXPECT_TRUE(ot::proto::TOKENSTATE_SIGNED == token.State());
+        EXPECT_TRUE(ot::blind::TokenState::Signed == token.State());
 
         const auto push = issuePurse.Push(pToken, reason_);
 
@@ -361,7 +375,7 @@ TEST_F(Test_Basic, sign)
         pToken = requestPurse.Pop();
     }
 
-    EXPECT_TRUE(ot::proto::PURSETYPE_ISSUE == issuePurse.State());
+    EXPECT_TRUE(ot::blind::PurseType::Issue == issuePurse.State());
     EXPECT_EQ(issuePurse.Notary().str(), requestPurse.Notary().str());
     EXPECT_EQ(issuePurse.Type(), requestPurse.Type());
     EXPECT_EQ(issuePurse.Unit().str(), requestPurse.Unit().str());
@@ -388,7 +402,7 @@ TEST_F(Test_Basic, process)
     EXPECT_TRUE(purse.Unlock(alice, reason_));
     ASSERT_TRUE(purse.IsUnlocked());
     EXPECT_TRUE(purse.Process(alice, mint, reason_));
-    EXPECT_TRUE(ot::proto::PURSETYPE_NORMAL == purse.State());
+    EXPECT_TRUE(ot::blind::PurseType::Normal == purse.State());
 
     issue_purse_ = std::move(restored);
 }
@@ -443,7 +457,7 @@ TEST_F(Test_Basic, wallet)
             server_id_,
             unit_id_,
             reason_,
-            ot::proto::CASHTYPE_LUCRE);
+            ot::blind::CashType::Lucre);
     }
 
     {
@@ -461,7 +475,7 @@ TEST_F(Test_Basic, PushPop)
         server_id_,
         unit_id_,
         reason_,
-        ot::proto::CASHTYPE_LUCRE);
+        ot::blind::CashType::Lucre);
     auto& purse = purseEditor.get();
 
     ASSERT_TRUE(issue_purse_);

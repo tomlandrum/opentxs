@@ -19,6 +19,7 @@
 
 #include "core/OTStorage.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/core/Core.hpp"
 #include "internal/api/client/Client.hpp"
 #include "opentxs/Shared.hpp"
 #include "opentxs/SharedPimpl.hpp"
@@ -41,6 +42,7 @@
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/NymFile.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/contract/basket/Basket.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
 #include "opentxs/core/cron/OTCronItem.hpp"
@@ -64,7 +66,6 @@
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/BasketItem.pb.h"
 #include "opentxs/protobuf/BasketParams.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 
 #define CLIENT_MASTER_KEY_TIMEOUT_DEFAULT 300
@@ -2365,7 +2366,8 @@ auto OT_API::IsBasketCurrency(
 
     if (!loaded) { return false; }
 
-    return (proto::UNITTYPE_BASKET == contract->type());
+    return (
+        core::UnitType::Basket == core::internal::translate(contract->type()));
 }
 
 // Get Basket Count (of member currency types.)
@@ -2383,7 +2385,10 @@ auto OT_API::GetBasketMemberCount(
 
     if (!serialized) { return 0; }
 
-    if (proto::UNITTYPE_BASKET != serialized->type()) { return 0; }
+    if (core::UnitType::Basket !=
+        core::internal::translate(serialized->type())) {
+        return 0;
+    }
 
     return serialized->basket().item_size();
 }
@@ -2405,7 +2410,10 @@ auto OT_API::GetBasketMemberType(
 
     if (!serialized) { return false; }
 
-    if (proto::UNITTYPE_BASKET != serialized->type()) { return false; }
+    if (core::UnitType::Basket !=
+        core::internal::translate(serialized->type())) {
+        return false;
+    }
 
     if ((nIndex >= serialized->basket().item_size()) || (nIndex < 0)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Index out of bounds: ")(nIndex)(
@@ -2437,7 +2445,10 @@ auto OT_API::GetBasketMemberMinimumTransferAmount(
 
     if (!serialized) { return 0; }
 
-    if (proto::UNITTYPE_BASKET != serialized->type()) { return 0; }
+    if (core::UnitType::Basket !=
+        core::internal::translate(serialized->type())) {
+        return 0;
+    }
 
     if ((nIndex >= serialized->basket().item_size()) || (nIndex < 0)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Index out of bounds: ")(nIndex)(
@@ -2464,7 +2475,10 @@ auto OT_API::GetBasketMinimumTransferAmount(
 
     if (!serialized) { return 0; }
 
-    if (proto::UNITTYPE_BASKET != serialized->type()) { return 0; }
+    if (core::UnitType::Basket !=
+        core::internal::translate(serialized->type())) {
+        return 0;
+    }
 
     return serialized->basket().weight();
 }

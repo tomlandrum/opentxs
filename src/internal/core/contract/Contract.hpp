@@ -11,6 +11,7 @@
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Secret.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
@@ -104,7 +105,7 @@ struct Unit final : virtual public opentxs::contract::Unit, public Signable {
         return {};
     }
     auto TLA() const -> std::string final { return {}; }
-    auto Type() const -> proto::UnitType final { return {}; }
+    auto Type() const -> core::UnitType final { return {}; }
     auto UnitOfAccount() const -> proto::ContactItemType final { return {}; }
     auto VisitAccountRecords(
         const std::string&,
@@ -137,8 +138,8 @@ struct Server final : virtual public opentxs::contract::Server,
     auto ConnectInfo(
         std::string&,
         std::uint32_t&,
-        proto::AddressType&,
-        const proto::AddressType&) const -> bool final
+        core::AddressType&,
+        const core::AddressType&) const -> bool final
     {
         return {};
     }

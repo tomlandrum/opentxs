@@ -14,9 +14,9 @@
 #include "core/contract/UnitDefinition.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/contract/CurrencyContract.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 
 namespace opentxs
@@ -44,9 +44,9 @@ public:
         return fractional_unit_name_;
     }
     auto TLA() const -> std::string final { return tla_; }
-    auto Type() const -> proto::UnitType final
+    auto Type() const -> core::UnitType final
     {
-        return proto::UNITTYPE_CURRENCY;
+        return core::UnitType::Currency;
     }
 
     Currency(

@@ -71,7 +71,6 @@
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/identity/Types.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 
@@ -624,7 +623,7 @@ public:
         const blind::Mint& mint,
         const Amount totalValue,
         const opentxs::PasswordPrompt& reason,
-        const proto::CashType type) const
+        const blind::CashType type) const
         -> std::unique_ptr<blind::Purse> final;
     auto Purse(const proto::Purse& serialized) const
         -> std::unique_ptr<blind::Purse> final;
@@ -633,7 +632,7 @@ public:
         const identifier::Server& server,
         const identifier::UnitDefinition& unit,
         const opentxs::PasswordPrompt& reason,
-        const proto::CashType type) const
+        const blind::CashType type) const
         -> std::unique_ptr<blind::Purse> final;
 #endif  // OT_CASH
     auto ReplyAcknowledgement(

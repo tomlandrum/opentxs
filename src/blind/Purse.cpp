@@ -20,12 +20,15 @@
 #include "blind/Token.hpp"
 #include "internal/api/Api.hpp"
 #include "internal/api/server/Server.hpp"
+#include "internal/blind/Blind.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/crypto/Symmetric.hpp"
 #include "opentxs/blind/Mint.hpp"
 #include "opentxs/blind/Purse.hpp"
+#include "opentxs/blind/PurseType.hpp"
 #include "opentxs/blind/Token.hpp"
+#include "opentxs/blind/TokenState.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
@@ -36,7 +39,6 @@
 #include "opentxs/crypto/SymmetricMode.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Envelope.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
@@ -53,7 +55,7 @@ using ReturnType = blind::implementation::Purse;
 auto Factory::Purse(
     const api::internal::Core& api,
     const otx::context::Server& context,
-    const proto::CashType type,
+    const blind::CashType type,
     const blind::Mint& mint,
     const Amount totalValue,
     const opentxs::PasswordPrompt& reason) -> blind::Purse*
@@ -74,7 +76,7 @@ auto Factory::Purse(
     const identity::Nym& nym,
     const identifier::Server& server,
     const identity::Nym& serverNym,
-    const proto::CashType type,
+    const blind::CashType type,
     const blind::Mint& mint,
     const Amount totalValue,
     const opentxs::PasswordPrompt& reason) -> blind::Purse*
@@ -156,7 +158,7 @@ auto Factory::Purse(
     const identity::Nym& owner,
     const identifier::Server& server,
     const identifier::UnitDefinition& unit,
-    const proto::CashType type,
+    const blind::CashType type,
     const opentxs::PasswordPrompt& reason) -> blind::Purse*
 {
     auto* output = new blind::implementation::Purse(api, server, unit, type);
@@ -183,10 +185,10 @@ const opentxs::crypto::SymmetricMode Purse::mode_{
 Purse::Purse(
     const api::internal::Core& api,
     const VersionNumber version,
-    const proto::CashType type,
+    const blind::CashType type,
     const identifier::Server& notary,
     const identifier::UnitDefinition& unit,
-    const proto::PurseType state,
+    const blind::PurseType state,
     const Amount totalValue,
     const Time validFrom,
     const Time validTo,
@@ -244,7 +246,7 @@ Purse::Purse(
     const api::internal::Core& api,
     const identifier::Nym& owner,
     const identifier::Server& server,
-    const proto::CashType type,
+    const blind::CashType type,
     const Mint& mint,
     OTSecret&& secondaryKeyPassword,
     std::unique_ptr<const OTSymmetricKey> secondaryKey,
@@ -255,7 +257,7 @@ Purse::Purse(
           type,
           server,
           mint.InstrumentDefinitionID(),
-          proto::PURSETYPE_REQUEST,
+          blind::PurseType::Request,
           0,
           Time::min(),
           Time::max(),
@@ -279,14 +281,14 @@ Purse::Purse(
     const api::internal::Core& api,
     const identifier::Server& server,
     const identifier::UnitDefinition& unit,
-    const proto::CashType type)
+    const blind::CashType type)
     : Purse(
           api,
           OT_PURSE_VERSION,
           type,
           server,
           unit,
-          proto::PURSETYPE_NORMAL,
+          blind::PurseType::Normal,
           0,
           Time::min(),
           Time::max(),
@@ -308,10 +310,10 @@ Purse::Purse(const api::internal::Core& api, const proto::Purse& in)
     : Purse(
           api,
           in.version(),
-          in.type(),
+          opentxs::blind::internal::translate(in.type()),
           identifier::Server::Factory(in.notary()),
           identifier::UnitDefinition::Factory(in.mint()),
-          in.state(),
+          opentxs::blind::internal::translate(in.state()),
           in.totalvalue(),
           Clock::from_time_t(in.latestvalidfrom()),
           Clock::from_time_t(in.earliestvalidto()),
@@ -340,7 +342,7 @@ Purse::Purse(const api::internal::Core& api, const Purse& owner)
           owner.type_,
           owner.notary_,
           owner.unit_,
-          proto::PURSETYPE_ISSUE,
+          blind::PurseType::Issue,
           0,
           Time::min(),
           Time::max(),
@@ -401,9 +403,9 @@ auto Purse::deserialize_secondary_key(
     const proto::Purse& in) noexcept(false)
     -> std::unique_ptr<const OTSymmetricKey>
 {
-    switch (in.state()) {
-        case proto::PURSETYPE_REQUEST:
-        case proto::PURSETYPE_ISSUE: {
+    switch (opentxs::blind::internal::translate(in.state())) {
+        case blind::PurseType::Request:
+        case blind::PurseType::Issue: {
             auto output = std::make_unique<OTSymmetricKey>(api.Symmetric().Key(
                 in.secondarykey(),
                 opentxs::crypto::SymmetricMode::ChaCha20Poly1305));
@@ -418,7 +420,7 @@ auto Purse::deserialize_secondary_key(
 
             return std::move(output);
         }
-        case proto::PURSETYPE_NORMAL: {
+        case blind::PurseType::Normal: {
         } break;
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid purse state").Flush();
@@ -434,9 +436,9 @@ auto Purse::deserialize_secondary_password(
     const api::internal::Core& api,
     const proto::Purse& in) noexcept(false) -> std::unique_ptr<const OTEnvelope>
 {
-    switch (in.state()) {
-        case proto::PURSETYPE_REQUEST:
-        case proto::PURSETYPE_ISSUE: {
+    switch (opentxs::blind::internal::translate(in.state())) {
+        case blind::PurseType::Request:
+        case blind::PurseType::Issue: {
             auto output = std::make_unique<OTEnvelope>(
                 api.Factory().Envelope(in.secondarypassword()));
 
@@ -451,7 +453,7 @@ auto Purse::deserialize_secondary_password(
 
             return std::move(output);
         }
-        case proto::PURSETYPE_NORMAL: {
+        case blind::PurseType::Normal: {
         } break;
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid purse state").Flush();
@@ -568,7 +570,7 @@ auto Purse::Process(
     const Mint& mint,
     const opentxs::PasswordPrompt& reason) -> bool
 {
-    if (proto::PURSETYPE_ISSUE != state_) {
+    if (blind::PurseType::Issue != state_) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect purse state").Flush();
 
         return false;
@@ -581,7 +583,7 @@ auto Purse::Process(
     }
 
     if (processed) {
-        state_ = proto::PURSETYPE_NORMAL;
+        state_ = blind::PurseType::Normal;
         const_cast<std::shared_ptr<const OTEnvelope>&>(secondary_password_)
             .reset();
         const_cast<std::shared_ptr<const OTSymmetricKey>&>(secondary_).reset();
@@ -628,9 +630,9 @@ auto Purse::Push(
     }
 
     switch (token.State()) {
-        case proto::TOKENSTATE_BLINDED:
-        case proto::TOKENSTATE_SIGNED:
-        case proto::TOKENSTATE_READY: {
+        case blind::TokenState::Blinded:
+        case blind::TokenState::Signed:
+        case blind::TokenState::Ready: {
             total_value_ += token.Value();
             apply_times(token);
         } break;
@@ -689,8 +691,8 @@ auto Purse::Serialize() const -> proto::Purse
 {
     proto::Purse output{};
     output.set_version(version_);
-    output.set_type(type_);
-    output.set_state(state_);
+    output.set_type(opentxs::blind::internal::translate(type_));
+    output.set_state(opentxs::blind::internal::translate(state_));
     output.set_notary(notary_->str());
     output.set_mint(unit_->str());
     output.set_totalvalue(total_value_);
@@ -714,8 +716,8 @@ auto Purse::Serialize() const -> proto::Purse
     }
 
     switch (state_) {
-        case proto::PURSETYPE_REQUEST:
-        case proto::PURSETYPE_ISSUE: {
+        case blind::PurseType::Request:
+        case blind::PurseType::Issue: {
             if (false == bool(secondary_)) {
                 throw std::runtime_error("missing secondary key");
             }
@@ -731,7 +733,7 @@ auto Purse::Serialize() const -> proto::Purse
             *output.mutable_secondarypassword() =
                 secondary_password_->get().Serialize();
         } break;
-        case proto::PURSETYPE_NORMAL: {
+        case blind::PurseType::Normal: {
         } break;
         default: {
             throw std::runtime_error("invalid purse state");
@@ -802,19 +804,19 @@ auto Purse::Verify(const api::server::internal::Manager& server) const -> bool
     Amount total{0};
     auto validFrom{Time::min()};
     auto validTo{Time::max()};
-    std::set<proto::TokenState> allowedStates{};
+    std::set<blind::TokenState> allowedStates{};
 
     switch (state_) {
-        case proto::PURSETYPE_REQUEST: {
-            allowedStates.insert(proto::TOKENSTATE_BLINDED);
+        case blind::PurseType::Request: {
+            allowedStates.insert(blind::TokenState::Blinded);
         } break;
-        case proto::PURSETYPE_ISSUE: {
-            allowedStates.insert(proto::TOKENSTATE_SIGNED);
+        case blind::PurseType::Issue: {
+            allowedStates.insert(blind::TokenState::Signed);
         } break;
-        case proto::PURSETYPE_NORMAL: {
-            allowedStates.insert(proto::TOKENSTATE_READY);
-            allowedStates.insert(proto::TOKENSTATE_SPENT);
-            allowedStates.insert(proto::TOKENSTATE_EXPIRED);
+        case blind::PurseType::Normal: {
+            allowedStates.insert(blind::TokenState::Ready);
+            allowedStates.insert(blind::TokenState::Spent);
+            allowedStates.insert(blind::TokenState::Expired);
         } break;
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid purse state.")
@@ -878,7 +880,7 @@ auto Purse::Verify(const api::server::internal::Manager& server) const -> bool
 
         auto& mint = *pMint;
 
-        if (mint.Expired() && (token.State() != proto::TOKENSTATE_EXPIRED)) {
+        if (mint.Expired() && (token.State() != blind::TokenState::Expired)) {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Token is expired").Flush();
 
             return false;
@@ -902,14 +904,14 @@ auto Purse::Verify(const api::server::internal::Manager& server) const -> bool
         validTo = std::min(validTo, token.ValidFrom());
 
         switch (token.State()) {
-            case proto::TOKENSTATE_BLINDED:
-            case proto::TOKENSTATE_SIGNED:
-            case proto::TOKENSTATE_READY: {
+            case blind::TokenState::Blinded:
+            case blind::TokenState::Signed:
+            case blind::TokenState::Ready: {
                 total += token.Value();
                 [[fallthrough]];
             }
-            case proto::TOKENSTATE_SPENT:
-            case proto::TOKENSTATE_EXPIRED: {
+            case blind::TokenState::Spent:
+            case blind::TokenState::Expired: {
             } break;
             default: {
                 LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid token state")

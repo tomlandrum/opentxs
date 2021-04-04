@@ -19,7 +19,7 @@
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/contract/Signable.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
+#include "opentxs/core/Types.hpp"
 
 namespace opentxs
 {
@@ -46,8 +46,8 @@ class Server : virtual public opentxs::contract::Signable
 {
 public:
     using Endpoint = std::tuple<
-        proto::AddressType,
-        proto::ProtocolVersion,
+        core::AddressType,
+        core::ProtocolVersion,
         std::string,     // hostname / address
         std::uint32_t,   // port
         VersionNumber>;  // version
@@ -57,8 +57,8 @@ public:
     OPENTXS_EXPORT virtual bool ConnectInfo(
         std::string& strHostname,
         std::uint32_t& nPort,
-        proto::AddressType& actual,
-        const proto::AddressType& preferred) const = 0;
+        core::AddressType& actual,
+        const core::AddressType& preferred) const = 0;
     OPENTXS_EXPORT virtual proto::ServerContract Contract() const = 0;
     OPENTXS_EXPORT virtual std::string EffectiveName() const = 0;
     OPENTXS_EXPORT virtual proto::ServerContract PublicContract() const = 0;

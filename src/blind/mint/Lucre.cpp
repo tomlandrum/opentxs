@@ -33,7 +33,6 @@ extern "C" {
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/Envelope.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 
 #ifdef __APPLE__
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -220,7 +219,7 @@ auto Lucre::SignToken(
     LucreDumper setDumper;
 #endif
 
-    if (proto::CASHTYPE_LUCRE != token.Type()) {
+    if (blind::CashType::Lucre != token.Type()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect token type").Flush();
 
         return false;
@@ -327,7 +326,7 @@ auto Lucre::VerifyToken(
     const PasswordPrompt& reason) -> bool
 {
 
-    if (proto::CASHTYPE_LUCRE != token.Type()) {
+    if (blind::CashType::Lucre != token.Type()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect token type").Flush();
 
         return false;

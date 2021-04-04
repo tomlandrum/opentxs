@@ -54,7 +54,6 @@
 #include "opentxs/network/zeromq/socket/Push.hpp"
 #include "opentxs/network/zeromq/socket/Socket.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -1906,7 +1905,7 @@ auto Wallet::mutable_Purse(
     const identifier::Server& server,
     const identifier::UnitDefinition& unit,
     const PasswordPrompt& reason,
-    const proto::CashType type) const -> Editor<blind::Purse>
+    const blind::CashType type) const -> Editor<blind::Purse>
 {
     auto pPurse = purse(nymID, server, unit, true);
 

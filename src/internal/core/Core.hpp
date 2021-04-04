@@ -5,9 +5,13 @@
 
 #pragma once
 
+#include <map>
+
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/NymFile.hpp"
+#include "opentxs/core/Types.hpp"
+#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "util/Blank.hpp"
 
 namespace opentxs
@@ -38,6 +42,30 @@ struct NymFile : virtual public opentxs::NymFile {
     virtual auto SaveSignedNymFile(const PasswordPrompt& reason) -> bool = 0;
 };
 }  // namespace opentxs::internal
+
+namespace opentxs::core::internal
+{
+using AddressTypeMap = std::map<core::AddressType, proto::AddressType>;
+using AddressTypeReverseMap = std::map<proto::AddressType, core::AddressType>;
+using ProtocolVersionMap =
+    std::map<core::ProtocolVersion, proto::ProtocolVersion>;
+using ProtocolVersionReverseMap =
+    std::map<proto::ProtocolVersion, core::ProtocolVersion>;
+using UnitTypeMap = std::map<core::UnitType, proto::UnitType>;
+using UnitTypeReverseMap = std::map<proto::UnitType, core::UnitType>;
+
+auto addresstype_map() noexcept -> const AddressTypeMap&;
+auto protocolversion_map() noexcept -> const ProtocolVersionMap&;
+auto unittype_map() noexcept -> const UnitTypeMap&;
+auto translate(const core::AddressType in) noexcept -> proto::AddressType;
+auto translate(const core::ProtocolVersion in) noexcept
+    -> proto::ProtocolVersion;
+auto translate(const core::UnitType in) noexcept -> proto::UnitType;
+auto translate(const proto::AddressType in) noexcept -> core::AddressType;
+auto translate(const proto::ProtocolVersion in) noexcept
+    -> core::ProtocolVersion;
+auto translate(const proto::UnitType in) noexcept -> core::UnitType;
+}  // namespace opentxs::core::internal
 
 namespace opentxs::factory
 {

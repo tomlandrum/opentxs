@@ -17,6 +17,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/api/Primitives.hpp"
 #include "opentxs/api/client/blockchain/Types.hpp"
+#include "opentxs/blind/CashType.hpp"
 #if OT_BLOCKCHAIN
 #include "opentxs/blockchain/Blockchain.hpp"
 #endif                                   // OT_BLOCKCHAIN
@@ -57,7 +58,6 @@
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 
@@ -569,7 +569,7 @@ public:
         const blind::Mint& mint,
         const Amount totalValue,
         const opentxs::PasswordPrompt& reason,
-        const proto::CashType type = proto::CASHTYPE_LUCRE) const = 0;
+        const blind::CashType type = blind::CashType::Lucre) const = 0;
     OPENTXS_EXPORT virtual std::unique_ptr<blind::Purse> Purse(
         const proto::Purse& serialized) const = 0;
     OPENTXS_EXPORT virtual std::unique_ptr<blind::Purse> Purse(
@@ -577,7 +577,7 @@ public:
         const identifier::Server& server,
         const identifier::UnitDefinition& unit,
         const opentxs::PasswordPrompt& reason,
-        const proto::CashType type = proto::CASHTYPE_LUCRE) const = 0;
+        const blind::CashType type = blind::CashType::Lucre) const = 0;
 #endif  // OT_CASH
     OPENTXS_EXPORT virtual OTReplyAcknowledgement ReplyAcknowledgement(
         const Nym_p& nym,

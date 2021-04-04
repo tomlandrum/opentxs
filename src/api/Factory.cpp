@@ -100,7 +100,6 @@
 #include "opentxs/ext/OTPayment.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -1951,7 +1950,7 @@ auto Factory::Purse(
     const blind::Mint& mint,
     const Amount totalValue,
     const opentxs::PasswordPrompt& reason,
-    const proto::CashType type) const -> std::unique_ptr<blind::Purse>
+    const blind::CashType type) const -> std::unique_ptr<blind::Purse>
 {
     return std::unique_ptr<blind::Purse>(
         opentxs::Factory::Purse(api_, context, type, mint, totalValue, reason));
@@ -1969,7 +1968,7 @@ auto Factory::Purse(
     const identifier::Server& server,
     const identifier::UnitDefinition& unit,
     const opentxs::PasswordPrompt& reason,
-    const proto::CashType type) const -> std::unique_ptr<blind::Purse>
+    const blind::CashType type) const -> std::unique_ptr<blind::Purse>
 {
     return std::unique_ptr<blind::Purse>(
         opentxs::Factory::Purse(api_, owner, server, unit, type, reason));

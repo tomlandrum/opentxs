@@ -39,6 +39,7 @@
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
@@ -56,7 +57,6 @@
 #include "opentxs/protobuf/ConnectionInfoReply.pb.h"  // IWYU pragma: keep
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/PairEvent.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
@@ -252,7 +252,7 @@ TEST_F(Test_Pair, issue_dollars)
         issuer_.Reason());
 
     EXPECT_EQ(UNIT_DEFINITION_CONTRACT_VERSION, contract->Version());
-    EXPECT_EQ(ot::proto::UNITTYPE_CURRENCY, contract->Type());
+    EXPECT_EQ(ot::core::UnitType::Currency, contract->Type());
     EXPECT_EQ(UNIT_DEFINITION_UNIT_OF_ACCOUNT, contract->UnitOfAccount());
     EXPECT_TRUE(unit_id_->empty());
 

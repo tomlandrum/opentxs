@@ -30,6 +30,7 @@
 #include "opentxs/api/crypto/Encode.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #include "opentxs/client/NymData.hpp"
+#include "opentxs/core/AddressType.hpp"
 #include "opentxs/core/Armored.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Ledger.hpp"
@@ -37,6 +38,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/OTTransaction.hpp"
+#include "opentxs/core/ProtocolVersion.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
@@ -54,7 +56,6 @@
 #include "opentxs/network/zeromq/socket/Sender.tpp"
 #include "opentxs/network/zeromq/socket/Socket.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/OTXPush.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
@@ -344,8 +345,8 @@ void Server::CreateMainFile(bool& mainFileExists)
             manager_.GetInproc())
             .Flush();
         contract::Server::Endpoint inproc{
-            proto::ADDRESSTYPE_INPROC,
-            proto::PROTOCOLVERSION_LEGACY,
+            core::AddressType::Inproc,
+            core::ProtocolVersion::Legacy,
             manager_.GetInproc(),
             commandPort,
             2};
@@ -353,8 +354,8 @@ void Server::CreateMainFile(bool& mainFileExists)
     } else {
         LogNormal("Creating standard contract.").Flush();
         contract::Server::Endpoint ipv4{
-            proto::ADDRESSTYPE_IPV4,
-            proto::PROTOCOLVERSION_LEGACY,
+            core::AddressType::IPV4,
+            core::ProtocolVersion::Legacy,
             hostname,
             commandPort,
             1};
@@ -363,8 +364,8 @@ void Server::CreateMainFile(bool& mainFileExists)
 
         if (0 < onion.size()) {
             contract::Server::Endpoint tor{
-                proto::ADDRESSTYPE_ONION,
-                proto::PROTOCOLVERSION_LEGACY,
+                core::AddressType::Onion,
+                core::ProtocolVersion::Legacy,
                 onion,
                 commandPort,
                 1};
@@ -375,8 +376,8 @@ void Server::CreateMainFile(bool& mainFileExists)
 
         if (0 < eep.size()) {
             contract::Server::Endpoint i2p{
-                proto::ADDRESSTYPE_EEP,
-                proto::PROTOCOLVERSION_LEGACY,
+                core::AddressType::EEP,
+                core::ProtocolVersion::Legacy,
                 eep,
                 commandPort,
                 1};
@@ -414,7 +415,7 @@ void Server::CreateMainFile(bool& mainFileExists)
     std::string strNotaryID{};
     std::string strHostname{};
     std::uint32_t nPort{0};
-    proto::AddressType type{};
+    core::AddressType type{};
 
     if (!contract->ConnectInfo(strHostname, nPort, type, type)) {
         LogNormal(OT_METHOD)(__FUNCTION__)(__FUNCTION__)(
@@ -906,7 +907,7 @@ auto Server::DropMessageToNymbox(
 }
 
 auto Server::GetConnectInfo(
-    proto::AddressType& type,
+    core::AddressType& type,
     std::string& strHostname,
     std::uint32_t& nPort) const -> bool
 {

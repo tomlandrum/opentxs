@@ -22,11 +22,13 @@ extern "C" {
 #include "blind/Lucre.hpp"
 #include "crypto/library/openssl/OpenSSL_BIO.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/blind/Blind.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #include "opentxs/blind/Mint.hpp"
 #include "opentxs/blind/Purse.hpp"
+#include "opentxs/blind/TokenState.hpp"
 #include "opentxs/core/Armored.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
@@ -34,7 +36,6 @@ extern "C" {
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 #include "opentxs/protobuf/LucreTokenData.pb.h"
 #include "opentxs/protobuf/Token.pb.h"
@@ -49,7 +50,7 @@ Lucre::Lucre(
     const api::internal::Core& api,
     Purse& purse,
     const VersionNumber version,
-    const proto::TokenState state,
+    const blind::TokenState state,
     const std::uint64_t series,
     const Denomination value,
     const Time validFrom,
@@ -117,7 +118,7 @@ Lucre::Lucre(
           api,
           purse,
           in.lucre().version(),
-          in.state(),
+          opentxs::blind::internal::translate(in.state()),
           in.series(),
           in.denomination(),
           Clock::from_time_t(in.validfrom()),
@@ -189,7 +190,7 @@ Lucre::Lucre(
           api,
           purse,
           LUCRE_TOKEN_VERSION,
-          proto::TOKENSTATE_BLINDED,
+          blind::TokenState::Blinded,
           mint.GetSeries(),
           value,
           mint.GetValidFrom(),
@@ -215,7 +216,7 @@ auto Lucre::AddSignature(const String& signature) -> bool
     }
 
     signature_ = signature;
-    state_ = proto::TOKENSTATE_SIGNED;
+    state_ = blind::TokenState::Signed;
 
     return true;
 }
@@ -451,18 +452,18 @@ auto Lucre::ID(const PasswordPrompt& reason) const -> std::string
 auto Lucre::IsSpent(const PasswordPrompt& reason) const -> bool
 {
     switch (state_) {
-        case proto::TOKENSTATE_SPENT: {
+        case blind::TokenState::Spent: {
             return true;
         }
-        case proto::TOKENSTATE_BLINDED:
-        case proto::TOKENSTATE_SIGNED:
-        case proto::TOKENSTATE_EXPIRED: {
+        case blind::TokenState::Blinded:
+        case blind::TokenState::Signed:
+        case blind::TokenState::Expired: {
             return false;
         }
-        case proto::TOKENSTATE_READY: {
+        case blind::TokenState::Ready: {
             break;
         }
-        case proto::TOKENSTATE_ERROR:
+        case blind::TokenState::Error:
         default: {
             throw std::runtime_error("invalid token state");
         }
@@ -479,7 +480,7 @@ auto Lucre::IsSpent(const PasswordPrompt& reason) const -> bool
 
 auto Lucre::MarkSpent(const PasswordPrompt& reason) -> bool
 {
-    if (proto::TOKENSTATE_READY != state_) {
+    if (blind::TokenState::Ready != state_) {
         throw std::runtime_error("invalid token state");
     }
 
@@ -497,7 +498,7 @@ auto Lucre::MarkSpent(const PasswordPrompt& reason) -> bool
             .Flush();
     }
 
-    if (output) { state_ = proto::TOKENSTATE_SPENT; }
+    if (output) { state_ = blind::TokenState::Spent; }
 
     return output;
 }
@@ -507,7 +508,7 @@ auto Lucre::Process(
     const Mint& mint,
     const PasswordPrompt& reason) -> bool
 {
-    if (proto::TOKENSTATE_SIGNED != state_) {
+    if (blind::TokenState::Signed != state_) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect token state.").Flush();
 
         return false;
@@ -643,7 +644,7 @@ auto Lucre::Process(
         return false;
     }
 
-    state_ = proto::TOKENSTATE_READY;
+    state_ = blind::TokenState::Ready;
     private_.reset();
     public_.reset();
 
@@ -657,20 +658,20 @@ auto Lucre::Serialize() const -> proto::Token
     lucre.set_version(lucre_version_);
 
     switch (state_) {
-        case proto::TOKENSTATE_BLINDED: {
+        case blind::TokenState::Blinded: {
             serialize_private(lucre);
             serialize_public(lucre);
         } break;
-        case proto::TOKENSTATE_SIGNED: {
+        case blind::TokenState::Signed: {
             serialize_private(lucre);
             serialize_public(lucre);
             serialize_signature(lucre);
         } break;
-        case proto::TOKENSTATE_READY:
-        case proto::TOKENSTATE_SPENT: {
+        case blind::TokenState::Ready:
+        case blind::TokenState::Spent: {
             serialize_spendable(lucre);
         } break;
-        case proto::TOKENSTATE_EXPIRED: {
+        case blind::TokenState::Expired: {
             if (false == signature_->empty()) { serialize_signature(lucre); }
 
             if (private_) { serialize_private(lucre); }

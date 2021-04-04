@@ -5,6 +5,7 @@
 
 add_library(
   opentxs-blind OBJECT
+  "Blind.cpp"
   "Mint.cpp"
   "Mint.hpp"
   "Purse.cpp"

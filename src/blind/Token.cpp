@@ -14,16 +14,18 @@
 #if OT_CASH_USING_LUCRE
 #include "blind/token/Lucre.hpp"
 #endif  // OT_CASH_USING_LUCRE
+#include "internal/blind/Blind.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/blind/Purse.hpp"
+#include "opentxs/blind/CashType.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/crypto/SymmetricMode.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Token.pb.h"
+#include "util/Container.hpp"
 
 #define OT_METHOD "opentxs::blind::token::implementation::Token::"
 
@@ -35,7 +37,7 @@ auto Factory::Token(const blind::Token& token, blind::Purse& purse) noexcept
     -> std::unique_ptr<blind::Token>
 {
     switch (token.Type()) {
-        case proto::CASHTYPE_LUCRE: {
+        case blind::CashType::Lucre: {
 
             return std::make_unique<ReturnType>(
                 dynamic_cast<const ReturnType&>(token), purse);
@@ -52,8 +54,8 @@ auto Factory::Token(
     const proto::Token& serialized) noexcept(false)
     -> std::unique_ptr<blind::Token>
 {
-    switch (serialized.type()) {
-        case proto::CASHTYPE_LUCRE: {
+    switch (opentxs::blind::internal::translate(serialized.type())) {
+        case blind::CashType::Lucre: {
 
             return std::make_unique<ReturnType>(api, purse, serialized);
         }
@@ -72,7 +74,7 @@ auto Factory::Token(
     const opentxs::PasswordPrompt& reason) -> std::unique_ptr<blind::Token>
 {
     switch (purse.Type()) {
-        case proto::CASHTYPE_LUCRE: {
+        case blind::CashType::Lucre: {
 
             return std::make_unique<ReturnType>(
                 api, owner, mint, value, purse, reason);
@@ -92,8 +94,8 @@ const opentxs::crypto::SymmetricMode Token::mode_{
 Token::Token(
     const api::internal::Core& api,
     Purse& purse,
-    const proto::TokenState state,
-    const proto::CashType type,
+    const blind::TokenState state,
+    const blind::CashType type,
     const identifier::Server& notary,
     const identifier::UnitDefinition& unit,
     const std::uint64_t series,
@@ -138,8 +140,8 @@ Token::Token(
     : Token(
           api,
           purse,
-          in.state(),
-          in.type(),
+          opentxs::blind::internal::translate(in.state()),
+          opentxs::blind::internal::translate(in.type()),
           identifier::Server::Factory(in.notary()),
           identifier::UnitDefinition::Factory(in.mint()),
           in.series(),
@@ -154,7 +156,7 @@ Token::Token(
     const api::internal::Core& api,
     Purse& purse,
     const VersionNumber version,
-    const proto::TokenState state,
+    const blind::TokenState state,
     const std::uint64_t series,
     const Denomination denomination,
     const Time validFrom,
@@ -213,8 +215,8 @@ auto Token::Serialize() const -> proto::Token
 {
     proto::Token output{};
     output.set_version(version_);
-    output.set_type(type_);
-    output.set_state(state_);
+    output.set_type(opentxs::blind::internal::translate(type_));
+    output.set_state(opentxs::blind::internal::translate(state_));
     output.set_notary(notary_->str());
     output.set_mint(unit_->str());
     output.set_series(series_);

@@ -16,6 +16,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/core/Types.hpp"
 
 namespace opentxs
 {
@@ -77,7 +78,7 @@ public:
         const OTServerContract& contract);
 
     OPENTXS_EXPORT virtual bool ChangeAddressType(
-        const proto::AddressType type) = 0;
+        const core::AddressType type) = 0;
     OPENTXS_EXPORT virtual bool ClearProxy() = 0;
     OPENTXS_EXPORT virtual bool EnableProxy() = 0;
     OPENTXS_EXPORT virtual NetworkReplyMessage Send(

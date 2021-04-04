@@ -18,6 +18,7 @@
 #include "opentxs/api/Endpoints.hpp"
 #include "opentxs/api/Settings.hpp"
 #include "opentxs/api/Wallet.hpp"
+#include "opentxs/core/AddressType.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/String.hpp"
@@ -25,7 +26,6 @@
 #include "opentxs/network/ServerConnection.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 
 #define CLIENT_SEND_TIMEOUT_SECONDS 20
 #if OT_VALGRIND
@@ -78,13 +78,13 @@ auto ZMQ::Context() const -> const opentxs::network::zeromq::Context&
     return api_.ZeroMQ();
 }
 
-auto ZMQ::DefaultAddressType() const -> proto::AddressType
+auto ZMQ::DefaultAddressType() const -> core::AddressType
 {
     bool changed{false};
     const std::int64_t defaultType{
-        static_cast<std::int64_t>(proto::ADDRESSTYPE_IPV4)};
+        static_cast<std::int64_t>(core::AddressType::IPV4)};
     std::int64_t configuredType{
-        static_cast<std::int64_t>(proto::ADDRESSTYPE_ERROR)};
+        static_cast<std::int64_t>(core::AddressType::Error)};
     api_.Config().CheckSet_long(
         String::Factory("Connection"),
         String::Factory("preferred_address_type"),
@@ -94,7 +94,7 @@ auto ZMQ::DefaultAddressType() const -> proto::AddressType
 
     if (changed) { api_.Config().Save(); }
 
-    return static_cast<proto::AddressType>(configuredType);
+    return static_cast<core::AddressType>(configuredType);
 }
 
 void ZMQ::init(const Lock& lock) const

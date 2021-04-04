@@ -227,10 +227,9 @@ auto Factory::Credential(
         return nullptr;
     }
 
-        if (output->Role() !=
-            identity::credential::internal::translate(role)) {
-            return nullptr;
-        }
+    if (output->Role() != identity::credential::internal::translate(role)) {
+        return nullptr;
+    }
 
     return output.release();
 }
@@ -259,10 +258,10 @@ auto Factory::Credential(
 
     if (false == bool(output)) { return nullptr; }
 
-        if (output->Role() !=
-            identity::credential::internal::translate(serialized.role())) {
-            return nullptr;
-        }
+    if (output->Role() !=
+        identity::credential::internal::translate(serialized.role())) {
+        return nullptr;
+    }
 
     if (false == output->Validate()) { return nullptr; }
 

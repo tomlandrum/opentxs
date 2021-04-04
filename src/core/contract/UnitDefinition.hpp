@@ -15,9 +15,9 @@
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 
 namespace opentxs
 {
@@ -92,7 +92,7 @@ public:
         const std::string& str_thousand,
         const std::string& str_decimal) const -> bool override;
     auto TLA() const -> std::string override { return short_name_; }
-    auto Type() const -> proto::UnitType override = 0;
+    auto Type() const -> core::UnitType override = 0;
     auto UnitOfAccount() const -> proto::ContactItemType override
     {
         return unit_of_account_;

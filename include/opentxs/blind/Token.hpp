@@ -16,7 +16,7 @@
 #if OT_CASH
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
+#include "opentxs/blind/Types.hpp"
 
 namespace opentxs
 {
@@ -62,8 +62,8 @@ public:
     OPENTXS_EXPORT virtual Purse& Owner() const noexcept = 0;
     OPENTXS_EXPORT virtual proto::Token Serialize() const = 0;
     OPENTXS_EXPORT virtual MintSeries Series() const = 0;
-    OPENTXS_EXPORT virtual proto::TokenState State() const = 0;
-    OPENTXS_EXPORT virtual proto::CashType Type() const = 0;
+    OPENTXS_EXPORT virtual blind::TokenState State() const = 0;
+    OPENTXS_EXPORT virtual blind::CashType Type() const = 0;
     OPENTXS_EXPORT virtual const identifier::UnitDefinition& Unit() const = 0;
     OPENTXS_EXPORT virtual Time ValidFrom() const = 0;
     OPENTXS_EXPORT virtual Time ValidTo() const = 0;

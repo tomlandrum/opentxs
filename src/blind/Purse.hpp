@@ -17,13 +17,13 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/blind/Purse.hpp"
 #include "opentxs/blind/Token.hpp"
+#include "opentxs/blind/Types.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/Envelope.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Envelope.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
@@ -94,8 +94,8 @@ public:
         const PasswordPrompt& reason) -> bool final;
     auto Serialize() const -> proto::Purse final;
     auto size() const noexcept -> std::size_t final { return tokens_.size(); }
-    auto State() const -> proto::PurseType final { return state_; }
-    auto Type() const -> proto::CashType final { return type_; }
+    auto State() const -> blind::PurseType final { return state_; }
+    auto Type() const -> blind::CashType final { return type_; }
     auto Unit() const -> const identifier::UnitDefinition& final
     {
         return unit_;
@@ -133,7 +133,7 @@ public:
         const api::internal::Core& api,
         const identifier::Nym& owner,
         const identifier::Server& server,
-        const proto::CashType type,
+        const blind::CashType type,
         const Mint& mint,
         OTSecret&& secondaryKeyPassword,
         std::unique_ptr<const OTSymmetricKey> secondaryKey,
@@ -148,10 +148,10 @@ private:
 
     const api::internal::Core& api_;
     const VersionNumber version_;
-    const proto::CashType type_;
+    const blind::CashType type_;
     const OTServerID notary_;
     const OTUnitID unit_;
-    proto::PurseType state_;
+    blind::PurseType state_;
     Amount total_value_;
     Time latest_valid_from_;
     Time earliest_valid_to_;
@@ -185,14 +185,14 @@ private:
         const api::internal::Core& api,
         const identifier::Server& server,
         const identifier::UnitDefinition& unit,
-        const proto::CashType type);
+        const blind::CashType type);
     Purse(
         const api::internal::Core& api,
         const VersionNumber version,
-        const proto::CashType type,
+        const blind::CashType type,
         const identifier::Server& notary,
         const identifier::UnitDefinition& unit,
-        const proto::PurseType state,
+        const blind::PurseType state,
         const Amount totalValue,
         const Time validFrom,
         const Time validTo,

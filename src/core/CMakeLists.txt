@@ -26,6 +26,7 @@ add_library(
   "Armored.hpp"
   "Cheque.cpp"
   "Contract.cpp"
+  "Core.cpp"
   "Data.cpp"
   "Data.hpp"
   "Flag.cpp"

@@ -14,7 +14,6 @@
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/SymmetricMode.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Token.pb.h"
 
@@ -73,8 +72,8 @@ public:
     }
     auto Owner() const noexcept -> Purse& final { return purse_; }
     auto Series() const -> MintSeries override { return series_; }
-    auto State() const -> proto::TokenState override { return state_; }
-    auto Type() const -> proto::CashType override { return type_; }
+    auto State() const -> blind::TokenState override { return state_; }
+    auto Type() const -> blind::CashType override { return type_; }
     auto Unit() const -> const identifier::UnitDefinition& override
     {
         return unit_;
@@ -95,7 +94,7 @@ protected:
 
     const api::internal::Core& api_;
     Purse& purse_;
-    proto::TokenState state_;
+    blind::TokenState state_;
     const OTServerID notary_;
     const OTUnitID unit_;
     const std::uint64_t series_;
@@ -120,7 +119,7 @@ protected:
         const api::internal::Core& api,
         Purse& purse,
         const VersionNumber version,
-        const proto::TokenState state,
+        const blind::TokenState state,
         const std::uint64_t series,
         const Denomination denomination,
         const Time validFrom,
@@ -130,7 +129,7 @@ protected:
 private:
     friend blind::implementation::Purse;
 
-    const proto::CashType type_;
+    const blind::CashType type_;
     const VersionNumber version_;
 
     virtual auto clone() const noexcept -> Token* override = 0;
@@ -138,8 +137,8 @@ private:
     Token(
         const api::internal::Core& api,
         Purse& purse,
-        const proto::TokenState state,
-        const proto::CashType type,
+        const blind::TokenState state,
+        const blind::CashType type,
         const identifier::Server& notary,
         const identifier::UnitDefinition& unit,
         const std::uint64_t series,

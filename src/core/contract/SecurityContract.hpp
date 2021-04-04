@@ -13,9 +13,9 @@
 #include "core/contract/UnitDefinition.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/contract/SecurityContract.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 
 namespace opentxs
@@ -39,9 +39,9 @@ class Security final : public unit::Security,
 {
 public:
     auto TLA() const -> std::string final { return primary_unit_symbol_; }
-    auto Type() const -> proto::UnitType final
+    auto Type() const -> core::UnitType final
     {
-        return proto::UNITTYPE_SECURITY;
+        return core::UnitType::Security;
     }
 
     Security(

@@ -22,6 +22,7 @@
 #include "2_Factory.hpp"
 #include "core/OTStorage.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/core/Core.hpp"
 #include "internal/core/contract/Contract.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Shared.hpp"
@@ -34,13 +35,13 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Contact.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
@@ -76,20 +77,20 @@ auto Factory::UnitDefinition(
     const proto::UnitDefinition serialized) noexcept
     -> std::shared_ptr<contract::Unit>
 {
-    switch (serialized.type()) {
-        case proto::UNITTYPE_CURRENCY: {
+    switch (core::internal::translate(serialized.type())) {
+        case core::UnitType::Currency: {
 
             return CurrencyContract(api, nym, serialized);
         }
-        case proto::UNITTYPE_SECURITY: {
+        case core::UnitType::Security: {
 
             return SecurityContract(api, nym, serialized);
         }
-        case proto::UNITTYPE_BASKET: {
+        case core::UnitType::Basket: {
 
             return BasketContract(api, nym, serialized);
         }
-        case proto::UNITTYPE_ERROR:
+        case core::UnitType::Error:
         default: {
             return {};
         }
@@ -504,15 +505,15 @@ auto Unit::DisplayStatistics(String& strContents) const -> bool
     std::string type = "error";
 
     switch (Type()) {
-        case proto::UNITTYPE_CURRENCY:
+        case core::UnitType::Currency:
             type = "error";
 
             break;
-        case proto::UNITTYPE_SECURITY:
+        case core::UnitType::Security:
             type = "security";
 
             break;
-        case proto::UNITTYPE_BASKET:
+        case core::UnitType::Basket:
             type = "basket currency";
 
             break;
@@ -656,7 +657,7 @@ auto Unit::FormatAmountLocale(
         amount,
         static_cast<std::int32_t>(std::pow(10, DecimalPower())),
         DecimalPower(),
-        (proto::UNITTYPE_CURRENCY == Type()) ? primary_unit_symbol_.c_str()
+        (core::UnitType::Currency == Type()) ? primary_unit_symbol_.c_str()
                                              : nullptr,
         strSeparator->Get(),
         strDecimalPoint->Get());
@@ -728,7 +729,7 @@ auto Unit::IDVersion(const Lock& lock) const -> SerializedType
     contract.set_terms(conditions_);
     contract.set_name(primary_unit_name_);
     contract.set_symbol(primary_unit_symbol_);
-    contract.set_type(Type());
+    contract.set_type(core::internal::translate(Type()));
 
     if (version_ > 1) { contract.set_unitofaccount(unit_of_account_); }
 

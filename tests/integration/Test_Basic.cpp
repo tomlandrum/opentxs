@@ -37,6 +37,7 @@
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
@@ -46,7 +47,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/Contact.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/ui/AccountActivity.hpp"
 #include "opentxs/ui/AccountList.hpp"
 #include "opentxs/ui/AccountListItem.hpp"
@@ -1154,7 +1154,7 @@ TEST_F(Integration, issue_dollars)
         issuer_.Reason());
 
     EXPECT_EQ(UNIT_DEFINITION_CONTRACT_VERSION, contract->Version());
-    EXPECT_EQ(ot::proto::UNITTYPE_CURRENCY, contract->Type());
+    EXPECT_EQ(ot::core::UnitType::Currency, contract->Type());
     EXPECT_EQ(UNIT_DEFINITION_UNIT_OF_ACCOUNT, contract->UnitOfAccount());
     EXPECT_TRUE(unit_id_->empty());
 

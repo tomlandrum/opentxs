@@ -21,12 +21,12 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Editor.hpp"
+#include "opentxs/blind/CashType.hpp"
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 
 namespace opentxs
 {
@@ -518,7 +518,7 @@ public:
         const identifier::Server& server,
         const identifier::UnitDefinition& unit,
         const PasswordPrompt& reason,
-        const proto::CashType = proto::CASHTYPE_LUCRE) const = 0;
+        const blind::CashType = blind::CashType::Lucre) const = 0;
 #endif
 
     /**   Unload and delete a server contract

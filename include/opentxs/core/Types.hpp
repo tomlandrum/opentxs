@@ -3,22 +3,20 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef OPENTXS_IDENTITY_TYPES_HPP
-#define OPENTXS_IDENTITY_TYPES_HPP
+#ifndef OPENTXS_CORE_TYPES_HPP
+#define OPENTXS_CORE_TYPES_HPP
 
 #include <cstddef>
 #include <cstdint>
 
 namespace opentxs
 {
-namespace identity
+namespace core
 {
-enum class CredentialType : std::uint8_t;
-enum class CredentialRole : std::uint8_t;
-enum class KeyMode : std::uint8_t;
-enum class KeyRole : std::uint8_t;
-enum class SourceProofType : std::uint8_t;
-enum class SourceType : std::uint8_t;
-}  // namespace identity
+enum class AddressType : std::uint8_t;
+enum class ProtocolVersion : std::uint8_t;
+enum class UnitType : std::uint8_t;
+}  // namespace core
+
 }  // namespace opentxs
 #endif

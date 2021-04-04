@@ -5,11 +5,11 @@
 
 #pragma once
 
+#include "opentxs/blind/Types.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
@@ -730,7 +730,7 @@ public:
     OPENTXS_EXPORT static auto Purse(
         const api::internal::Core& api,
         const otx::context::Server&,
-        const proto::CashType type,
+        const blind::CashType type,
         const blind::Mint& mint,
         const Amount totalValue,
         const opentxs::PasswordPrompt& reason) -> blind::Purse*;
@@ -739,7 +739,7 @@ public:
         const identity::Nym& owner,
         const identifier::Server& server,
         const identity::Nym& serverNym,
-        const proto::CashType type,
+        const blind::CashType type,
         const blind::Mint& mint,
         const Amount totalValue,
         const opentxs::PasswordPrompt& reason) -> blind::Purse*;
@@ -753,7 +753,7 @@ public:
         const identity::Nym& owner,
         const identifier::Server& server,
         const identifier::UnitDefinition& unit,
-        const proto::CashType type,
+        const blind::CashType type,
         const opentxs::PasswordPrompt& reason) -> blind::Purse*;
 #endif
     static auto RPC(const api::Context& native) -> rpc::internal::RPC*;

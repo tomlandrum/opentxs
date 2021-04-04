@@ -26,17 +26,15 @@ using SymmetricModeReverseMap =
     std::map<proto::SymmetricMode, crypto::SymmetricMode>;
 
 auto asymmetrickeytype_map() noexcept -> const AsymmetricKeyTypeMap&;
+auto symmetrickeytype_map() noexcept -> const SymmetricKeyTypeMap&;
+auto symmetricmode_map() noexcept -> const SymmetricModeMap&;
 auto translate(crypto::AsymmetricKeyType in) noexcept
     -> proto::AsymmetricKeyType;
+auto translate(crypto::SymmetricKeyType in) noexcept -> proto::SymmetricKeyType;
+auto translate(crypto::SymmetricMode in) noexcept -> proto::SymmetricMode;
 auto translate(proto::AsymmetricKeyType in) noexcept
     -> crypto::AsymmetricKeyType;
-
-auto symmetrickeytype_map() noexcept -> const SymmetricKeyTypeMap&;
-auto translate(crypto::SymmetricKeyType in) noexcept -> proto::SymmetricKeyType;
 auto translate(proto::SymmetricKeyType in) noexcept -> crypto::SymmetricKeyType;
-
-auto symmetricmode_map() noexcept -> const SymmetricModeMap&;
-auto translate(crypto::SymmetricMode in) noexcept -> proto::SymmetricMode;
 auto translate(proto::SymmetricMode in) noexcept -> crypto::SymmetricMode;
 
 }  // namespace opentxs::crypto::internal

@@ -22,13 +22,13 @@
 #include "opentxs/core/OTTransaction.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/cron/OTCron.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/ext/OTPayment.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/network/zeromq/Message.hpp"
 #include "opentxs/network/zeromq/socket/Push.hpp"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "server/MainFile.hpp"
 #include "server/Notary.hpp"
 #include "server/Transactor.hpp"
@@ -74,7 +74,7 @@ class Server
 public:
     auto API() const -> const api::internal::Core& { return manager_; }
     auto GetConnectInfo(
-        proto::AddressType& type,
+        core::AddressType& type,
         std::string& hostname,
         std::uint32_t& port) const -> bool;
     auto GetServerID() const -> const identifier::Server&;

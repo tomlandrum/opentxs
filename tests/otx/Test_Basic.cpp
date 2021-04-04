@@ -55,6 +55,7 @@
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/peer/BailmentNotice.hpp"
@@ -74,7 +75,6 @@
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
@@ -329,7 +329,7 @@ public:
                 UNIT_DEFINITION_FRACTIONAL_UNIT_NAME,
                 UNIT_DEFINITION_UNIT_OF_ACCOUNT,
                 reason_c1_);
-        EXPECT_EQ(proto::UNITTYPE_CURRENCY, asset_contract_1_->Type());
+        EXPECT_EQ(core::UnitType::Currency, asset_contract_1_->Type());
 
         if (asset_contract_1_->ID()->empty()) {
             throw std::runtime_error("Failed to create unit definition 1");
@@ -352,7 +352,7 @@ public:
                 UNIT_DEFINITION_FRACTIONAL_UNIT_NAME_2,
                 UNIT_DEFINITION_UNIT_OF_ACCOUNT_2,
                 reason_c2_);
-        EXPECT_EQ(proto::UNITTYPE_CURRENCY, asset_contract_2_->Type());
+        EXPECT_EQ(core::UnitType::Currency, asset_contract_2_->Type());
 
         if (asset_contract_2_->ID()->empty()) {
             throw std::runtime_error("Failed to create unit definition 2");

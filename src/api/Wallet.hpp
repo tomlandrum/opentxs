@@ -41,7 +41,6 @@
 #include "opentxs/network/zeromq/socket/Request.hpp"
 #include "opentxs/network/zeromq/socket/Request.tpp"
 #include "opentxs/network/zeromq/socket/Sender.tpp"
-#include "opentxs/protobuf/CashEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
@@ -264,7 +263,7 @@ public:
         const identifier::Server& server,
         const identifier::UnitDefinition& unit,
         const PasswordPrompt& reason,
-        const proto::CashType type) const -> Editor<blind::Purse> final;
+        const blind::CashType type) const -> Editor<blind::Purse> final;
 #endif
     auto RemoveServer(const identifier::Server& id) const -> bool final;
     auto RemoveUnitDefinition(const identifier::UnitDefinition& id) const
