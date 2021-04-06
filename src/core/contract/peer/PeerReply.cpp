@@ -12,6 +12,7 @@
 
 #include "2_Factory.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/core/Core.hpp"
 #include "internal/core/contract/Contract.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -20,13 +21,13 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/verify/PeerReply.hpp"
@@ -50,7 +51,7 @@ Reply::Reply(
     const VersionNumber version,
     const identifier::Nym& initiator,
     const identifier::Server& server,
-    const proto::PeerRequestType& type,
+    const core::PeerRequestType& type,
     const Identifier& request,
     const std::string& conditions)
     : Signable(api, nym, version, conditions, "")
@@ -82,7 +83,7 @@ Reply::Reply(
     , recipient_(identifier::Nym::Factory(serialized.recipient()))
     , server_(identifier::Server::Factory(serialized.server()))
     , cookie_(Identifier::Factory(serialized.cookie()))
-    , type_(serialized.type())
+    , type_(core::internal::translate(serialized.type()))
 {
 }
 
@@ -164,7 +165,7 @@ auto Reply::IDVersion(const Lock& lock) const -> SerializedType
     contract.clear_id();  // reinforcing that this field must be blank.
     contract.set_initiator(String::Factory(initiator_)->Get());
     contract.set_recipient(String::Factory(recipient_)->Get());
-    contract.set_type(type_);
+    contract.set_type(core::internal::translate(type_));
     contract.set_cookie(String::Factory(cookie_)->Get());
     contract.clear_signature();  // reinforcing that this field must be blank.
     contract.set_server(String::Factory(server_)->Get());

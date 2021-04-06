@@ -11,9 +11,9 @@
 #include "core/contract/peer/PeerReply.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/NoticeAcknowledgement.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
 {
@@ -48,7 +48,7 @@ public:
         const identifier::Nym& initiator,
         const Identifier& request,
         const identifier::Server& server,
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const bool& ack);
     Acknowledgement(
         const api::internal::Core& api,

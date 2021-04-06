@@ -11,9 +11,9 @@
 #include "core/contract/peer/PeerRequest.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/ConnectionRequest.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
 {
@@ -50,7 +50,7 @@ public:
         const api::internal::Core& api,
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const proto::ConnectionInfoType type,
+        const core::ConnectionInfoType type,
         const identifier::Server& serverID);
     Connection(
         const api::internal::Core& api,
@@ -62,7 +62,7 @@ public:
 private:
     friend opentxs::Factory;
 
-    const proto::ConnectionInfoType connection_type_;
+    const core::ConnectionInfoType connection_type_;
 
     auto clone() const noexcept -> Connection* final
     {

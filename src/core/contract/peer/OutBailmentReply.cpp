@@ -17,9 +17,9 @@
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
+#include "opentxs/core/PeerRequestType.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/OutBailmentReply.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/verify/PeerReply.hpp"
@@ -123,7 +123,7 @@ Outbailment::Outbailment(
           CURRENT_VERSION,
           initiator,
           server,
-          proto::PEERREQUEST_OUTBAILMENT,
+          core::PeerRequestType::OutBailment,
           request,
           terms)
 {

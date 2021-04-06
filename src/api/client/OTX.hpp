@@ -30,6 +30,7 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Lockable.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/UniqueQueue.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
@@ -41,7 +42,6 @@
 #include "opentxs/network/zeromq/socket/Subscribe.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "otx/client/StateMachine.hpp"
 
 namespace opentxs
@@ -190,13 +190,13 @@ public:
         const identifier::Nym& localNymID,
         const identifier::Server& serverID,
         const identifier::Nym& targetNymID,
-        const proto::ConnectionInfoType& type,
+        const core::ConnectionInfoType& type,
         const SetID setID) const -> BackgroundTask final;
     auto InitiateStoreSecret(
         const identifier::Nym& localNymID,
         const identifier::Server& serverID,
         const identifier::Nym& targetNymID,
-        const proto::SecretType& type,
+        const core::SecretType& type,
         const std::string& primary,
         const std::string& secondary,
         const SetID setID) const -> BackgroundTask final;

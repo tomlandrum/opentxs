@@ -11,6 +11,7 @@
 
 #include "2_Factory.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/core/Core.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.tpp"
 #include "opentxs/api/Factory.hpp"
@@ -30,7 +31,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Nym.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerObject.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
@@ -215,7 +215,7 @@ Object::Object(
 #if OT_CASH
     const std::shared_ptr<blind::Purse> purse,
 #endif
-    const proto::PeerObjectType type,
+    const core::PeerObjectType type,
     const VersionNumber version)
     : api_(api)
     , nym_(nym)
@@ -246,7 +246,7 @@ Object::Object(
 #if OT_CASH
           {},
 #endif
-          serialized.type(),
+          core::internal::translate(serialized.type()),
           serialized.version())
 {
     Nym_p objectNym{nullptr};
@@ -262,14 +262,14 @@ Object::Object(
         nym_ = objectNym;
     }
 
-    switch (serialized.type()) {
-        case (proto::PEEROBJECT_MESSAGE): {
+    switch (core::internal::translate(serialized.type())) {
+        case (core::PeerObjectType::Message): {
             message_.reset(new std::string(serialized.otmessage()));
         } break;
-        case (proto::PEEROBJECT_REQUEST): {
+        case (core::PeerObjectType::Request): {
             request_ = api_.Factory().PeerRequest(nym_, serialized.otrequest());
         } break;
-        case (proto::PEEROBJECT_RESPONSE): {
+        case (core::PeerObjectType::Response): {
             if (false == bool(nym_)) {
                 nym_ = api_.Wallet().Nym(
                     api_.Factory().NymID(serialized.otrequest().recipient()));
@@ -281,10 +281,10 @@ Object::Object(
                 api_.Factory().PeerRequest(senderNym, serialized.otrequest());
             reply_ = api_.Factory().PeerReply(nym_, serialized.otreply());
         } break;
-        case (proto::PEEROBJECT_PAYMENT): {
+        case (core::PeerObjectType::Payment): {
             payment_.reset(new std::string(serialized.otpayment()));
         } break;
-        case (proto::PEEROBJECT_CASH): {
+        case (core::PeerObjectType::Cash): {
 #if OT_CASH
             purse_.reset(opentxs::Factory::Purse(api_, serialized.purse()));
 #endif
@@ -309,7 +309,7 @@ Object::Object(
 #if OT_CASH
           {},
 #endif
-          proto::PEEROBJECT_MESSAGE,
+          core::PeerObjectType::Message,
           PEER_MESSAGE_VERSION)
 {
 }
@@ -327,7 +327,7 @@ Object::Object(
           api.Factory().PeerReply(),
           api.Factory().PeerRequest(),
           purse,
-          proto::PEEROBJECT_CASH,
+          core::PeerObjectType::Cash,
           PEER_CASH_VERSION)
 {
 }
@@ -347,7 +347,7 @@ Object::Object(
 #if OT_CASH
           {},
 #endif
-          proto::PEEROBJECT_PAYMENT,
+          core::PeerObjectType::Payment,
           PEER_PAYMENT_VERSION)
 {
 }
@@ -367,7 +367,7 @@ Object::Object(
 #if OT_CASH
           {},
 #endif
-          proto::PEEROBJECT_RESPONSE,
+          core::PeerObjectType::Response,
           version)
 {
 }
@@ -386,7 +386,7 @@ Object::Object(
 #if OT_CASH
           {},
 #endif
-          proto::PEEROBJECT_REQUEST,
+          core::PeerObjectType::Request,
           version)
 {
 }
@@ -395,10 +395,10 @@ auto Object::Serialize() const -> proto::PeerObject
 {
     proto::PeerObject output;
 
-    output.set_type(type_);
+    output.set_type(core::internal::translate(type_));
 
     switch (type_) {
-        case (proto::PEEROBJECT_MESSAGE): {
+        case (core::PeerObjectType::Message): {
             if (PEER_MESSAGE_VERSION > version_) {
                 output.set_version(PEER_MESSAGE_VERSION);
             } else {
@@ -410,7 +410,7 @@ auto Object::Serialize() const -> proto::PeerObject
                 output.set_otmessage(String::Factory(*message_)->Get());
             }
         } break;
-        case (proto::PEEROBJECT_PAYMENT): {
+        case (core::PeerObjectType::Payment): {
             if (PEER_PAYMENT_VERSION > version_) {
                 output.set_version(PEER_PAYMENT_VERSION);
             } else {
@@ -422,7 +422,7 @@ auto Object::Serialize() const -> proto::PeerObject
                 output.set_otpayment(String::Factory(*payment_)->Get());
             }
         } break;
-        case (proto::PEEROBJECT_REQUEST): {
+        case (core::PeerObjectType::Request): {
             output.set_version(version_);
 
             if (0 < request_->Version()) {
@@ -432,7 +432,7 @@ auto Object::Serialize() const -> proto::PeerObject
                 if (nym) { *output.mutable_nym() = nym->asPublicNym(); }
             }
         } break;
-        case (proto::PEEROBJECT_RESPONSE): {
+        case (core::PeerObjectType::Response): {
             output.set_version(version_);
 
             if (0 < reply_->Version()) {
@@ -443,7 +443,7 @@ auto Object::Serialize() const -> proto::PeerObject
             }
         } break;
 #if OT_CASH
-        case (proto::PEEROBJECT_CASH): {
+        case (core::PeerObjectType::Cash): {
             if (PEER_CASH_VERSION > version_) {
                 output.set_version(PEER_CASH_VERSION);
             } else {
@@ -469,26 +469,26 @@ auto Object::Validate() const -> bool
     bool validChildren = false;
 
     switch (type_) {
-        case (proto::PEEROBJECT_MESSAGE): {
+        case (core::PeerObjectType::Message): {
             validChildren = bool(message_);
         } break;
-        case (proto::PEEROBJECT_REQUEST): {
+        case (core::PeerObjectType::Request): {
             if (0 < request_->Version()) {
                 validChildren = request_->Validate();
             }
         } break;
-        case (proto::PEEROBJECT_RESPONSE): {
+        case (core::PeerObjectType::Response): {
             if ((0 == reply_->Version()) || (0 == request_->Version())) {
                 break;
             }
 
             validChildren = reply_->Validate() && request_->Validate();
         } break;
-        case (proto::PEEROBJECT_PAYMENT): {
+        case (core::PeerObjectType::Payment): {
             validChildren = bool(payment_);
         } break;
 #if OT_CASH
-        case (proto::PEEROBJECT_CASH): {
+        case (core::PeerObjectType::Cash): {
             validChildren = bool(purse_);
         } break;
 #endif

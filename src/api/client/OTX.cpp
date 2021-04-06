@@ -51,6 +51,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/peer/BailmentNotice.hpp"
 #include "opentxs/core/contract/peer/BailmentReply.hpp"
@@ -81,7 +82,6 @@
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
 #include "opentxs/protobuf/ServerReply.pb.h"
 #include "opentxs/util/WorkType.hpp"
@@ -1362,7 +1362,7 @@ auto OTX::InitiateRequestConnection(
     const identifier::Nym& localNymID,
     const identifier::Server& serverID,
     const identifier::Nym& targetNymID,
-    const proto::ConnectionInfoType& type,
+    const core::ConnectionInfoType& type,
     const SetID setID) const -> OTX::BackgroundTask
 {
     CHECK_SERVER(localNymID, serverID)
@@ -1392,7 +1392,7 @@ auto OTX::InitiateStoreSecret(
     const identifier::Nym& localNymID,
     const identifier::Server& serverID,
     const identifier::Nym& targetNymID,
-    const proto::SecretType& type,
+    const core::SecretType& type,
     const std::string& primary,
     const std::string& secondary,
     const SetID setID) const -> OTX::BackgroundTask

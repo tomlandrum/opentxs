@@ -52,7 +52,7 @@ public:
         const api::internal::Core& api,
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const proto::SecretType type,
+        const core::SecretType type,
         const std::string& primary,
         const std::string& secondary,
         const identifier::Server& serverID);
@@ -66,7 +66,7 @@ public:
 private:
     friend opentxs::Factory;
 
-    const proto::SecretType secret_type_;
+    const core::SecretType secret_type_;
     const std::string primary_;
     const std::string secondary_;
 

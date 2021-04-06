@@ -22,6 +22,7 @@
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
 #include "internal/api/client/Client.hpp"
 #include "internal/api/server/Server.hpp"
+#include "internal/core/Core.hpp"
 #include "internal/otx/client/Client.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
@@ -49,11 +50,14 @@
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/Armored.hpp"
 #include "opentxs/core/Cheque.hpp"
+#include "opentxs/core/ConnectionInfoType.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Ledger.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
+#include "opentxs/core/PeerRequestType.hpp"
+#include "opentxs/core/SecretType.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/UnitType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
@@ -406,7 +410,7 @@ public:
         const OTPeerRequest& peerrequest,
         ProtoHasReply protohasreply,
         ProtoHasRequest protohasrequest,
-        proto::PeerRequestType prototype)
+        core::PeerRequestType prototype)
     {
         const RequestNumber sequence = alice_counter_;
         const RequestNumber messages{4};
@@ -466,7 +470,7 @@ public:
             incomingreply->initiator().c_str(), alice_nym_id_->str().c_str());
         EXPECT_STREQ(
             incomingreply->recipient().c_str(), bob_nym_id_->str().c_str());
-        EXPECT_EQ(incomingreply->type(), prototype);
+        EXPECT_EQ(core::internal::translate(incomingreply->type()), prototype);
         EXPECT_STREQ(
             incomingreply->server().c_str(), server_1_id_.str().c_str());
         EXPECT_TRUE(protohasreply(*incomingreply));
@@ -495,7 +499,8 @@ public:
             finishedrequest->initiator().c_str(), alice_nym_id_->str().c_str());
         EXPECT_STREQ(
             finishedrequest->recipient().c_str(), bob_nym_id_->str().c_str());
-        EXPECT_EQ(finishedrequest->type(), prototype);
+        EXPECT_EQ(
+            core::internal::translate(finishedrequest->type()), prototype);
         EXPECT_TRUE(protohasrequest(*finishedrequest));
 
         auto complete = client_1_.Wallet().PeerRequestComplete(
@@ -524,7 +529,7 @@ public:
     void receive_request(
         const OTPeerRequest& peerrequest,
         ProtoHasRequest protohasrequest,
-        proto::PeerRequestType prototype)
+        core::PeerRequestType prototype)
     {
         const RequestNumber sequence = bob_counter_;
         const RequestNumber messages{4};
@@ -588,7 +593,8 @@ public:
             incomingrequest->initiator().c_str(), alice_nym_id_->str().c_str());
         EXPECT_STREQ(
             incomingrequest->recipient().c_str(), bob_nym_id_->str().c_str());
-        EXPECT_EQ(incomingrequest->type(), prototype);
+        EXPECT_EQ(
+            core::internal::translate(incomingrequest->type()), prototype);
         EXPECT_TRUE(protohasrequest(*incomingrequest));
     }
 
@@ -596,7 +602,7 @@ public:
         const OTPeerReply& peerreply,
         const OTPeerRequest& peerrequest,
         ProtoHasReply protohasreply,
-        proto::PeerRequestType prototype)
+        core::PeerRequestType prototype)
     {
         const RequestNumber sequence = bob_counter_;
         const RequestNumber messages{1};
@@ -658,7 +664,7 @@ public:
             sentreply->initiator().c_str(), alice_nym_id_->str().c_str());
         EXPECT_STREQ(
             sentreply->recipient().c_str(), bob_nym_id_->str().c_str());
-        EXPECT_EQ(sentreply->type(), prototype);
+        EXPECT_EQ(core::internal::translate(sentreply->type()), prototype);
         EXPECT_STREQ(sentreply->server().c_str(), server_1_id_.str().c_str());
         EXPECT_TRUE(protohasreply(*sentreply));
 
@@ -707,7 +713,7 @@ public:
     void send_peer_request(
         const OTPeerRequest& peerrequest,
         ProtoHasRequest protohasrequest,
-        proto::PeerRequestType prototype)
+        core::PeerRequestType prototype)
     {
         const RequestNumber sequence = alice_counter_;
         const RequestNumber messages{1};
@@ -773,7 +779,7 @@ public:
             sentrequest->initiator().c_str(), alice_nym_id_->str().c_str());
         EXPECT_STREQ(
             sentrequest->recipient().c_str(), bob_nym_id_->str().c_str());
-        EXPECT_EQ(sentrequest->type(), prototype);
+        EXPECT_EQ(core::internal::translate(sentrequest->type()), prototype);
         EXPECT_TRUE(protohasrequest(*sentrequest));
     }
 
@@ -3124,11 +3130,11 @@ TEST_F(Test_Basic, initiate_and_acknowledge_bailment)
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_BAILMENT);
+        core::PeerRequestType::Bailment);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_BAILMENT);
+        core::PeerRequestType::Bailment);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3145,13 +3151,13 @@ TEST_F(Test_Basic, initiate_and_acknowledge_bailment)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        proto::PEERREQUEST_BAILMENT);
+        core::PeerRequestType::Bailment);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        proto::PEERREQUEST_BAILMENT);
+        core::PeerRequestType::Bailment);
 }
 
 TEST_F(Test_Basic, initiate_and_acknowledge_outbailment)
@@ -3173,11 +3179,11 @@ TEST_F(Test_Basic, initiate_and_acknowledge_outbailment)
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_OUTBAILMENT);
+        core::PeerRequestType::OutBailment);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_OUTBAILMENT);
+        core::PeerRequestType::OutBailment);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3194,13 +3200,13 @@ TEST_F(Test_Basic, initiate_and_acknowledge_outbailment)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        proto::PEERREQUEST_OUTBAILMENT);
+        core::PeerRequestType::OutBailment);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        proto::PEERREQUEST_OUTBAILMENT);
+        core::PeerRequestType::OutBailment);
 }
 
 TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
@@ -3222,11 +3228,11 @@ TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_PENDINGBAILMENT);
+        core::PeerRequestType::PendingBailment);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_PENDINGBAILMENT);
+        core::PeerRequestType::PendingBailment);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3236,7 +3242,7 @@ TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
         alice_nym_id_,
         peerrequest->ID(),
         server_1_id_,
-        proto::PEERREQUEST_PENDINGBAILMENT,
+        core::PeerRequestType::PendingBailment,
         true,
         reason_c2_);
     ProtoHasReply protohasreply = &proto::PeerReply::has_notice;
@@ -3244,13 +3250,13 @@ TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        proto::PEERREQUEST_PENDINGBAILMENT);
+        core::PeerRequestType::PendingBailment);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        proto::PEERREQUEST_PENDINGBAILMENT);
+        core::PeerRequestType::PendingBailment);
 }
 
 TEST_F(Test_Basic, initiate_request_connection_and_acknowledge_connection)
@@ -3262,18 +3268,18 @@ TEST_F(Test_Basic, initiate_request_connection_and_acknowledge_connection)
     auto peerrequest = client_1_.Factory().ConnectionRequest(
         aliceNym,
         bob_nym_id_,
-        proto::CONNECTIONINFO_BITCOIN,
+        core::ConnectionInfoType::Bitcoin,
         server_1_id_,
         reason_c1_);
     ProtoHasRequest protohasrequest = &proto::PeerRequest::has_connectioninfo;
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_CONNECTIONINFO);
+        core::PeerRequestType::ConnectionInfo);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_CONNECTIONINFO);
+        core::PeerRequestType::ConnectionInfo);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3294,13 +3300,13 @@ TEST_F(Test_Basic, initiate_request_connection_and_acknowledge_connection)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        proto::PEERREQUEST_CONNECTIONINFO);
+        core::PeerRequestType::ConnectionInfo);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        proto::PEERREQUEST_CONNECTIONINFO);
+        core::PeerRequestType::ConnectionInfo);
 }
 
 TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
@@ -3312,7 +3318,7 @@ TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
     auto peerrequest = client_1_.Factory().StoreSecret(
         aliceNym,
         bob_nym_id_,
-        proto::SECRETTYPE_BIP39,
+        core::SecretType::Bip39,
         TEST_SEED,
         TEST_SEED_PASSPHRASE,
         server_1_id_,
@@ -3321,11 +3327,11 @@ TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_STORESECRET);
+        core::PeerRequestType::StoreSecret);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        proto::PEERREQUEST_STORESECRET);
+        core::PeerRequestType::StoreSecret);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3335,7 +3341,7 @@ TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
         alice_nym_id_,
         peerrequest->ID(),
         server_1_id_,
-        proto::PEERREQUEST_STORESECRET,
+        core::PeerRequestType::StoreSecret,
         true,
         reason_c2_);
     ProtoHasReply protohasreply = &proto::PeerReply::has_notice;
@@ -3343,13 +3349,13 @@ TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        proto::PEERREQUEST_STORESECRET);
+        core::PeerRequestType::StoreSecret);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        proto::PEERREQUEST_STORESECRET);
+        core::PeerRequestType::StoreSecret);
 }
 
 #if OT_CASH

@@ -39,6 +39,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/NymFile.hpp"
+#include "opentxs/core/PeerObjectType.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
@@ -60,7 +61,6 @@
 #include "opentxs/protobuf/Context.pb.h"
 #include "opentxs/protobuf/Issuer.pb.h"  // IWYU pragma: keep
 #include "opentxs/protobuf/Nym.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
@@ -1578,7 +1578,7 @@ auto Wallet::PeerReplyReceive(
     const identifier::Nym& nym,
     const PeerObject& reply) const -> bool
 {
-    if (proto::PEEROBJECT_RESPONSE != reply.Type()) {
+    if (core::PeerObjectType::Response != reply.Type()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": This is not a peer reply.")
             .Flush();
 
@@ -1801,7 +1801,7 @@ auto Wallet::PeerRequestReceive(
     const identifier::Nym& nym,
     const PeerObject& request) const -> bool
 {
-    if (proto::PEEROBJECT_REQUEST != request.Type()) {
+    if (core::PeerObjectType::Request != request.Type()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": This is not a peer request.")
             .Flush();
 

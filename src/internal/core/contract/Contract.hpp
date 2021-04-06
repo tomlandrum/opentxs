@@ -10,8 +10,8 @@
 #include "opentxs/api/Core.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Identifier.hpp"
+#include "opentxs/core/PeerRequestType.hpp"
 #include "opentxs/core/Secret.hpp"
-#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
@@ -177,9 +177,9 @@ namespace opentxs::contract::peer::blank
 struct Reply final : virtual public opentxs::contract::peer::Reply,
                      public contract::blank::Signable {
     auto Contract() const -> SerializedType final { return {}; }
-    auto Type() const -> proto::PeerRequestType final
+    auto Type() const -> core::PeerRequestType final
     {
-        return proto::PEERREQUEST_ERROR;
+        return core::PeerRequestType::Error;
     }
 
     Reply(const api::Core& api)
@@ -203,9 +203,9 @@ struct Request final : virtual public opentxs::contract::peer::Request,
     auto Contract() const -> SerializedType final { return {}; }
     auto Initiator() const -> const identifier::Nym& final { return nym_; }
     auto Recipient() const -> const identifier::Nym& final { return nym_; }
-    auto Type() const -> proto::PeerRequestType final
+    auto Type() const -> core::PeerRequestType final
     {
-        return proto::PEERREQUEST_ERROR;
+        return core::PeerRequestType::Error;
     }
 
     Request(const api::Core& api)

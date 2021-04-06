@@ -31,13 +31,13 @@
 #include "opentxs/api/client/OTX.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Lockable.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/network/zeromq/ListenCallback.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
 #include "opentxs/network/zeromq/socket/Subscribe.hpp"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
 {
@@ -221,7 +221,7 @@ private:
         const identifier::Nym& localNymID,
         const identifier::Nym& issuerNymID,
         const identifier::Server& serverID,
-        const proto::ConnectionInfoType type) const
+        const core::ConnectionInfoType type) const
         -> std::pair<bool, OTIdentifier>;
     auto initiate_bailment(
         const identifier::Nym& nymID,

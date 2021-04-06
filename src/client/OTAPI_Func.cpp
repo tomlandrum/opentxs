@@ -138,7 +138,7 @@ OTAPI_Func::OTAPI_Func(
     , increment_(0)
     , quantity_(0)
     , price_(0)
-    , infoType_(proto::CONNECTIONINFO_ERROR)
+    , infoType_(core::ConnectionInfoType::Error)
     , unitDefinition_()
 {
     OT_ASSERT(CheckLock(api_lock_, apiLock));

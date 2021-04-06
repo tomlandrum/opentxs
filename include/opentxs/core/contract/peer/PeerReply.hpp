@@ -15,7 +15,6 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/core/contract/Signable.hpp"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
 {
@@ -47,7 +46,7 @@ public:
     using SerializedType = proto::PeerReply;
 
     OPENTXS_EXPORT virtual SerializedType Contract() const = 0;
-    OPENTXS_EXPORT virtual proto::PeerRequestType Type() const = 0;
+    OPENTXS_EXPORT virtual core::PeerRequestType Type() const = 0;
 
     OPENTXS_EXPORT virtual ~Reply() override = default;
 

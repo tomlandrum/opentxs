@@ -18,11 +18,11 @@
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
+#include "opentxs/core/PeerRequestType.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/protobuf/Bailment.pb.h"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/verify/PeerRequest.hpp"
 
@@ -114,7 +114,7 @@ Bailment::Bailment(
           CURRENT_VERSION,
           recipientID,
           serverID,
-          proto::PEERREQUEST_BAILMENT)
+          core::PeerRequestType::Bailment)
     , unit_(unitID)
     , server_(serverID)
 {

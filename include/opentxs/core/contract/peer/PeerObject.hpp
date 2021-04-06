@@ -16,9 +16,9 @@
 
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
 {
@@ -53,7 +53,7 @@ public:
     OPENTXS_EXPORT virtual const OTPeerRequest Request() const = 0;
     OPENTXS_EXPORT virtual const OTPeerReply Reply() const = 0;
     OPENTXS_EXPORT virtual proto::PeerObject Serialize() const = 0;
-    OPENTXS_EXPORT virtual proto::PeerObjectType Type() const = 0;
+    OPENTXS_EXPORT virtual core::PeerObjectType Type() const = 0;
     OPENTXS_EXPORT virtual bool Validate() const = 0;
 
     OPENTXS_EXPORT virtual std::unique_ptr<std::string>& Message() = 0;

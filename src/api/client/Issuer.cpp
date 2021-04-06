@@ -15,6 +15,7 @@
 #include <type_traits>
 
 #include "internal/api/client/Factory.hpp"
+#include "internal/core/Core.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/api/client/Issuer.hpp"
@@ -26,14 +27,15 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
+#include "opentxs/core/PeerRequestType.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/protobuf/Bailment.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ConnectionInfo.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Issuer.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/PeerRequestHistory.pb.h"
@@ -110,7 +112,7 @@ Issuer::Issuer(
         const auto& type = history.type();
 
         for (const auto& workflow : history.workflow()) {
-            peer_requests_[type].emplace(
+            peer_requests_[core::internal::translate(type)].emplace(
                 Identifier::Factory(workflow.requestid()),
                 std::pair<OTIdentifier, bool>(
                     Identifier::Factory(workflow.replyid()), workflow.used()));
@@ -195,25 +197,25 @@ auto Issuer::toString() const -> std::string
         output << "  * Type: ";
 
         switch (type) {
-            case proto::PEERREQUEST_BAILMENT: {
+            case core::PeerRequestType::Bailment: {
                 output << "bailment";
             } break;
-            case proto::PEERREQUEST_OUTBAILMENT: {
+            case core::PeerRequestType::OutBailment: {
                 output << "outbailment";
             } break;
-            case proto::PEERREQUEST_PENDINGBAILMENT: {
+            case core::PeerRequestType::PendingBailment: {
                 output << "pending bailment";
             } break;
-            case proto::PEERREQUEST_CONNECTIONINFO: {
+            case core::PeerRequestType::ConnectionInfo: {
                 output << "connection info";
             } break;
-            case proto::PEERREQUEST_STORESECRET: {
+            case core::PeerRequestType::StoreSecret: {
                 output << "store secret";
             } break;
-            case proto::PEERREQUEST_VERIFICATIONOFFER: {
+            case core::PeerRequestType::VerificationOffer: {
                 output << "verification offer";
             } break;
-            case proto::PEERREQUEST_FAUCET: {
+            case core::PeerRequestType::Faucet: {
                 output << "faucet";
             } break;
             default: {
@@ -270,7 +272,7 @@ void Issuer::AddAccount(
 
 auto Issuer::add_request(
     const Lock& lock,
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const Identifier& requestID,
     const Identifier& replyID) -> bool
 {
@@ -294,7 +296,7 @@ auto Issuer::add_request(
 }
 
 auto Issuer::AddReply(
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const Identifier& requestID,
     const Identifier& replyID) -> bool
 {
@@ -317,7 +319,7 @@ auto Issuer::AddReply(
 }
 
 auto Issuer::AddRequest(
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const Identifier& requestID) -> bool
 {
     Lock lock(lock_);
@@ -336,7 +338,7 @@ auto Issuer::BailmentInitiated(const identifier::UnitDefinition& unitID) const
     Lock lock(lock_);
     std::size_t count{0};
     const auto requests = get_requests(
-        lock, proto::PEERREQUEST_BAILMENT, RequestStatus::Requested);
+        lock, core::PeerRequestType::Bailment, RequestStatus::Requested);
     LogVerbose(OT_METHOD)(__FUNCTION__)(": Have ")(requests.size())(
         " initiated requests.")
         .Flush();
@@ -378,7 +380,7 @@ auto Issuer::BailmentInstructions(
     std::vector<BailmentDetails> output{};
     const auto replies = get_requests(
         lock,
-        proto::PEERREQUEST_BAILMENT,
+        core::PeerRequestType::Bailment,
         (onlyUnused) ? RequestStatus::Unused : RequestStatus::Replied);
 
     for (const auto& [requestID, replyID, isUsed] : replies) {
@@ -412,7 +414,7 @@ auto Issuer::BailmentInstructions(
     return output;
 }
 
-auto Issuer::ConnectionInfo(const proto::ConnectionInfoType type) const
+auto Issuer::ConnectionInfo(const core::ConnectionInfoType type) const
     -> std::vector<Issuer::ConnectionDetails>
 {
     LogVerbose(OT_METHOD)(__FUNCTION__)(": Searching for type ")(
@@ -422,7 +424,7 @@ auto Issuer::ConnectionInfo(const proto::ConnectionInfoType type) const
     Lock lock(lock_);
     std::vector<ConnectionDetails> output{};
     const auto replies = get_requests(
-        lock, proto::PEERREQUEST_CONNECTIONINFO, RequestStatus::Replied);
+        lock, core::PeerRequestType::ConnectionInfo, RequestStatus::Replied);
     LogVerbose(OT_METHOD)(__FUNCTION__)(": Have ")(replies.size())(
         " total requests.")
         .Flush();
@@ -440,7 +442,8 @@ auto Issuer::ConnectionInfo(const proto::ConnectionInfoType type) const
 
         OT_ASSERT(request);
 
-        if (type != request->connectioninfo().type()) {
+        if (type !=
+            core::internal::translate(request->connectioninfo().type())) {
             LogVerbose(OT_METHOD)(__FUNCTION__)(": Request ")(requestID)(
                 " is wrong type (")(request->connectioninfo().type())(")")
                 .Flush();
@@ -464,7 +467,7 @@ auto Issuer::ConnectionInfo(const proto::ConnectionInfoType type) const
     return output;
 }
 
-auto Issuer::ConnectionInfoInitiated(const proto::ConnectionInfoType type) const
+auto Issuer::ConnectionInfoInitiated(const core::ConnectionInfoType type) const
     -> bool
 {
     LogVerbose(OT_METHOD)(__FUNCTION__)(": Searching for all type ")(
@@ -473,7 +476,7 @@ auto Issuer::ConnectionInfoInitiated(const proto::ConnectionInfoType type) const
     Lock lock(lock_);
     std::size_t count{0};
     const auto requests = get_requests(
-        lock, proto::PEERREQUEST_CONNECTIONINFO, RequestStatus::All);
+        lock, core::PeerRequestType::ConnectionInfo, RequestStatus::All);
     LogVerbose(OT_METHOD)(__FUNCTION__)(": Have ")(requests.size())(
         " total requests.")
         .Flush();
@@ -492,7 +495,8 @@ auto Issuer::ConnectionInfoInitiated(const proto::ConnectionInfoType type) const
 
         OT_ASSERT(request);
 
-        if (type == request->connectioninfo().type()) {
+        if (type ==
+            core::internal::translate(request->connectioninfo().type())) {
             ++count;
         } else {
             LogVerbose(OT_METHOD)(__FUNCTION__)(": Request ")(requestID)(
@@ -506,7 +510,7 @@ auto Issuer::ConnectionInfoInitiated(const proto::ConnectionInfoType type) const
 
 auto Issuer::find_request(
     const Lock& lock,
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const Identifier& requestID) -> std::pair<bool, Issuer::Workflow::iterator>
 {
     OT_ASSERT(verify_lock(lock))
@@ -518,7 +522,7 @@ auto Issuer::find_request(
 }
 
 auto Issuer::GetRequests(
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const Issuer::RequestStatus state) const
     -> std::set<std::tuple<OTIdentifier, OTIdentifier, bool>>
 {
@@ -529,7 +533,7 @@ auto Issuer::GetRequests(
 
 auto Issuer::get_requests(
     const Lock& lock,
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const Issuer::RequestStatus state) const
     -> std::set<std::tuple<OTIdentifier, OTIdentifier, bool>>
 {
@@ -611,10 +615,10 @@ auto Issuer::RemoveAccount(
     return true;
 }
 
-auto Issuer::RequestTypes() const -> std::set<proto::PeerRequestType>
+auto Issuer::RequestTypes() const -> std::set<core::PeerRequestType>
 {
     Lock lock(lock_);
-    std::set<proto::PeerRequestType> output{};
+    std::set<core::PeerRequestType> output{};
 
     for (const auto& [type, map] : peer_requests_) {
         const auto& notUsed [[maybe_unused]] = map;
@@ -646,7 +650,7 @@ auto Issuer::Serialize() const -> proto::Issuer
     for (const auto& [type, work] : peer_requests_) {
         auto& history = *output.add_peerrequests();
         history.set_version(version_);
-        history.set_type(type);
+        history.set_type(core::internal::translate(type));
 
         for (const auto& [request, data] : work) {
             const auto& [reply, isUsed] = data;
@@ -673,7 +677,7 @@ void Issuer::SetPairingCode(const std::string& code)
 }
 
 auto Issuer::SetUsed(
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const Identifier& requestID,
     const bool isUsed) -> bool
 {
@@ -693,7 +697,7 @@ auto Issuer::StoreSecretComplete() const -> bool
 {
     Lock lock(lock_);
     const auto storeSecret = get_requests(
-        lock, proto::PEERREQUEST_STORESECRET, RequestStatus::Replied);
+        lock, core::PeerRequestType::StoreSecret, RequestStatus::Replied);
 
     return 0 != storeSecret.size();
 }
@@ -701,8 +705,8 @@ auto Issuer::StoreSecretComplete() const -> bool
 auto Issuer::StoreSecretInitiated() const -> bool
 {
     Lock lock(lock_);
-    const auto storeSecret =
-        get_requests(lock, proto::PEERREQUEST_STORESECRET, RequestStatus::All);
+    const auto storeSecret = get_requests(
+        lock, core::PeerRequestType::StoreSecret, RequestStatus::All);
 
     return 0 != storeSecret.size();
 }

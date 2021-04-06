@@ -55,6 +55,7 @@
 #include "opentxs/core/NymFile.hpp"
 #include "opentxs/core/OTTransaction.hpp"
 #include "opentxs/core/OTTransactionType.hpp"
+#include "opentxs/core/PeerObjectType.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/basket/Basket.hpp"
@@ -91,7 +92,6 @@
 #include "opentxs/protobuf/OTXPush.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PendingCommand.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
 #include "opentxs/protobuf/ServerContext.pb.h"
@@ -998,7 +998,7 @@ auto Server::create_instrument_notice_from_peer_object(
     const TransactionNumber number,
     const PasswordPrompt& reason) const -> bool
 {
-    OT_ASSERT(proto::PEEROBJECT_PAYMENT == peerObject.Type());
+    OT_ASSERT(core::PeerObjectType::Payment == peerObject.Type());
 
     if (false == peerObject.Validate()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid peer object.").Flush();
@@ -4218,12 +4218,12 @@ void Server::process_incoming_message(
         auto& peerObject = *pPeerObject;
 
         switch (peerObject.Type()) {
-            case (proto::PEEROBJECT_MESSAGE): {
+            case (core::PeerObjectType::Message): {
                 client.Activity().Mail(
                     recipientNymId, *message, StorageBox::MAILINBOX, reason);
             } break;
 #if OT_CASH
-            case (proto::PEEROBJECT_CASH): {
+            case (core::PeerObjectType::Cash): {
                 process_incoming_cash(
                     lock,
                     client,
@@ -4232,7 +4232,7 @@ void Server::process_incoming_message(
                     *message);
             } break;
 #endif
-            case (proto::PEEROBJECT_PAYMENT): {
+            case (core::PeerObjectType::Payment): {
                 const bool created = create_instrument_notice_from_peer_object(
                     lock,
                     client,
@@ -4247,10 +4247,10 @@ void Server::process_incoming_message(
                         .Flush();
                 }
             } break;
-            case (proto::PEEROBJECT_REQUEST): {
+            case (core::PeerObjectType::Request): {
                 api_.Wallet().PeerRequestReceive(recipientNymId, peerObject);
             } break;
-            case (proto::PEEROBJECT_RESPONSE): {
+            case (core::PeerObjectType::Response): {
                 api_.Wallet().PeerReplyReceive(recipientNymId, peerObject);
             } break;
             default: {
@@ -6171,7 +6171,7 @@ auto Server::process_incoming_cash(
     const Message& message) const -> bool
 {
     OT_ASSERT(nym_);
-    OT_ASSERT(proto::PEEROBJECT_CASH == incoming.Type());
+    OT_ASSERT(core::PeerObjectType::Cash == incoming.Type());
 
     if (false == incoming.Validate()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid peer object.").Flush();

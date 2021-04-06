@@ -70,8 +70,8 @@ auto Ed25519Key(
 auto Ed25519Key(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const Secret& privateKey,
-    const Secret& chainCode,
+    const opentxs::Secret& privateKey,
+    const opentxs::Secret& chainCode,
     const Data& publicKey,
     const proto::HDPath& path,
     const Bip32Fingerprint parent,
@@ -119,7 +119,7 @@ auto Secp256k1Key(
 auto Secp256k1Key(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const Secret& privateKey,
+    const opentxs::Secret& privateKey,
     const Data& publicKey,
     const proto::KeyRole role,
     const VersionNumber version,
@@ -128,8 +128,8 @@ auto Secp256k1Key(
 auto Secp256k1Key(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const Secret& privateKey,
-    const Secret& chainCode,
+    const opentxs::Secret& privateKey,
+    const opentxs::Secret& chainCode,
     const Data& publicKey,
     const proto::HDPath& path,
     const Bip32Fingerprint parent,
@@ -164,7 +164,7 @@ auto SymmetricKey(
 auto SymmetricKey(
     const api::internal::Core& api,
     const crypto::SymmetricProvider& engine,
-    const Secret& seed,
+    const opentxs::Secret& seed,
     const std::uint64_t operations,
     const std::uint64_t difficulty,
     const std::size_t size,
@@ -173,7 +173,7 @@ auto SymmetricKey(
 auto SymmetricKey(
     const api::internal::Core& api,
     const crypto::SymmetricProvider& engine,
-    const Secret& raw,
+    const opentxs::Secret& raw,
     const opentxs::PasswordPrompt& reason) noexcept
     -> std::unique_ptr<crypto::key::Symmetric>;
 }  // namespace opentxs::factory

@@ -7,6 +7,7 @@
 
 #include "opentxs/blind/Types.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/crypto/Types.hpp"
@@ -480,7 +481,7 @@ public:
         const api::internal::Core& api,
         const Nym_p& nym,
         const identifier::Nym& recipient,
-        const proto::ConnectionInfoType type,
+        const core::ConnectionInfoType type,
         const identifier::Server& server,
         const opentxs::PasswordPrompt& reason) noexcept
         -> std::shared_ptr<contract::peer::request::Connection>;
@@ -578,7 +579,7 @@ public:
         const identifier::Nym& initiator,
         const opentxs::Identifier& request,
         const identifier::Server& server,
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const bool& ack,
         const opentxs::PasswordPrompt& reason) noexcept
         -> std::shared_ptr<contract::peer::reply::Acknowledgement>;
@@ -870,7 +871,7 @@ public:
         const api::internal::Core& api,
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const proto::SecretType type,
+        const core::SecretType type,
         const std::string& primary,
         const std::string& secondary,
         const identifier::Server& server,

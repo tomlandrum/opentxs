@@ -21,12 +21,12 @@
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Lockable.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Issuer.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
 {
@@ -55,12 +55,12 @@ public:
         const identifier::UnitDefinition& unitID,
         const bool onlyUnused = true) const
         -> std::vector<BailmentDetails> final;
-    auto ConnectionInfo(const proto::ConnectionInfoType type) const
+    auto ConnectionInfo(const core::ConnectionInfoType type) const
         -> std::vector<ConnectionDetails> final;
-    auto ConnectionInfoInitiated(const proto::ConnectionInfoType type) const
+    auto ConnectionInfoInitiated(const core::ConnectionInfoType type) const
         -> bool final;
     auto GetRequests(
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const RequestStatus state = RequestStatus::All) const
         -> std::set<std::tuple<OTIdentifier, OTIdentifier, bool>> final;
     auto IssuerID() const -> const identifier::Nym& final { return issuer_id_; }
@@ -68,7 +68,7 @@ public:
     auto Paired() const -> bool final;
     auto PairingCode() const -> const std::string& final;
     auto PrimaryServer() const -> OTServerID final;
-    auto RequestTypes() const -> std::set<proto::PeerRequestType> final;
+    auto RequestTypes() const -> std::set<core::PeerRequestType> final;
     auto Serialize() const -> proto::Issuer final;
     auto StoreSecretComplete() const -> bool final;
     auto StoreSecretInitiated() const -> bool final;
@@ -78,11 +78,11 @@ public:
         const identifier::UnitDefinition& unitID,
         const Identifier& accountID) final;
     auto AddReply(
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const Identifier& requestID,
         const Identifier& replyID) -> bool final;
     auto AddRequest(
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const Identifier& requestID) -> bool final;
     auto RemoveAccount(
         const proto::ContactItemType type,
@@ -91,7 +91,7 @@ public:
     void SetPaired(const bool paired) final;
     void SetPairingCode(const std::string& code) final;
     auto SetUsed(
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const Identifier& requestID,
         const bool isUsed = true) -> bool final;
 
@@ -108,7 +108,7 @@ public:
 
 private:
     using Workflow = std::map<OTIdentifier, std::pair<OTIdentifier, bool>>;
-    using WorkflowMap = std::map<proto::PeerRequestType, Workflow>;
+    using WorkflowMap = std::map<core::PeerRequestType, Workflow>;
     using UnitAccountPair = std::pair<OTUnitID, OTIdentifier>;
 
     const api::Wallet& wallet_;
@@ -122,17 +122,17 @@ private:
 
     auto find_request(
         const Lock& lock,
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const Identifier& requestID) -> std::pair<bool, Workflow::iterator>;
     auto get_requests(
         const Lock& lock,
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const RequestStatus state = RequestStatus::All) const
         -> std::set<std::tuple<OTIdentifier, OTIdentifier, bool>>;
 
     auto add_request(
         const Lock& lock,
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const Identifier& requestID,
         const Identifier& replyID) -> bool;
 

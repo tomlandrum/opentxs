@@ -12,12 +12,14 @@
 #include <utility>
 
 #include "2_Factory.hpp"
+#include "internal/core/Core.hpp"
 #include "core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
+#include "opentxs/core/PeerRequestType.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ConnectionInfo.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/verify/PeerRequest.hpp"
 
@@ -32,7 +34,7 @@ auto Factory::ConnectionRequest(
     const api::internal::Core& api,
     const Nym_p& nym,
     const identifier::Nym& recipient,
-    const proto::ConnectionInfoType type,
+    const core::ConnectionInfoType type,
     const identifier::Server& server,
     const opentxs::PasswordPrompt& reason) noexcept
     -> std::shared_ptr<contract::peer::request::Connection>
@@ -99,7 +101,7 @@ Connection::Connection(
     const api::internal::Core& api,
     const Nym_p& nym,
     const identifier::Nym& recipientID,
-    const proto::ConnectionInfoType type,
+    const core::ConnectionInfoType type,
     const identifier::Server& serverID)
     : Request(
           api,
@@ -107,7 +109,7 @@ Connection::Connection(
           CURRENT_VERSION,
           recipientID,
           serverID,
-          proto::PEERREQUEST_CONNECTIONINFO)
+          core::PeerRequestType::ConnectionInfo)
     , connection_type_(type)
 {
     Lock lock(lock_);
@@ -119,7 +121,8 @@ Connection::Connection(
     const Nym_p& nym,
     const SerializedType& serialized)
     : Request(api, nym, serialized)
-    , connection_type_(serialized.connectioninfo().type())
+    , connection_type_(
+          core::internal::translate(serialized.connectioninfo().type()))
 {
     Lock lock(lock_);
     init_serialized(lock);
@@ -136,7 +139,7 @@ auto Connection::IDVersion(const Lock& lock) const -> SerializedType
     auto contract = Request::IDVersion(lock);
     auto& connectioninfo = *contract.mutable_connectioninfo();
     connectioninfo.set_version(version_);
-    connectioninfo.set_type(connection_type_);
+    connectioninfo.set_type(core::internal::translate(connection_type_));
 
     return contract;
 }

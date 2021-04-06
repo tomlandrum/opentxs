@@ -19,9 +19,9 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 
 #define OT_CHEQUE_DAYS 30
 #define OT_CHEQUE_HOURS 24 * OT_CHEQUE_DAYS
@@ -183,13 +183,13 @@ public:
         const identifier::Nym& localNymID,
         const identifier::Server& serverID,
         const identifier::Nym& targetNymID,
-        const proto::ConnectionInfoType& type,
+        const core::ConnectionInfoType& type,
         const SetID setID = {}) const = 0;
     OPENTXS_EXPORT virtual BackgroundTask InitiateStoreSecret(
         const identifier::Nym& localNymID,
         const identifier::Server& serverID,
         const identifier::Nym& targetNymID,
-        const proto::SecretType& type,
+        const core::SecretType& type,
         const std::string& primary,
         const std::string& secondary,
         const SetID setID = {}) const = 0;

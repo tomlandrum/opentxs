@@ -52,6 +52,7 @@
 #include "opentxs/core/NymFile.hpp"
 #include "opentxs/core/OTTransaction.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
+#include "opentxs/core/PeerObjectType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/peer/PeerObject.hpp"
@@ -71,7 +72,6 @@
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerObject.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
@@ -1092,7 +1092,7 @@ auto Operation::construct_send_message() -> std::shared_ptr<Message>
 
     auto& object = *pObject;
 
-    OT_ASSERT(proto::PEEROBJECT_MESSAGE == object.Type());
+    OT_ASSERT(core::PeerObjectType::Message == object.Type());
 
     auto pOutput =
         construct_send_nym_object(object, recipientNym, context, envelope, -1);
@@ -1169,7 +1169,7 @@ auto Operation::construct_send_peer_reply() -> std::shared_ptr<Message>
 
     auto& object = *pObject;
 
-    OT_ASSERT(proto::PEEROBJECT_RESPONSE == object.Type());
+    OT_ASSERT(core::PeerObjectType::Response == object.Type());
 
     auto pOutput = construct_send_nym_object(object, recipientNym, context, -1);
 
@@ -1225,7 +1225,7 @@ auto Operation::construct_send_peer_request() -> std::shared_ptr<Message>
 
     auto& object = *pObject;
 
-    OT_ASSERT(proto::PEEROBJECT_REQUEST == object.Type());
+    OT_ASSERT(core::PeerObjectType::Request == object.Type());
 
     auto pOutput = construct_send_nym_object(object, recipientNym, context, -1);
 

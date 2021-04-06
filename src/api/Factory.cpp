@@ -23,6 +23,7 @@
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #endif  // OT_BLOCKCHAIN
+#include "internal/core/Core.hpp"
 #include "internal/crypto/key/Factory.hpp"
 #include "internal/identity/credential/Credential.hpp"
 #include "internal/network/zeromq/socket/Socket.hpp"
@@ -58,6 +59,8 @@
 #include "opentxs/core/OTTransaction.hpp"
 #include "opentxs/core/OTTransactionType.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
+#include "opentxs/core/PeerRequestType.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/CurrencyContract.hpp"
 #include "opentxs/core/contract/SecurityContract.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
@@ -106,7 +109,6 @@
 #include "opentxs/protobuf/Envelope.pb.h"  // IWYU pragma: keep
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "opentxs/protobuf/PaymentCode.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
@@ -634,7 +636,7 @@ auto Factory::ConnectionReply(
 auto Factory::ConnectionRequest(
     const Nym_p& nym,
     const identifier::Nym& recipient,
-    const proto::ConnectionInfoType type,
+    const core::ConnectionInfoType type,
     const identifier::Server& server,
     const opentxs::PasswordPrompt& reason) const noexcept(false)
     -> OTConnectionRequest
@@ -1873,25 +1875,25 @@ auto Factory::PeerReply() const noexcept -> OTPeerReply
 auto Factory::PeerReply(const Nym_p& nym, const proto::PeerReply& serialized)
     const noexcept(false) -> OTPeerReply
 {
-    switch (serialized.type()) {
-        case proto::PEERREQUEST_BAILMENT: {
+    switch (core::internal::translate(serialized.type())) {
+        case core::PeerRequestType::Bailment: {
             return BailmentReply(nym, serialized).as<contract::peer::Reply>();
         }
-        case proto::PEERREQUEST_CONNECTIONINFO: {
+        case core::PeerRequestType::ConnectionInfo: {
             return ConnectionReply(nym, serialized).as<contract::peer::Reply>();
         }
-        case proto::PEERREQUEST_OUTBAILMENT: {
+        case core::PeerRequestType::OutBailment: {
             return OutbailmentReply(nym, serialized)
                 .as<contract::peer::Reply>();
         }
-        case proto::PEERREQUEST_PENDINGBAILMENT:
-        case proto::PEERREQUEST_STORESECRET: {
+        case core::PeerRequestType::PendingBailment:
+        case core::PeerRequestType::StoreSecret: {
             return ReplyAcknowledgement(nym, serialized)
                 .as<contract::peer::Reply>();
         }
-        case proto::PEERREQUEST_VERIFICATIONOFFER:
-        case proto::PEERREQUEST_FAUCET:
-        case proto::PEERREQUEST_ERROR:
+        case core::PeerRequestType::VerificationOffer:
+        case core::PeerRequestType::Faucet:
+        case core::PeerRequestType::Error:
         default: {
             throw std::runtime_error("Unsupported reply type");
         }
@@ -1907,29 +1909,29 @@ auto Factory::PeerRequest(
     const Nym_p& nym,
     const proto::PeerRequest& serialized) const noexcept(false) -> OTPeerRequest
 {
-    switch (serialized.type()) {
-        case proto::PEERREQUEST_BAILMENT: {
+    switch (core::internal::translate(serialized.type())) {
+        case core::PeerRequestType::Bailment: {
             return BailmentRequest(nym, serialized)
                 .as<contract::peer::Request>();
         }
-        case proto::PEERREQUEST_OUTBAILMENT: {
+        case core::PeerRequestType::OutBailment: {
             return OutbailmentRequest(nym, serialized)
                 .as<contract::peer::Request>();
         }
-        case proto::PEERREQUEST_PENDINGBAILMENT: {
+        case core::PeerRequestType::PendingBailment: {
             return BailmentNotice(nym, serialized)
                 .as<contract::peer::Request>();
         }
-        case proto::PEERREQUEST_CONNECTIONINFO: {
+        case core::PeerRequestType::ConnectionInfo: {
             return ConnectionRequest(nym, serialized)
                 .as<contract::peer::Request>();
         }
-        case proto::PEERREQUEST_STORESECRET: {
+        case core::PeerRequestType::StoreSecret: {
             return StoreSecret(nym, serialized).as<contract::peer::Request>();
         }
-        case proto::PEERREQUEST_VERIFICATIONOFFER:
-        case proto::PEERREQUEST_FAUCET:
-        case proto::PEERREQUEST_ERROR:
+        case core::PeerRequestType::VerificationOffer:
+        case core::PeerRequestType::Faucet:
+        case core::PeerRequestType::Error:
         default: {
             throw std::runtime_error("Unsupported reply type");
         }
@@ -1980,7 +1982,7 @@ auto Factory::ReplyAcknowledgement(
     const identifier::Nym& initiator,
     const opentxs::Identifier& request,
     const identifier::Server& server,
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const bool& ack,
     const opentxs::PasswordPrompt& reason) const noexcept(false)
     -> OTReplyAcknowledgement
@@ -2192,7 +2194,7 @@ auto Factory::SmartContract(const identifier::Server& NOTARY_ID) const
 auto Factory::StoreSecret(
     const Nym_p& nym,
     const identifier::Nym& recipient,
-    const proto::SecretType type,
+    const core::SecretType type,
     const std::string& primary,
     const std::string& secondary,
     const identifier::Server& server,

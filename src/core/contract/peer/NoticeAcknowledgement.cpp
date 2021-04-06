@@ -17,9 +17,9 @@
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/NoticeAcknowledgement.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/verify/PeerReply.hpp"
@@ -37,7 +37,7 @@ auto Factory::NoticeAcknowledgement(
     const identifier::Nym& initiator,
     const Identifier& request,
     const identifier::Server& server,
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const bool& ack,
     const opentxs::PasswordPrompt& reason) noexcept
     -> std::shared_ptr<contract::peer::reply::Acknowledgement>
@@ -117,7 +117,7 @@ Acknowledgement::Acknowledgement(
     const identifier::Nym& initiator,
     const Identifier& request,
     const identifier::Server& server,
-    const proto::PeerRequestType type,
+    const core::PeerRequestType type,
     const bool& ack)
     : Reply(api, nym, CURRENT_VERSION, initiator, server, type, request)
     , ack_(ack)

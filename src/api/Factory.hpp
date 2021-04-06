@@ -44,6 +44,7 @@
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/CurrencyContract.hpp"
 #include "opentxs/core/contract/SecurityContract.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
@@ -72,7 +73,6 @@
 #include "opentxs/identity/Types.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
 {
@@ -366,7 +366,7 @@ public:
     auto ConnectionRequest(
         const Nym_p& nym,
         const identifier::Nym& recipient,
-        const proto::ConnectionInfoType type,
+        const core::ConnectionInfoType type,
         const identifier::Server& server,
         const opentxs::PasswordPrompt& reason) const noexcept(false)
         -> OTConnectionRequest final;
@@ -640,7 +640,7 @@ public:
         const identifier::Nym& initiator,
         const opentxs::Identifier& request,
         const identifier::Server& server,
-        const proto::PeerRequestType type,
+        const core::PeerRequestType type,
         const bool& ack,
         const opentxs::PasswordPrompt& reason) const noexcept(false)
         -> OTReplyAcknowledgement final;
@@ -693,7 +693,7 @@ public:
     auto StoreSecret(
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const proto::SecretType type,
+        const core::SecretType type,
         const std::string& primary,
         const std::string& secondary,
         const identifier::Server& server,
