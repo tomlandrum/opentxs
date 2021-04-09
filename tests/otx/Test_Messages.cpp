@@ -11,6 +11,7 @@
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
 #include "internal/api/client/Client.hpp"
 #include "internal/api/server/Server.hpp"
+#include "internal/otx/OTX.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/SharedPimpl.hpp"
@@ -32,8 +33,9 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/otx/Reply.hpp"
 #include "opentxs/otx/Request.hpp"
+#include "opentxs/otx/ServerReplyType.hpp"
+#include "opentxs/otx/ServerRequestType.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
-#include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/OTXPush.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"  // IWYU pragma: keep
 #include "opentxs/protobuf/ServerReply.pb.h"
@@ -106,7 +108,7 @@ const OTNymID Test_Messages::alice_nym_id_{identifier::Nym::Factory()};
 
 TEST_F(Test_Messages, activateRequest)
 {
-    const proto::ServerRequestType type{proto::SERVERREQUEST_ACTIVATE};
+    const otx::ServerRequestType type{otx::ServerRequestType::Activate};
     auto requestID = Identifier::Factory();
     const auto alice = client_.Wallet().Nym(alice_nym_id_);
 
@@ -131,7 +133,7 @@ TEST_F(Test_Messages, activateRequest)
 
     EXPECT_EQ(ot::otx::Request::DefaultVersion, serialized.version());
     EXPECT_EQ(requestID->str(), serialized.id());
-    EXPECT_EQ(type, serialized.type());
+    EXPECT_EQ(type, otx::internal::translate(serialized.type()));
     EXPECT_EQ(Alice_, serialized.nym());
     EXPECT_EQ(server_id_.str(), serialized.server());
     EXPECT_EQ(1, serialized.request());
@@ -161,7 +163,7 @@ TEST_F(Test_Messages, activateRequest)
 TEST_F(Test_Messages, pushReply)
 {
     const std::string payload{"TEST PAYLOAD"};
-    const proto::ServerReplyType type{proto::SERVERREPLY_PUSH};
+    const otx::ServerReplyType type{otx::ServerReplyType::Push};
     auto replyID = Identifier::Factory();
     const auto server = server_.Wallet().Nym(server_.NymID());
 
@@ -200,7 +202,7 @@ TEST_F(Test_Messages, pushReply)
 
     EXPECT_EQ(ot::otx::Reply::DefaultVersion, serialized.version());
     EXPECT_EQ(replyID->str(), serialized.id());
-    EXPECT_EQ(type, serialized.type());
+    EXPECT_EQ(type, otx::internal::translate(serialized.type()));
     EXPECT_EQ(Alice_, serialized.nym());
     EXPECT_EQ(server_id_.str(), serialized.server());
     EXPECT_EQ(1, serialized.request());

@@ -67,7 +67,7 @@ public:
     auto RandomKeypair(
         const AllocateOutput privateKey,
         const AllocateOutput publicKey,
-        const identity::KeyRole role,
+        const opentxs::crypto::key::asymmetric::Role role,
         const NymParameters& options,
         const AllocateOutput params) const noexcept -> bool final;
     auto ScalarAdd(

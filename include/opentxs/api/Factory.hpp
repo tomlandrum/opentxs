@@ -48,12 +48,13 @@
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/contract/peer/StoreSecret.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/Envelope.hpp"
-#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
@@ -154,7 +155,8 @@ public:
     OPENTXS_EXPORT virtual OTAsymmetricKey AsymmetricKey(
         const NymParameters& params,
         const opentxs::PasswordPrompt& reason,
-        const identity::KeyRole role = identity::KeyRole::Sign,
+        const opentxs::crypto::key::asymmetric::Role role =
+            opentxs::crypto::key::asymmetric::Role::Sign,
         const VersionNumber version =
             opentxs::crypto::key::Asymmetric::DefaultVersion) const = 0;
     OPENTXS_EXPORT virtual OTAsymmetricKey AsymmetricKey(
@@ -316,7 +318,7 @@ public:
     OPENTXS_EXPORT virtual OTConnectionRequest ConnectionRequest(
         const Nym_p& nym,
         const identifier::Nym& recipient,
-        const core::ConnectionInfoType type,
+        const contract::peer::ConnectionInfoType type,
         const identifier::Server& server,
         const opentxs::PasswordPrompt& reason) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTConnectionRequest ConnectionRequest(
@@ -402,7 +404,7 @@ public:
     OPENTXS_EXPORT virtual OTKeypair Keypair(
         const NymParameters& nymParameters,
         const VersionNumber version,
-        const identity::KeyRole role,
+        const opentxs::crypto::key::asymmetric::Role role,
         const opentxs::PasswordPrompt& reason) const = 0;
     OPENTXS_EXPORT virtual OTKeypair Keypair(
         const proto::AsymmetricKey& serializedPubkey,
@@ -416,7 +418,7 @@ public:
         const Bip32Index credset,
         const Bip32Index credindex,
         const EcdsaCurve& curve,
-        const identity::KeyRole role,
+        const opentxs::crypto::key::asymmetric::Role role,
         const opentxs::PasswordPrompt& reason) const = 0;
 #endif  // OT_CRYPTO_WITH_BIP32
     OPENTXS_EXPORT virtual std::unique_ptr<opentxs::Ledger> Ledger(
@@ -584,7 +586,7 @@ public:
         const identifier::Nym& initiator,
         const opentxs::Identifier& request,
         const identifier::Server& server,
-        const core::PeerRequestType type,
+        const contract::peer::PeerRequestType type,
         const bool& ack,
         const opentxs::PasswordPrompt& reason) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTReplyAcknowledgement ReplyAcknowledgement(
@@ -628,7 +630,7 @@ public:
     OPENTXS_EXPORT virtual OTStoreSecret StoreSecret(
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const core::SecretType type,
+        const contract::peer::SecretType type,
         const std::string& primary,
         const std::string& secondary,
         const identifier::Server& server,
@@ -649,8 +651,8 @@ public:
     OPENTXS_EXPORT virtual OTSymmetricKey SymmetricKey(
         const opentxs::crypto::SymmetricProvider& engine,
         const opentxs::PasswordPrompt& password,
-        const opentxs::crypto::SymmetricMode mode =
-            opentxs::crypto::SymmetricMode::Error) const = 0;
+        const opentxs::crypto::key::symmetric::Algorithm mode =
+            opentxs::crypto::key::symmetric::Algorithm::Error) const = 0;
     /** Instantiate a symmetric key from serialized form
      *
      *  \param[in] engine A reference to the crypto library to be bound to the
@@ -677,7 +679,7 @@ public:
         const std::uint64_t operations,
         const std::uint64_t difficulty,
         const std::size_t size,
-        const opentxs::crypto::SymmetricKeyType type) const = 0;
+        const opentxs::crypto::key::symmetric::Source type) const = 0;
     /** Construct a symmetric key from an existing Secret
      *
      *  \param[in] engine A reference to the crypto library to be bound to the

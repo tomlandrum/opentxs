@@ -12,7 +12,7 @@
 
 namespace opentxs
 {
-namespace core
+namespace contract
 {
 enum class ProtocolVersion : std::uint8_t {
     Error = 0,
@@ -20,6 +20,6 @@ enum class ProtocolVersion : std::uint8_t {
     Notify = 2,
 };
 
-}  // namespace core
+}  // namespace contract
 }  // namespace opentxs
 #endif

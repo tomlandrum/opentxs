@@ -70,7 +70,7 @@ public:
         Identifier& theOutput) const noexcept = 0;
     OPENTXS_EXPORT virtual bool CalculateTag(
         const identity::Authority& nym,
-        const crypto::AsymmetricKeyType type,
+        const crypto::key::asymmetric::Algorithm type,
         const PasswordPrompt& reason,
         std::uint32_t& tag,
         Secret& password) const noexcept = 0;
@@ -91,7 +91,7 @@ public:
         const NymCapability& capability) const noexcept = 0;
     OPENTXS_EXPORT virtual bool HasPrivate() const noexcept = 0;
     OPENTXS_EXPORT virtual bool HasPublic() const noexcept = 0;
-    OPENTXS_EXPORT virtual crypto::AsymmetricKeyType keyType()
+    OPENTXS_EXPORT virtual crypto::key::asymmetric::Algorithm keyType()
         const noexcept = 0;
     OPENTXS_EXPORT virtual ReadView Params() const noexcept = 0;
     OPENTXS_EXPORT virtual const std::string Path() const noexcept = 0;
@@ -99,7 +99,8 @@ public:
     OPENTXS_EXPORT virtual ReadView PrivateKey(
         const PasswordPrompt& reason) const noexcept = 0;
     OPENTXS_EXPORT virtual ReadView PublicKey() const noexcept = 0;
-    OPENTXS_EXPORT virtual identity::KeyRole Role() const noexcept = 0;
+    OPENTXS_EXPORT virtual opentxs::crypto::key::asymmetric::Role Role()
+        const noexcept = 0;
     OPENTXS_EXPORT virtual std::shared_ptr<proto::AsymmetricKey> Serialize()
         const noexcept = 0;
     OPENTXS_EXPORT virtual crypto::HashType SigHashType() const noexcept = 0;

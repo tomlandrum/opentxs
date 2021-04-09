@@ -7,9 +7,10 @@
 
 #include "opentxs/blind/Types.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
-#include "opentxs/core/Types.hpp"
+//#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
 
@@ -481,7 +482,7 @@ public:
         const api::internal::Core& api,
         const Nym_p& nym,
         const identifier::Nym& recipient,
-        const core::ConnectionInfoType type,
+        const contract::peer::ConnectionInfoType type,
         const identifier::Server& server,
         const opentxs::PasswordPrompt& reason) noexcept
         -> std::shared_ptr<contract::peer::request::Connection>;
@@ -579,7 +580,7 @@ public:
         const identifier::Nym& initiator,
         const opentxs::Identifier& request,
         const identifier::Server& server,
-        const core::PeerRequestType type,
+        const contract::peer::PeerRequestType type,
         const bool& ack,
         const opentxs::PasswordPrompt& reason) noexcept
         -> std::shared_ptr<contract::peer::reply::Acknowledgement>;
@@ -871,7 +872,7 @@ public:
         const api::internal::Core& api,
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const core::SecretType type,
+        const contract::peer::SecretType type,
         const std::string& primary,
         const std::string& secondary,
         const identifier::Server& server,

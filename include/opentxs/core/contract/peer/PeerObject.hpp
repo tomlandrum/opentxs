@@ -53,7 +53,7 @@ public:
     OPENTXS_EXPORT virtual const OTPeerRequest Request() const = 0;
     OPENTXS_EXPORT virtual const OTPeerReply Reply() const = 0;
     OPENTXS_EXPORT virtual proto::PeerObject Serialize() const = 0;
-    OPENTXS_EXPORT virtual core::PeerObjectType Type() const = 0;
+    OPENTXS_EXPORT virtual contract::peer::PeerObjectType Type() const = 0;
     OPENTXS_EXPORT virtual bool Validate() const = 0;
 
     OPENTXS_EXPORT virtual std::unique_ptr<std::string>& Message() = 0;

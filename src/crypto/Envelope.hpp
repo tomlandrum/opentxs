@@ -80,18 +80,19 @@ private:
     friend OTEnvelope;
 
     using Ciphertext = std::unique_ptr<proto::Ciphertext>;
-    using DHMap =
-        std::map<crypto::AsymmetricKeyType, std::vector<OTAsymmetricKey>>;
+    using DHMap = std::
+        map<crypto::key::asymmetric::Algorithm, std::vector<OTAsymmetricKey>>;
     using Nyms = std::vector<const identity::Nym*>;
     using Tag = std::uint32_t;
     using SessionKey =
-        std::tuple<Tag, crypto::AsymmetricKeyType, OTSymmetricKey>;
+        std::tuple<Tag, crypto::key::asymmetric::Algorithm, OTSymmetricKey>;
     using SessionKeys = std::vector<SessionKey>;
-    using SupportedKeys = std::vector<crypto::AsymmetricKeyType>;
+    using SupportedKeys = std::vector<crypto::key::asymmetric::Algorithm>;
     using Weight = unsigned int;
-    using WeightMap = std::map<crypto::AsymmetricKeyType, Weight>;
-    using Solution =
-        std::map<OTNymID, std::map<OTIdentifier, crypto::AsymmetricKeyType>>;
+    using WeightMap = std::map<crypto::key::asymmetric::Algorithm, Weight>;
+    using Solution = std::map<
+        OTNymID,
+        std::map<OTIdentifier, crypto::key::asymmetric::Algorithm>>;
     using Solutions = std::map<Weight, SupportedKeys>;
     using Requirements = std::vector<identity::Nym::NymKeys>;
 
@@ -145,7 +146,7 @@ private:
         const key::Symmetric& masterKey,
         const PasswordPrompt& reason) noexcept -> bool;
     auto get_dh_key(
-        const crypto::AsymmetricKeyType type,
+        const crypto::key::asymmetric::Algorithm type,
         const identity::Authority& nym,
         const PasswordPrompt& reason) noexcept -> const key::Asymmetric&;
     auto seal(

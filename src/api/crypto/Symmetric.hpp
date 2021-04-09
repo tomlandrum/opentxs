@@ -14,8 +14,8 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/api/crypto/Symmetric.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
-#include "opentxs/crypto/SymmetricKeyType.hpp"
-#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/key/symmetric/Source.hpp"
+#include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 
 namespace opentxs
 {
@@ -47,25 +47,25 @@ namespace opentxs::api::crypto::implementation
 class Symmetric final : virtual public api::crypto::Symmetric
 {
 public:
-    virtual auto IvSize(const opentxs::crypto::SymmetricMode mode) const
-        -> std::size_t final;
+    virtual auto IvSize(const opentxs::crypto::key::symmetric::Algorithm mode)
+        const -> std::size_t final;
     auto Key(
         const PasswordPrompt& password,
-        const opentxs::crypto::SymmetricMode mode =
-            opentxs::crypto::SymmetricMode::ChaCha20Poly1305) const
+        const opentxs::crypto::key::symmetric::Algorithm mode =
+            opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305) const
         -> OTSymmetricKey final;
     auto Key(
         const proto::SymmetricKey& serialized,
-        const opentxs::crypto::SymmetricMode mode) const
+        const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> OTSymmetricKey final;
     auto Key(
         const Secret& seed,
         const std::uint64_t operations = 0,
         const std::uint64_t difficulty = 0,
-        const opentxs::crypto::SymmetricMode mode =
-            opentxs::crypto::SymmetricMode::ChaCha20Poly1305,
-        const opentxs::crypto::SymmetricKeyType type =
-            opentxs::crypto::SymmetricKeyType::Argon2) const
+        const opentxs::crypto::key::symmetric::Algorithm mode =
+            opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305,
+        const opentxs::crypto::key::symmetric::Source type =
+            opentxs::crypto::key::symmetric::Source::Argon2) const
         -> OTSymmetricKey final;
 
     Symmetric(const api::internal::Core& api) noexcept;
@@ -75,7 +75,7 @@ public:
 private:
     const api::internal::Core& api_;
 
-    auto GetEngine(const opentxs::crypto::SymmetricMode mode) const
+    auto GetEngine(const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> const opentxs::crypto::SymmetricProvider*;
 
     Symmetric() = delete;

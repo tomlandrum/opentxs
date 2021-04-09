@@ -48,7 +48,7 @@
 #include "opentxs/core/NumList.hpp"
 #include "opentxs/core/OTTransaction.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/Basket.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
@@ -1918,7 +1918,7 @@ void Notary::NotarizePayDividend(
                     SHARES_ISSUER_ACCT_ID, reason_);
                 const auto& purportedID = context.RemoteNym().ID();
 
-                if (pSharesContract->Type() != core::UnitType::Security) {
+                if (pSharesContract->Type() != contract::UnitType::Security) {
                     const auto strSharesType =
                         String::Factory(SHARES_INSTRUMENT_DEFINITION_ID);
                     LogOutput(OT_METHOD)(__FUNCTION__)(

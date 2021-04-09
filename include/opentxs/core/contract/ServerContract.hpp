@@ -19,6 +19,7 @@
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/contract/Signable.hpp"
+#include "opentxs/core/contract/Types.hpp"
 #include "opentxs/core/Types.hpp"
 
 namespace opentxs
@@ -47,7 +48,7 @@ class Server : virtual public opentxs::contract::Signable
 public:
     using Endpoint = std::tuple<
         core::AddressType,
-        core::ProtocolVersion,
+        contract::ProtocolVersion,
         std::string,     // hostname / address
         std::uint32_t,   // port
         VersionNumber>;  // version

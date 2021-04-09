@@ -14,8 +14,8 @@
 #include <vector>
 
 #include "opentxs/Proto.hpp"
+#include "opentxs/api/client/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 
 namespace opentxs
 {
@@ -135,14 +135,15 @@ namespace client
 class Workflow
 {
 public:
-    using Cheque = std::
-        pair<proto::PaymentWorkflowState, std::unique_ptr<opentxs::Cheque>>;
+    using Cheque = std::pair<
+        api::client::PaymentWorkflowState,
+        std::unique_ptr<opentxs::Cheque>>;
 #if OT_CASH
-    using Purse =
-        std::pair<proto::PaymentWorkflowState, std::unique_ptr<blind::Purse>>;
+    using Purse = std::
+        pair<api::client::PaymentWorkflowState, std::unique_ptr<blind::Purse>>;
 #endif
-    using Transfer =
-        std::pair<proto::PaymentWorkflowState, std::unique_ptr<opentxs::Item>>;
+    using Transfer = std::
+        pair<api::client::PaymentWorkflowState, std::unique_ptr<opentxs::Item>>;
 
 #if OT_CASH
     OPENTXS_EXPORT static bool ContainsCash(
@@ -255,8 +256,8 @@ public:
         const opentxs::Cheque& cheque) const = 0;
     OPENTXS_EXPORT virtual std::set<OTIdentifier> List(
         const identifier::Nym& nymID,
-        const proto::PaymentWorkflowType type,
-        const proto::PaymentWorkflowState state) const = 0;
+        const api::client::PaymentWorkflowType type,
+        const api::client::PaymentWorkflowState state) const = 0;
     OPENTXS_EXPORT virtual Cheque LoadCheque(
         const identifier::Nym& nymID,
         const Identifier& chequeID) const = 0;

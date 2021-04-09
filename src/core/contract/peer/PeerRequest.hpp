@@ -12,8 +12,8 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 
@@ -62,7 +62,7 @@ public:
         return recipient_;
     }
     auto Serialize() const -> OTData final;
-    auto Type() const -> core::PeerRequestType final { return type_; }
+    auto Type() const -> PeerRequestType final { return type_; }
     void SetAlias(const std::string&) final {}
 
     ~Request() override = default;
@@ -79,7 +79,7 @@ protected:
         VersionNumber version,
         const identifier::Nym& recipient,
         const identifier::Server& serverID,
-        const core::PeerRequestType& type,
+        const PeerRequestType& type,
         const std::string& conditions = {});
     Request(
         const api::internal::Core& api,
@@ -95,7 +95,7 @@ private:
     const OTNymID recipient_;
     const OTIdentifier server_;
     const OTIdentifier cookie_;
-    const core::PeerRequestType type_;
+    const PeerRequestType type_;
 
     static auto GetID(
         const api::internal::Core& api,

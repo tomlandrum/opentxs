@@ -1288,8 +1288,9 @@ auto Storage::PaymentWorkflowsByAccount(
 
 auto Storage::PaymentWorkflowsByState(
     const std::string& nymID,
-    const proto::PaymentWorkflowType type,
-    const proto::PaymentWorkflowState state) const -> std::set<std::string>
+    const api::client::PaymentWorkflowType type,
+    const api::client::PaymentWorkflowState state) const
+    -> std::set<std::string>
 {
     if (false == Root().Tree().Nyms().Exists(nymID)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Nym ")(nymID)(" doesn't exist.")
@@ -1319,8 +1320,8 @@ auto Storage::PaymentWorkflowsByUnit(
 
 auto Storage::PaymentWorkflowState(
     const std::string& nymID,
-    const std::string& workflowID) const
-    -> std::pair<proto::PaymentWorkflowType, proto::PaymentWorkflowState>
+    const std::string& workflowID) const -> std::
+    pair<api::client::PaymentWorkflowType, api::client::PaymentWorkflowState>
 {
     if (false == Root().Tree().Nyms().Exists(nymID)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Nym ")(nymID)(" doesn't exist.")

@@ -23,6 +23,8 @@
 #include "opentxs/api/Endpoints.hpp"  // IWYU pragma: keep
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/Wallet.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #include "opentxs/core/Account.hpp"
@@ -39,7 +41,6 @@
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentEvent.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
-#include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "ui/base/Widget.hpp"
 
 #define OT_METHOD "opentxs::ui::implementation::CustodialAccountActivity::"
@@ -168,18 +169,19 @@ auto CustodialAccountActivity::extract_rows(
 {
     auto output = std::vector<RowKey>{};
 
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE: {
-            switch (workflow.state()) {
-                case proto::PAYMENTWORKFLOWSTATE_UNSENT:
-                case proto::PAYMENTWORKFLOWSTATE_CONVEYED:
-                case proto::PAYMENTWORKFLOWSTATE_EXPIRED: {
+    switch (opentxs::api::client::internal::translate(workflow.type())) {
+        case api::client::PaymentWorkflowType::OutgoingCheque: {
+            switch (
+                opentxs::api::client::internal::translate(workflow.state())) {
+                case api::client::PaymentWorkflowState::Unsent:
+                case api::client::PaymentWorkflowState::Conveyed:
+                case api::client::PaymentWorkflowState::Expired: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_CREATE,
                         extract_event(
                             proto::PAYMENTEVENTTYPE_CREATE, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_CANCELLED: {
+                case api::client::PaymentWorkflowState::Cancelled: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_CREATE,
                         extract_event(
@@ -189,8 +191,8 @@ auto CustodialAccountActivity::extract_rows(
                         extract_event(
                             proto::PAYMENTEVENTTYPE_CANCEL, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_ACCEPTED:
-                case proto::PAYMENTWORKFLOWSTATE_COMPLETED: {
+                case api::client::PaymentWorkflowState::Accepted:
+                case api::client::PaymentWorkflowState::Completed: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_CREATE,
                         extract_event(
@@ -200,8 +202,8 @@ auto CustodialAccountActivity::extract_rows(
                         extract_event(
                             proto::PAYMENTEVENTTYPE_ACCEPT, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_ERROR:
-                case proto::PAYMENTWORKFLOWSTATE_INITIATED:
+                case api::client::PaymentWorkflowState::Error:
+                case api::client::PaymentWorkflowState::Initiated:
                 default: {
                     LogOutput(OT_METHOD)(__FUNCTION__)(
                         ": Invalid workflow state (")(workflow.state())(")")
@@ -209,21 +211,22 @@ auto CustodialAccountActivity::extract_rows(
                 }
             }
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE: {
-            switch (workflow.state()) {
-                case proto::PAYMENTWORKFLOWSTATE_CONVEYED:
-                case proto::PAYMENTWORKFLOWSTATE_EXPIRED:
-                case proto::PAYMENTWORKFLOWSTATE_COMPLETED: {
+        case api::client::PaymentWorkflowType::IncomingCheque: {
+            switch (
+                opentxs::api::client::internal::translate(workflow.state())) {
+                case api::client::PaymentWorkflowState::Conveyed:
+                case api::client::PaymentWorkflowState::Expired:
+                case api::client::PaymentWorkflowState::Completed: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_CONVEY,
                         extract_event(
                             proto::PAYMENTEVENTTYPE_CONVEY, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_ERROR:
-                case proto::PAYMENTWORKFLOWSTATE_UNSENT:
-                case proto::PAYMENTWORKFLOWSTATE_CANCELLED:
-                case proto::PAYMENTWORKFLOWSTATE_ACCEPTED:
-                case proto::PAYMENTWORKFLOWSTATE_INITIATED:
+                case api::client::PaymentWorkflowState::Error:
+                case api::client::PaymentWorkflowState::Unsent:
+                case api::client::PaymentWorkflowState::Cancelled:
+                case api::client::PaymentWorkflowState::Accepted:
+                case api::client::PaymentWorkflowState::Initiated:
                 default: {
                     LogOutput(OT_METHOD)(__FUNCTION__)(
                         ": Invalid workflow state (")(workflow.state())(")")
@@ -231,16 +234,17 @@ auto CustodialAccountActivity::extract_rows(
                 }
             }
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER: {
-            switch (workflow.state()) {
-                case proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED:
-                case proto::PAYMENTWORKFLOWSTATE_ACCEPTED: {
+        case api::client::PaymentWorkflowType::OutgoingTransfer: {
+            switch (
+                opentxs::api::client::internal::translate(workflow.state())) {
+                case api::client::PaymentWorkflowState::Acknowledged:
+                case api::client::PaymentWorkflowState::Accepted: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_ACKNOWLEDGE,
                         extract_event(
                             proto::PAYMENTEVENTTYPE_ACKNOWLEDGE, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_COMPLETED: {
+                case api::client::PaymentWorkflowState::Completed: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_ACKNOWLEDGE,
                         extract_event(
@@ -250,14 +254,14 @@ auto CustodialAccountActivity::extract_rows(
                         extract_event(
                             proto::PAYMENTEVENTTYPE_COMPLETE, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_INITIATED:
-                case proto::PAYMENTWORKFLOWSTATE_ABORTED: {
+                case api::client::PaymentWorkflowState::Initiated:
+                case api::client::PaymentWorkflowState::Aborted: {
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_ERROR:
-                case proto::PAYMENTWORKFLOWSTATE_UNSENT:
-                case proto::PAYMENTWORKFLOWSTATE_CONVEYED:
-                case proto::PAYMENTWORKFLOWSTATE_CANCELLED:
-                case proto::PAYMENTWORKFLOWSTATE_EXPIRED:
+                case api::client::PaymentWorkflowState::Error:
+                case api::client::PaymentWorkflowState::Unsent:
+                case api::client::PaymentWorkflowState::Conveyed:
+                case api::client::PaymentWorkflowState::Cancelled:
+                case api::client::PaymentWorkflowState::Expired:
                 default: {
                     LogOutput(OT_METHOD)(__FUNCTION__)(
                         ": Invalid workflow state (")(workflow.state())(")")
@@ -265,15 +269,16 @@ auto CustodialAccountActivity::extract_rows(
                 }
             }
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER: {
-            switch (workflow.state()) {
-                case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+        case api::client::PaymentWorkflowType::IncomingTransfer: {
+            switch (
+                opentxs::api::client::internal::translate(workflow.state())) {
+                case api::client::PaymentWorkflowState::Conveyed: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_CONVEY,
                         extract_event(
                             proto::PAYMENTEVENTTYPE_CONVEY, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_COMPLETED: {
+                case api::client::PaymentWorkflowState::Completed: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_CONVEY,
                         extract_event(
@@ -283,14 +288,14 @@ auto CustodialAccountActivity::extract_rows(
                         extract_event(
                             proto::PAYMENTEVENTTYPE_ACCEPT, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_ERROR:
-                case proto::PAYMENTWORKFLOWSTATE_UNSENT:
-                case proto::PAYMENTWORKFLOWSTATE_CANCELLED:
-                case proto::PAYMENTWORKFLOWSTATE_ACCEPTED:
-                case proto::PAYMENTWORKFLOWSTATE_EXPIRED:
-                case proto::PAYMENTWORKFLOWSTATE_INITIATED:
-                case proto::PAYMENTWORKFLOWSTATE_ABORTED:
-                case proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED:
+                case api::client::PaymentWorkflowState::Error:
+                case api::client::PaymentWorkflowState::Unsent:
+                case api::client::PaymentWorkflowState::Cancelled:
+                case api::client::PaymentWorkflowState::Accepted:
+                case api::client::PaymentWorkflowState::Expired:
+                case api::client::PaymentWorkflowState::Initiated:
+                case api::client::PaymentWorkflowState::Aborted:
+                case api::client::PaymentWorkflowState::Acknowledged:
                 default: {
                     LogOutput(OT_METHOD)(__FUNCTION__)(
                         ": Invalid workflow state (")(workflow.state())(")")
@@ -298,17 +303,18 @@ auto CustodialAccountActivity::extract_rows(
                 }
             }
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
-            switch (workflow.state()) {
-                case proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED:
-                case proto::PAYMENTWORKFLOWSTATE_CONVEYED:
-                case proto::PAYMENTWORKFLOWSTATE_ACCEPTED: {
+        case api::client::PaymentWorkflowType::InternalTransfer: {
+            switch (
+                opentxs::api::client::internal::translate(workflow.state())) {
+                case api::client::PaymentWorkflowState::Acknowledged:
+                case api::client::PaymentWorkflowState::Conveyed:
+                case api::client::PaymentWorkflowState::Accepted: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_ACKNOWLEDGE,
                         extract_event(
                             proto::PAYMENTEVENTTYPE_ACKNOWLEDGE, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_COMPLETED: {
+                case api::client::PaymentWorkflowState::Completed: {
                     output.emplace_back(
                         proto::PAYMENTEVENTTYPE_ACKNOWLEDGE,
                         extract_event(
@@ -318,13 +324,13 @@ auto CustodialAccountActivity::extract_rows(
                         extract_event(
                             proto::PAYMENTEVENTTYPE_COMPLETE, workflow));
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_INITIATED:
-                case proto::PAYMENTWORKFLOWSTATE_ABORTED: {
+                case api::client::PaymentWorkflowState::Initiated:
+                case api::client::PaymentWorkflowState::Aborted: {
                 } break;
-                case proto::PAYMENTWORKFLOWSTATE_ERROR:
-                case proto::PAYMENTWORKFLOWSTATE_UNSENT:
-                case proto::PAYMENTWORKFLOWSTATE_CANCELLED:
-                case proto::PAYMENTWORKFLOWSTATE_EXPIRED:
+                case api::client::PaymentWorkflowState::Error:
+                case api::client::PaymentWorkflowState::Unsent:
+                case api::client::PaymentWorkflowState::Cancelled:
+                case api::client::PaymentWorkflowState::Expired:
                 default: {
                     LogOutput(OT_METHOD)(__FUNCTION__)(
                         ": Invalid workflow state (")(workflow.state())(")")
@@ -332,9 +338,9 @@ auto CustodialAccountActivity::extract_rows(
                 }
             }
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
+        case api::client::PaymentWorkflowType::Error:
+        case api::client::PaymentWorkflowType::OutgoingInvoice:
+        case api::client::PaymentWorkflowType::IncomingInvoice:
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Unsupported workflow type (")(
                 workflow.type())(")")

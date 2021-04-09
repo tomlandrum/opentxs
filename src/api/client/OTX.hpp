@@ -32,6 +32,7 @@
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/Types.hpp"
 #include "opentxs/core/UniqueQueue.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
@@ -40,7 +41,7 @@
 #include "opentxs/network/zeromq/socket/Publish.hpp"
 #include "opentxs/network/zeromq/socket/Pull.hpp"
 #include "opentxs/network/zeromq/socket/Subscribe.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "otx/client/StateMachine.hpp"
 
@@ -190,13 +191,13 @@ public:
         const identifier::Nym& localNymID,
         const identifier::Server& serverID,
         const identifier::Nym& targetNymID,
-        const core::ConnectionInfoType& type,
+        const contract::peer::ConnectionInfoType& type,
         const SetID setID) const -> BackgroundTask final;
     auto InitiateStoreSecret(
         const identifier::Nym& localNymID,
         const identifier::Server& serverID,
         const identifier::Nym& targetNymID,
-        const core::SecretType& type,
+        const contract::peer::SecretType& type,
         const std::string& primary,
         const std::string& secondary,
         const SetID setID) const -> BackgroundTask final;
@@ -342,7 +343,7 @@ private:
     static auto error_task() -> BackgroundTask;
     static auto error_result() -> Result
     {
-        return Result{proto::LASTREPLYSTATUS_NOTSENT, nullptr};
+        return Result{otx::LastReplyStatus::NotSent, nullptr};
     }
 
     auto add_task(const TaskID taskID, const ThreadStatus status) const

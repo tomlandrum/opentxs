@@ -16,7 +16,7 @@
 
 #include "crypto/key/Null.hpp"
 #include "internal/api/Api.hpp"
-#include "internal/crypto/Crypto.hpp"
+#include "internal/crypto/key/Key.hpp"
 #include "internal/identity/credential/Credential.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
@@ -80,7 +80,7 @@ const std::map<crypto::SignatureRole, VersionNumber> Asymmetric::sig_version_{
 Asymmetric::Asymmetric(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& engine,
-    const crypto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const proto::KeyRole role,
     const bool hasPublic,
     const bool hasPrivate,
@@ -91,7 +91,7 @@ Asymmetric::Asymmetric(
     , provider_(engine)
     , version_(version)
     , type_(keyType)
-    , role_(opentxs::identity::credential::internal::translate(role))
+    , role_(opentxs::crypto::key::internal::translate(role))
     , has_public_(hasPublic)
     , has_private_(hasPrivate)
     , m_pMetadata(new OTSignatureMetadata(api_))
@@ -114,7 +114,7 @@ Asymmetric::Asymmetric(
 Asymmetric::Asymmetric(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& engine,
-    const crypto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const proto::KeyRole role,
     const VersionNumber version,
     EncryptedExtractor getEncrypted) noexcept(false)
@@ -139,7 +139,7 @@ Asymmetric::Asymmetric(
     : Asymmetric(
           api,
           engine,
-          opentxs::crypto::internal::translate(serialized.type()),
+          opentxs::crypto::key::internal::translate(serialized.type()),
           serialized.role(),
           true,
           proto::KEYMODE_PRIVATE == serialized.mode(),
@@ -155,7 +155,7 @@ Asymmetric::Asymmetric(const Asymmetric& rhs) noexcept
           rhs.api_,
           rhs.provider_,
           rhs.type_,
-          opentxs::identity::credential::internal::translate(rhs.role_),
+          opentxs::crypto::key::internal::translate(rhs.role_),
           rhs.has_public_,
           rhs.has_private_,
           rhs.version_,
@@ -177,7 +177,7 @@ Asymmetric::Asymmetric(const Asymmetric& rhs, const ReadView newPublic) noexcept
           rhs.api_,
           rhs.provider_,
           rhs.type_,
-          opentxs::identity::credential::internal::translate(rhs.role_),
+          opentxs::crypto::key::internal::translate(rhs.role_),
           true,
           false,
           rhs.version_,
@@ -254,7 +254,7 @@ auto Asymmetric::CalculateID(Identifier& output) const noexcept -> bool
 
 auto Asymmetric::CalculateTag(
     const identity::Authority& nym,
-    const crypto::AsymmetricKeyType type,
+    const crypto::key::asymmetric::Algorithm type,
     const PasswordPrompt& reason,
     std::uint32_t& tag,
     Secret& password) const noexcept -> bool
@@ -268,7 +268,9 @@ auto Asymmetric::CalculateTag(
     try {
         const auto& cred = nym.GetTagCredential(type);
         const auto& key =
-            cred.GetKeypair(type, identity::KeyRole::Encrypt).GetPublicKey();
+            cred.GetKeypair(
+                    type, opentxs::crypto::key::asymmetric::Role::Encrypt)
+                .GetPublicKey();
 
         if (false == get_tag(key, nym.GetMasterCredID(), reason, tag)) {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to calculate tag.")
@@ -421,7 +423,7 @@ auto Asymmetric::generate_key(
     const auto generated = provider.RandomKeypair(
         privateKey,
         publicKey,
-        opentxs::identity::credential::internal::translate(role),
+        opentxs::crypto::key::internal::translate(role),
         options,
         params);
 
@@ -449,7 +451,8 @@ auto Asymmetric::get_private_key(const PasswordPrompt& reason) const
 
         const auto& privateKey = *encrypted_key_;
         auto sessionKey = api_.Symmetric().Key(
-            privateKey.key(), opentxs::crypto::SymmetricMode::ChaCha20Poly1305);
+            privateKey.key(),
+            opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305);
 
         if (false == sessionKey.get()) {
             throw std::runtime_error{"Failed to extract session key"};
@@ -592,7 +595,7 @@ auto Asymmetric::Serialize() const noexcept
     auto& output = *pOutput;
 
     output.set_version(version_);
-    output.set_role(opentxs::identity::credential::internal::translate(role_));
+    output.set_role(opentxs::crypto::key::internal::translate(role_));
     output.set_type(static_cast<proto::AsymmetricKeyType>(type_));
     output.set_key(key_->data(), key_->size());
 

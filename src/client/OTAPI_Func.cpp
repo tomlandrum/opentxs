@@ -22,13 +22,13 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/contract/peer/ConnectionInfoType.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/core/recurring/OTPaymentPlan.hpp"
 #include "opentxs/core/script/OTSmartContract.hpp"
 #include "opentxs/ext/OTPayment.hpp"
-#include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 
 #define OT_METHOD "opentxs::OTAPI_Func::"
@@ -138,7 +138,7 @@ OTAPI_Func::OTAPI_Func(
     , increment_(0)
     , quantity_(0)
     , price_(0)
-    , infoType_(core::ConnectionInfoType::Error)
+    , infoType_(contract::peer::ConnectionInfoType::Error)
     , unitDefinition_()
 {
     OT_ASSERT(CheckLock(api_lock_, apiLock));

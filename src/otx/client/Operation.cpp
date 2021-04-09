@@ -34,6 +34,7 @@
 #include "opentxs/api/Legacy.hpp"
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/api/client/Activity.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #if OT_CASH
 #include "opentxs/blind/Mint.hpp"
@@ -52,10 +53,10 @@
 #include "opentxs/core/NymFile.hpp"
 #include "opentxs/core/OTTransaction.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
-#include "opentxs/core/PeerObjectType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/peer/PeerObject.hpp"
+#include "opentxs/core/contract/peer/PeerObjectType.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -65,13 +66,12 @@
 #include "opentxs/crypto/Envelope.hpp"
 #include "opentxs/ext/OTPayment.hpp"
 #include "opentxs/identity/Nym.hpp"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/otx/consensus/Base.hpp"
 #include "opentxs/otx/consensus/ManagedNumber.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/protobuf/PeerObject.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
@@ -1092,7 +1092,7 @@ auto Operation::construct_send_message() -> std::shared_ptr<Message>
 
     auto& object = *pObject;
 
-    OT_ASSERT(core::PeerObjectType::Message == object.Type());
+    OT_ASSERT(contract::peer::PeerObjectType::Message == object.Type());
 
     auto pOutput =
         construct_send_nym_object(object, recipientNym, context, envelope, -1);
@@ -1169,7 +1169,7 @@ auto Operation::construct_send_peer_reply() -> std::shared_ptr<Message>
 
     auto& object = *pObject;
 
-    OT_ASSERT(core::PeerObjectType::Response == object.Type());
+    OT_ASSERT(contract::peer::PeerObjectType::Response == object.Type());
 
     auto pOutput = construct_send_nym_object(object, recipientNym, context, -1);
 
@@ -1225,7 +1225,7 @@ auto Operation::construct_send_peer_request() -> std::shared_ptr<Message>
 
     auto& object = *pObject;
 
-    OT_ASSERT(core::PeerObjectType::Request == object.Type());
+    OT_ASSERT(contract::peer::PeerObjectType::Request == object.Type());
 
     auto pOutput = construct_send_nym_object(object, recipientNym, context, -1);
 
@@ -1581,7 +1581,7 @@ auto Operation::download_box_receipt(
         if (shutdown().load()) { return false; }
     }
 
-    return proto::LASTREPLYSTATUS_MESSAGESUCCESS == std::get<0>(result->get());
+    return otx::LastReplyStatus::MessageSuccess == std::get<0>(result->get());
 }
 
 auto Operation::DownloadContract(const Identifier& ID, const ContractType type)
@@ -1760,7 +1760,7 @@ void Operation::execute()
     update_workflow(*message_, finished);
 
     switch (std::get<0>(finished)) {
-        case proto::LASTREPLYSTATUS_MESSAGESUCCESS: {
+        case otx::LastReplyStatus::MessageSuccess: {
             if (Category::Transaction == category) {
                 evaluate_transaction_reply(std::move(finished));
             } else if (Category::CreateAccount == category) {
@@ -1791,7 +1791,7 @@ void Operation::execute()
                 state_.store(State::NymboxPost);
             }
         } break;
-        case proto::LASTREPLYSTATUS_MESSAGEFAILED: {
+        case otx::LastReplyStatus::MessageFailed: {
             ++error_count_;
             state_.store(State::NymboxPre);
         } break;
@@ -1833,7 +1833,7 @@ auto Operation::get_account_data(
 
     lastResult = result->get();
 
-    return proto::LASTREPLYSTATUS_MESSAGESUCCESS == std::get<0>(lastResult);
+    return otx::LastReplyStatus::MessageSuccess == std::get<0>(lastResult);
 }
 
 auto Operation::get_receipts(
@@ -1989,7 +1989,7 @@ void Operation::nymbox_post()
         }
 
         switch (std::get<0>(result->get())) {
-            case proto::LASTREPLYSTATUS_MESSAGESUCCESS: {
+            case otx::LastReplyStatus::MessageSuccess: {
                 if (context.NymboxHashMatch()) { state_.store(State::Idle); }
             } break;
             default: {
@@ -2037,7 +2037,7 @@ void Operation::nymbox_pre()
             }
 
             switch (std::get<0>(result->get())) {
-                case proto::LASTREPLYSTATUS_MESSAGESUCCESS: {
+                case otx::LastReplyStatus::MessageSuccess: {
                     if (needInbox) {
                         state_.store(State::TransactionNumbers);
                     } else {
@@ -2214,9 +2214,9 @@ auto Operation::process_inbox(
     lastResult = result->get();
     const auto [status, reply] = lastResult;
 
-    if (proto::LASTREPLYSTATUS_MESSAGESUCCESS != status) {
+    if (otx::LastReplyStatus::MessageSuccess != status) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to deliver processInbox ")(
-            status)
+            value(status))
             .Flush();
 
         return false;
@@ -2356,7 +2356,7 @@ auto Operation::SendCash(
     auto [state, pPurse] =
         api::client::Workflow::InstantiatePurse(api_, workflow);
 
-    if (proto::PAYMENTWORKFLOWSTATE_UNSENT != state) {
+    if (api::client::PaymentWorkflowState::Unsent != state) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow state")
             .Flush();
 
@@ -2595,7 +2595,7 @@ auto Operation::state_machine() -> bool
 
     if (error_count_ > MAX_ERROR_COUNT) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Error count exceeded").Flush();
-        set_result({proto::LASTREPLYSTATUS_UNKNOWN, nullptr});
+        set_result({otx::LastReplyStatus::Unknown, nullptr});
         state_.store(State::Idle);
 
         return false;
@@ -2651,7 +2651,7 @@ void Operation::transaction_numbers()
         if (shutdown().load()) { return; }
     }
 
-    if (proto::LASTREPLYSTATUS_MESSAGESUCCESS == std::get<0>(result->get())) {
+    if (otx::LastReplyStatus::MessageSuccess == std::get<0>(result->get())) {
         auto nymbox = context.RefreshNymbox(api_, reason_);
 
         while (false == bool(nymbox)) {
@@ -2776,6 +2776,6 @@ Operation::~Operation()
     const bool needPromise =
         (false == result_set_.load()) && (State::Idle != state_.load());
 
-    if (needPromise) { set_result({proto::LASTREPLYSTATUS_UNKNOWN, nullptr}); }
+    if (needPromise) { set_result({otx::LastReplyStatus::Unknown, nullptr}); }
 }
 }  // namespace opentxs::otx::client::implementation

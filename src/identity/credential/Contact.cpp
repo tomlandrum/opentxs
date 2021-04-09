@@ -16,6 +16,7 @@
 #include "2_Factory.hpp"
 #include "identity/credential/Base.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/crypto/key/Key.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -25,7 +26,6 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/identity/credential/Contact.hpp"
 #include "opentxs/identity/CredentialRole.hpp"
-#include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/protobuf/Claim.pb.h"
 #include "opentxs/protobuf/ContactData.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -176,7 +176,7 @@ Contact::Contact(
           params,
           version,
           identity::CredentialRole::Contact,
-          identity::KeyMode::Null,
+          crypto::key::asymmetric::Mode::Null,
           get_master_id(master))
     , data_(params.ContactData() ? *params.ContactData() : proto::ContactData{})
 {
@@ -222,7 +222,7 @@ auto Contact::serialize(
 {
     auto serializedCredential = Base::serialize(lock, asPrivate, asSigned);
     serializedCredential->set_mode(
-        internal::translate(identity::KeyMode::Null));
+        crypto::key::internal::translate(crypto::key::asymmetric::Mode::Null));
     serializedCredential->clear_signature();  // this fixes a bug, but shouldn't
 
     if (asSigned) {

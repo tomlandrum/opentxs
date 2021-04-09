@@ -20,6 +20,7 @@
 #include "core/StateMachine.hpp"
 #include "internal/api/client/Client.hpp"
 #include "internal/api/client/Factory.hpp"
+#include "internal/core/contract/peer/Peer.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.tpp"
 #include "opentxs/SharedPimpl.hpp"
@@ -34,17 +35,17 @@
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/contact/ContactSection.hpp"
-#include "opentxs/core/ConnectionInfoType.hpp"
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Lockable.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Message.hpp"
-#include "opentxs/core/PeerRequestType.hpp"
-#include "opentxs/core/SecretType.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
+#include "opentxs/core/contract/peer/ConnectionInfoType.hpp"
+#include "opentxs/core/contract/peer/PeerRequestType.hpp"
+#include "opentxs/core/contract/peer/SecretType.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
@@ -54,9 +55,9 @@
 #include "opentxs/network/zeromq/socket/Publish.hpp"
 #include "opentxs/network/zeromq/socket/Sender.tpp"
 #include "opentxs/network/zeromq/socket/Subscribe.hpp"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PairEvent.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
@@ -428,27 +429,27 @@ void Pair::callback_peer_reply(const zmq::Message& in) noexcept
 
     if (false == proto::Validate(reply, VERBOSE)) { return; }
 
-    switch (core::internal::translate(reply.type())) {
-        case core::PeerRequestType::Bailment: {
+    switch (contract::peer::internal::translate(reply.type())) {
+        case contract::peer::PeerRequestType::Bailment: {
             LogDetail(OT_METHOD)(__FUNCTION__)(": Received bailment reply.")
                 .Flush();
             Lock lock(decision_lock_);
             trigger = process_request_bailment(lock, nymID, reply);
         } break;
-        case core::PeerRequestType::OutBailment: {
+        case contract::peer::PeerRequestType::OutBailment: {
             LogDetail(OT_METHOD)(__FUNCTION__)(": Received outbailment reply.")
                 .Flush();
             Lock lock(decision_lock_);
             trigger = process_request_outbailment(lock, nymID, reply);
         } break;
-        case core::PeerRequestType::ConnectionInfo: {
+        case contract::peer::PeerRequestType::ConnectionInfo: {
             LogDetail(OT_METHOD)(__FUNCTION__)(
                 ": Received connection info reply.")
                 .Flush();
             Lock lock(decision_lock_);
             trigger = process_connection_info(lock, nymID, reply);
         } break;
-        case core::PeerRequestType::StoreSecret: {
+        case contract::peer::PeerRequestType::StoreSecret: {
             LogDetail(OT_METHOD)(__FUNCTION__)(": Received store secret reply.")
                 .Flush();
             Lock lock(decision_lock_);
@@ -474,8 +475,8 @@ void Pair::callback_peer_request(const zmq::Message& in) noexcept
 
     if (false == proto::Validate(request, VERBOSE)) { return; }
 
-    switch (core::internal::translate(request.type())) {
-        case core::PeerRequestType::PendingBailment: {
+    switch (contract::peer::internal::translate(request.type())) {
+        case contract::peer::PeerRequestType::PendingBailment: {
             Lock lock(decision_lock_);
             trigger = process_pending_bailment(lock, nymID, request);
         } break;
@@ -586,7 +587,8 @@ void Pair::check_accounts(
 
                     if (sent) {
                         issuer.AddRequest(
-                            core::PeerRequestType::Bailment, requestID);
+                            contract::peer::PeerRequestType::Bailment,
+                            requestID);
                     }
                 }
             }
@@ -604,10 +606,12 @@ void Pair::check_connection_info(
 
     if (false == trusted) { return; }
 
-    const auto btcrpc = issuer.ConnectionInfo(core::ConnectionInfoType::BtcRpc);
+    const auto btcrpc =
+        issuer.ConnectionInfo(contract::peer::ConnectionInfoType::BtcRpc);
     const bool needInfo =
-        (btcrpc.empty() && (false == issuer.ConnectionInfoInitiated(
-                                         core::ConnectionInfoType::BtcRpc)));
+        (btcrpc.empty() &&
+         (false == issuer.ConnectionInfoInitiated(
+                       contract::peer::ConnectionInfoType::BtcRpc)));
 
     if (needInfo) {
         LogDetail(OT_METHOD)(__FUNCTION__)(
@@ -617,10 +621,11 @@ void Pair::check_connection_info(
             issuer.LocalNymID(),
             issuer.IssuerID(),
             serverID,
-            core::ConnectionInfoType::BtcRpc);
+            contract::peer::ConnectionInfoType::BtcRpc);
 
         if (sent) {
-            issuer.AddRequest(core::PeerRequestType::ConnectionInfo, requestID);
+            issuer.AddRequest(
+                contract::peer::PeerRequestType::ConnectionInfo, requestID);
         }
     }
 }
@@ -686,7 +691,8 @@ void Pair::check_store_secret(
             store_secret(issuer.LocalNymID(), issuer.IssuerID(), serverID);
 
         if (sent) {
-            issuer.AddRequest(core::PeerRequestType::StoreSecret, requestID);
+            issuer.AddRequest(
+                contract::peer::PeerRequestType::StoreSecret, requestID);
         }
     }
 #endif  // OT_CRYPTO_WITH_BIP32
@@ -722,7 +728,8 @@ auto Pair::get_connection(
     const identifier::Nym& localNymID,
     const identifier::Nym& issuerNymID,
     const identifier::Server& serverID,
-    const core::ConnectionInfoType type) const -> std::pair<bool, OTIdentifier>
+    const contract::peer::ConnectionInfoType type) const
+    -> std::pair<bool, OTIdentifier>
 {
     std::pair<bool, OTIdentifier> output{false, Identifier::Factory()};
     auto& [success, requestID] = output;
@@ -734,7 +741,7 @@ auto Pair::get_connection(
     if (0 == taskID) { return output; }
 
     const auto result = std::get<0>(future.get());
-    success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
+    success = (otx::LastReplyStatus::MessageSuccess == result);
 
     return output;
 }
@@ -787,7 +794,7 @@ auto Pair::initiate_bailment(
     if (0 == taskID) { return output; }
 
     const auto result = std::get<0>(future.get());
-    success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
+    success = (otx::LastReplyStatus::MessageSuccess == result);
 
     return output;
 }
@@ -822,8 +829,8 @@ auto Pair::process_connection_info(
     OT_ASSERT(CheckLock(lock, decision_lock_))
     OT_ASSERT(nymID == Identifier::Factory(reply.initiator()))
     OT_ASSERT(
-        core::PeerRequestType::ConnectionInfo ==
-        core::internal::translate(reply.type()))
+        contract::peer::PeerRequestType::ConnectionInfo ==
+        contract::peer::internal::translate(reply.type()))
 
     const auto requestID = Identifier::Factory(reply.cookie());
     const auto replyID = Identifier::Factory(reply.id());
@@ -831,7 +838,7 @@ auto Pair::process_connection_info(
     auto editor = client_.Wallet().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
     const auto added = issuer.AddReply(
-        core::PeerRequestType::ConnectionInfo, requestID, replyID);
+        contract::peer::PeerRequestType::ConnectionInfo, requestID, replyID);
 
     if (added) {
         client_.Wallet().PeerRequestComplete(nymID, replyID);
@@ -866,34 +873,34 @@ void Pair::process_peer_replies(const Lock& lock, const identifier::Nym& nymID)
 
         const auto& type = reply->type();
 
-        switch (core::internal::translate(type)) {
-            case core::PeerRequestType::Bailment: {
+        switch (contract::peer::internal::translate(type)) {
+            case contract::peer::PeerRequestType::Bailment: {
                 LogDetail(OT_METHOD)(__FUNCTION__)(": Received bailment reply.")
                     .Flush();
                 process_request_bailment(lock, nymID, *reply);
             } break;
-            case core::PeerRequestType::OutBailment: {
+            case contract::peer::PeerRequestType::OutBailment: {
                 LogDetail(OT_METHOD)(__FUNCTION__)(
                     ": Received outbailment reply.")
                     .Flush();
                 process_request_outbailment(lock, nymID, *reply);
             } break;
-            case core::PeerRequestType::ConnectionInfo: {
+            case contract::peer::PeerRequestType::ConnectionInfo: {
                 LogDetail(OT_METHOD)(__FUNCTION__)(
                     ": Received connection info reply.")
                     .Flush();
                 process_connection_info(lock, nymID, *reply);
             } break;
-            case core::PeerRequestType::StoreSecret: {
+            case contract::peer::PeerRequestType::StoreSecret: {
                 LogDetail(OT_METHOD)(__FUNCTION__)(
                     ": Received store secret reply.")
                     .Flush();
                 process_store_secret(lock, nymID, *reply);
             } break;
-            case core::PeerRequestType::Error:
-            case core::PeerRequestType::PendingBailment:
-            case core::PeerRequestType::VerificationOffer:
-            case core::PeerRequestType::Faucet:
+            case contract::peer::PeerRequestType::Error:
+            case contract::peer::PeerRequestType::PendingBailment:
+            case contract::peer::PeerRequestType::VerificationOffer:
+            case contract::peer::PeerRequestType::Faucet:
             default: {
                 continue;
             }
@@ -924,20 +931,20 @@ void Pair::process_peer_requests(const Lock& lock, const identifier::Nym& nymID)
 
         const auto& type = request->type();
 
-        switch (core::internal::translate(type)) {
-            case core::PeerRequestType::PendingBailment: {
+        switch (contract::peer::internal::translate(type)) {
+            case contract::peer::PeerRequestType::PendingBailment: {
                 LogOutput(OT_METHOD)(__FUNCTION__)(
                     ": Received pending bailment notification.")
                     .Flush();
                 process_pending_bailment(lock, nymID, *request);
             } break;
-            case core::PeerRequestType::Error:
-            case core::PeerRequestType::Bailment:
-            case core::PeerRequestType::OutBailment:
-            case core::PeerRequestType::ConnectionInfo:
-            case core::PeerRequestType::StoreSecret:
-            case core::PeerRequestType::VerificationOffer:
-            case core::PeerRequestType::Faucet:
+            case contract::peer::PeerRequestType::Error:
+            case contract::peer::PeerRequestType::Bailment:
+            case contract::peer::PeerRequestType::OutBailment:
+            case contract::peer::PeerRequestType::ConnectionInfo:
+            case contract::peer::PeerRequestType::StoreSecret:
+            case contract::peer::PeerRequestType::VerificationOffer:
+            case contract::peer::PeerRequestType::Faucet:
             default: {
 
                 continue;
@@ -954,16 +961,16 @@ auto Pair::process_pending_bailment(
     OT_ASSERT(CheckLock(lock, decision_lock_))
     OT_ASSERT(nymID == Identifier::Factory(request.recipient()))
     OT_ASSERT(
-        core::PeerRequestType::PendingBailment ==
-        core::internal::translate(request.type()))
+        contract::peer::PeerRequestType::PendingBailment ==
+        contract::peer::internal::translate(request.type()))
 
     const auto requestID = Identifier::Factory(request.id());
     const auto issuerNymID = identifier::Nym::Factory(request.initiator());
     const auto serverID = identifier::Server::Factory(request.server());
     auto editor = client_.Wallet().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
-    const auto added =
-        issuer.AddRequest(core::PeerRequestType::PendingBailment, requestID);
+    const auto added = issuer.AddRequest(
+        contract::peer::PeerRequestType::PendingBailment, requestID);
 
     if (added) {
         pending_bailment_->Send(request);
@@ -971,7 +978,9 @@ auto Pair::process_pending_bailment(
             Identifier::Factory(request.pendingbailment().requestid());
         if (!originalRequest->empty()) {
             issuer.SetUsed(
-                core::PeerRequestType::Bailment, originalRequest, true);
+                contract::peer::PeerRequestType::Bailment,
+                originalRequest,
+                true);
         } else {
             LogOutput(OT_METHOD)(__FUNCTION__)(
                 ": Failed to set request as used on issuer.")
@@ -992,12 +1001,14 @@ auto Pair::process_pending_bailment(
         const auto result = future.get();
         const auto status = std::get<0>(result);
 
-        if (proto::LASTREPLYSTATUS_MESSAGESUCCESS == status) {
+        if (otx::LastReplyStatus::MessageSuccess == status) {
             const auto message = std::get<1>(result);
             auto replyID{Identifier::Factory()};
             message->GetIdentifier(replyID);
             issuer.AddReply(
-                core::PeerRequestType::PendingBailment, requestID, replyID);
+                contract::peer::PeerRequestType::PendingBailment,
+                requestID,
+                replyID);
 
             return true;
         }
@@ -1016,16 +1027,16 @@ auto Pair::process_request_bailment(
     OT_ASSERT(CheckLock(lock, decision_lock_))
     OT_ASSERT(nymID == Identifier::Factory(reply.initiator()))
     OT_ASSERT(
-        core::PeerRequestType::Bailment ==
-        core::internal::translate(reply.type()))
+        contract::peer::PeerRequestType::Bailment ==
+        contract::peer::internal::translate(reply.type()))
 
     const auto requestID = Identifier::Factory(reply.cookie());
     const auto replyID = Identifier::Factory(reply.id());
     const auto issuerNymID = identifier::Nym::Factory(reply.recipient());
     auto editor = client_.Wallet().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
-    const auto added =
-        issuer.AddReply(core::PeerRequestType::Bailment, requestID, replyID);
+    const auto added = issuer.AddReply(
+        contract::peer::PeerRequestType::Bailment, requestID, replyID);
 
     if (added) {
         client_.Wallet().PeerRequestComplete(nymID, replyID);
@@ -1046,16 +1057,16 @@ auto Pair::process_request_outbailment(
     OT_ASSERT(CheckLock(lock, decision_lock_))
     OT_ASSERT(nymID == Identifier::Factory(reply.initiator()))
     OT_ASSERT(
-        core::PeerRequestType::OutBailment ==
-        core::internal::translate(reply.type()))
+        contract::peer::PeerRequestType::OutBailment ==
+        contract::peer::internal::translate(reply.type()))
 
     const auto requestID = Identifier::Factory(reply.cookie());
     const auto replyID = Identifier::Factory(reply.id());
     const auto issuerNymID = identifier::Nym::Factory(reply.recipient());
     auto editor = client_.Wallet().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
-    const auto added =
-        issuer.AddReply(core::PeerRequestType::OutBailment, requestID, replyID);
+    const auto added = issuer.AddReply(
+        contract::peer::PeerRequestType::OutBailment, requestID, replyID);
 
     if (added) {
         client_.Wallet().PeerRequestComplete(nymID, replyID);
@@ -1076,16 +1087,16 @@ auto Pair::process_store_secret(
     OT_ASSERT(CheckLock(lock, decision_lock_))
     OT_ASSERT(nymID == Identifier::Factory(reply.initiator()))
     OT_ASSERT(
-        core::PeerRequestType::StoreSecret ==
-        core::internal::translate(reply.type()))
+        contract::peer::PeerRequestType::StoreSecret ==
+        contract::peer::internal::translate(reply.type()))
 
     const auto requestID = Identifier::Factory(reply.cookie());
     const auto replyID = Identifier::Factory(reply.id());
     const auto issuerNymID = identifier::Nym::Factory(reply.recipient());
     auto editor = client_.Wallet().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
-    const auto added =
-        issuer.AddReply(core::PeerRequestType::StoreSecret, requestID, replyID);
+    const auto added = issuer.AddReply(
+        contract::peer::PeerRequestType::StoreSecret, requestID, replyID);
 
     if (added) {
         client_.Wallet().PeerRequestComplete(nymID, replyID);
@@ -1156,7 +1167,7 @@ void Pair::queue_unit_definition(
     }
 
     const auto [result, pReply] = future.get();
-    const auto success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
+    const auto success = (otx::LastReplyStatus::MessageSuccess == result);
 
     if (success) {
         LogDetail(OT_METHOD)(__FUNCTION__)(": Obtained unit definition ")(
@@ -1195,7 +1206,7 @@ auto Pair::register_account(
     if (0 == taskID) { return output; }
 
     const auto [result, pReply] = future.get();
-    success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
+    success = (otx::LastReplyStatus::MessageSuccess == result);
 
     if (success) {
         OT_ASSERT(pReply);
@@ -1230,7 +1241,7 @@ void Pair::state_machine(const IssuerID& id) const
         if (std::future_status::ready == state) {
             const auto result = future.get();
 
-            if (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result.first) {
+            if (otx::LastReplyStatus::MessageSuccess == result.first) {
                 LogTrace(OT_METHOD)(__FUNCTION__)(": Task ")(task)(
                     " completed successfully.")
                     .Flush();
@@ -1384,7 +1395,7 @@ auto Pair::store_secret(
         localNymID,
         serverID,
         issuerNymID,
-        core::SecretType::Bip39,
+        contract::peer::SecretType::Bip39,
         client_.Seeds().Words(seedID, reason),
         client_.Seeds().Passphrase(seedID, reason),
         setID);
@@ -1392,7 +1403,7 @@ auto Pair::store_secret(
     if (0 == taskID) { return output; }
 
     const auto result = std::get<0>(future.get());
-    success = (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result);
+    success = (otx::LastReplyStatus::MessageSuccess == result);
 
     return output;
 }

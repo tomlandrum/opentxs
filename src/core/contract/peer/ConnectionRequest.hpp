@@ -50,7 +50,7 @@ public:
         const api::internal::Core& api,
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const core::ConnectionInfoType type,
+        const contract::peer::ConnectionInfoType type,
         const identifier::Server& serverID);
     Connection(
         const api::internal::Core& api,
@@ -62,7 +62,7 @@ public:
 private:
     friend opentxs::Factory;
 
-    const core::ConnectionInfoType connection_type_;
+    const contract::peer::ConnectionInfoType connection_type_;
 
     auto clone() const noexcept -> Connection* final
     {

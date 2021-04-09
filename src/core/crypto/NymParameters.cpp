@@ -19,7 +19,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/crypto/Language.hpp"
 #include "opentxs/crypto/SeedStrength.hpp"
 #include "opentxs/crypto/SeedStyle.hpp"
@@ -32,16 +32,18 @@
 
 namespace opentxs
 {
-const std::map<crypto::AsymmetricKeyType, NymParameterType> key_to_nym_
+const std::map<crypto::key::asymmetric::Algorithm, NymParameterType> key_to_nym_
 {
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
-    {crypto::AsymmetricKeyType::Legacy, NymParameterType::rsa},
+    {crypto::key::asymmetric::Algorithm::Legacy, NymParameterType::rsa},
 #endif
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-        {crypto::AsymmetricKeyType::Secp256k1, NymParameterType::secp256k1},
+        {crypto::key::asymmetric::Algorithm::Secp256k1,
+         NymParameterType::secp256k1},
 #endif
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
-        {crypto::AsymmetricKeyType::ED25519, NymParameterType::ed25519},
+        {crypto::key::asymmetric::Algorithm::ED25519,
+         NymParameterType::ed25519},
 #endif
 };
 const auto nym_to_key_{reverse_map(key_to_nym_)};
@@ -147,7 +149,7 @@ NymParameters::NymParameters(
 }
 
 NymParameters::NymParameters(
-    crypto::AsymmetricKeyType key,
+    crypto::key::asymmetric::Algorithm key,
     identity::CredentialType credential,
     const identity::SourceType source,
     const std::uint8_t pcVersion) noexcept
@@ -183,13 +185,13 @@ NymParameters::NymParameters(const NymParameters& rhs) noexcept
 {
 }
 
-auto NymParameters::AsymmetricKeyType() const noexcept
-    -> crypto::AsymmetricKeyType
+auto NymParameters::Algorithm() const noexcept
+    -> crypto::key::asymmetric::Algorithm
 {
     try {
         return nym_to_key_.at(imp_->nymType_);
     } catch (...) {
-        return crypto::AsymmetricKeyType::Error;
+        return crypto::key::asymmetric::Algorithm::Error;
     }
 }
 

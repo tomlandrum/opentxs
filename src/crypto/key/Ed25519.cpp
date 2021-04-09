@@ -17,7 +17,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Ed25519.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "util/Sodium.hpp"
 
 namespace opentxs::factory
@@ -113,7 +113,7 @@ Ed25519::Ed25519(
     : ot_super(
           api,
           ecdsa,
-          crypto::AsymmetricKeyType::ED25519,
+          crypto::key::asymmetric::Algorithm::ED25519,
           role,
           version,
           reason)
@@ -136,7 +136,7 @@ Ed25519::Ed25519(
     : ot_super(
           api,
           ecdsa,
-          crypto::AsymmetricKeyType::ED25519,
+          crypto::key::asymmetric::Algorithm::ED25519,
           privateKey,
           chainCode,
           publicKey,

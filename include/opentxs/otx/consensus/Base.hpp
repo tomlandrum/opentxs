@@ -17,7 +17,7 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Editor.hpp"
 #include "opentxs/core/contract/Signable.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
+#include "opentxs/otx/Types.hpp"
 
 namespace opentxs
 {
@@ -56,7 +56,7 @@ public:
     OPENTXS_EXPORT virtual OTIdentifier RemoteNymboxHash() const = 0;
     OPENTXS_EXPORT virtual RequestNumber Request() const = 0;
     OPENTXS_EXPORT virtual proto::Context Serialized() const = 0;
-    OPENTXS_EXPORT virtual proto::ConsensusType Type() const = 0;
+    OPENTXS_EXPORT virtual otx::ConsensusType Type() const = 0;
     OPENTXS_EXPORT virtual bool VerifyAcknowledgedNumber(
         const RequestNumber& req) const = 0;
     OPENTXS_EXPORT virtual bool VerifyAvailableNumber(

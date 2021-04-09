@@ -19,6 +19,7 @@
 #include "crypto/key/EllipticCurve.hpp"
 #include "internal/api/Api.hpp"
 #include "internal/crypto/key/Factory.hpp"
+#include "internal/crypto/key/Key.hpp"
 #include "internal/identity/credential/Credential.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.hpp"
@@ -32,7 +33,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/crypto/Bip32.hpp"
 #include "opentxs/crypto/Bip32Child.hpp"
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
@@ -109,7 +110,7 @@ HD::HD(
 HD::HD(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const crypto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const proto::KeyRole role,
     const VersionNumber version,
     const PasswordPrompt& reason) noexcept(false)
@@ -124,7 +125,7 @@ HD::HD(
 HD::HD(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const crypto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const Secret& privateKey,
     const Data& publicKey,
     const proto::KeyRole role,
@@ -152,7 +153,7 @@ HD::HD(
 HD::HD(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const crypto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const Secret& privateKey,
     const Secret& chainCode,
     const Data& publicKey,
@@ -184,7 +185,7 @@ HD::HD(
 HD::HD(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const proto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const Secret& privateKey,
     const Secret& chainCode,
     const Data& publicKey,
@@ -285,7 +286,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
 
         switch (type_) {
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
-            case crypto::AsymmetricKeyType::ED25519: {
+            case crypto::key::asymmetric::Algorithm::ED25519: {
                 return factory::Ed25519Key(
                     api_,
                     api_.Crypto().ED25519(),
@@ -294,13 +295,13 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     pubkey,
                     path,
                     parent,
-                    opentxs::identity::credential::internal::translate(role_),
+                    opentxs::crypto::key::internal::translate(role_),
                     version_,
                     reason);
             }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-            case crypto::AsymmetricKeyType::Secp256k1: {
+            case crypto::key::asymmetric::Algorithm::Secp256k1: {
                 return factory::Secp256k1Key(
                     api_,
                     api_.Crypto().SECP256K1(),
@@ -309,7 +310,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     pubkey,
                     path,
                     parent,
-                    opentxs::identity::credential::internal::translate(role_),
+                    opentxs::crypto::key::internal::translate(role_),
                     version_,
                     reason);
             }
@@ -364,7 +365,8 @@ auto HD::get_chain_code(const PasswordPrompt& reason) const noexcept(false)
         // key, and this session key is only embedded in the private key
         // ciphertext
         auto sessionKey = api_.Symmetric().Key(
-            privateKey.key(), opentxs::crypto::SymmetricMode::ChaCha20Poly1305);
+            privateKey.key(),
+            opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305);
 
         if (false == sessionKey.get()) {
             throw std::runtime_error{"Failed to extract session key"};

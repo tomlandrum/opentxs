@@ -37,13 +37,13 @@ void RPC::evaluate_register_account(
     const auto& status = std::get<0>(result);
     const auto& pReply = std::get<1>(result);
 
-    if (proto::LASTREPLYSTATUS_NOTSENT == status) {
+    if (otx::LastReplyStatus::NotSent == status) {
         add_output_status(output, proto::RPCRESPONSE_ERROR);
-    } else if (proto::LASTREPLYSTATUS_UNKNOWN == status) {
+    } else if (otx::LastReplyStatus::Unknown == status) {
         add_output_status(output, proto::RPCRESPONSE_BAD_SERVER_RESPONSE);
-    } else if (proto::LASTREPLYSTATUS_MESSAGEFAILED == status) {
+    } else if (otx::LastReplyStatus::MessageFailed == status) {
         add_output_status(output, proto::RPCRESPONSE_REGISTER_ACCOUNT_FAILED);
-    } else if (proto::LASTREPLYSTATUS_MESSAGESUCCESS == status) {
+    } else if (otx::LastReplyStatus::MessageSuccess == status) {
         OT_ASSERT(pReply);
 
         const auto& reply = *pReply;
@@ -61,13 +61,13 @@ void RPC::evaluate_register_nym(
     // const auto& [status, pReply] = result;
     const auto& status = std::get<0>(result);
 
-    if (proto::LASTREPLYSTATUS_NOTSENT == status) {
+    if (otx::LastReplyStatus::NotSent == status) {
         add_output_status(output, proto::RPCRESPONSE_ERROR);
-    } else if (proto::LASTREPLYSTATUS_UNKNOWN == status) {
+    } else if (otx::LastReplyStatus::Unknown == status) {
         add_output_status(output, proto::RPCRESPONSE_BAD_SERVER_RESPONSE);
-    } else if (proto::LASTREPLYSTATUS_MESSAGEFAILED == status) {
+    } else if (otx::LastReplyStatus::MessageFailed == status) {
         add_output_status(output, proto::RPCRESPONSE_REGISTER_NYM_FAILED);
-    } else if (proto::LASTREPLYSTATUS_MESSAGESUCCESS == status) {
+    } else if (otx::LastReplyStatus::MessageSuccess == status) {
         add_output_status(output, proto::RPCRESPONSE_SUCCESS);
     }
 }

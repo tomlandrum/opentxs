@@ -15,6 +15,7 @@
 #include "core/contract/Signable.hpp"
 #include "identity/credential/Base.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/crypto/key/Key.hpp"
 #include "internal/identity/Identity.hpp"
 #include "internal/identity/credential/Credential.hpp"
 #include "opentxs/Pimpl.hpp"
@@ -30,7 +31,6 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/CredentialRole.hpp"
-#include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/credential/Primary.hpp"
 #include "opentxs/protobuf/ChildCredentialParameters.pb.h"
@@ -48,7 +48,7 @@ Base::Base(
     const NymParameters& nymParameters,
     const VersionNumber version,
     const identity::CredentialRole role,
-    const identity::KeyMode mode,
+    const crypto::key::asymmetric::Mode mode,
     const std::string& masterID) noexcept
     : Signable(api, {}, version, {}, {})
     , parent_(parent)
@@ -83,8 +83,7 @@ Base::Base(
           opentxs::identity::credential::internal::translate(serialized.type()))
     , role_(
           opentxs::identity::credential::internal::translate(serialized.role()))
-    , mode_(
-          opentxs::identity::credential::internal::translate(serialized.mode()))
+    , mode_(opentxs::crypto::key::internal::translate(serialized.mode()))
 {
     if (serialized.nymid() != nym_id_) {
         throw std::runtime_error(
@@ -198,14 +197,16 @@ auto Base::isValid(
 {
     SerializationModeFlag serializationMode = AS_PUBLIC;
 
-    if (identity::KeyMode::Private == mode_) { serializationMode = AS_PRIVATE; }
+    if (crypto::key::asymmetric::Mode::Private == mode_) {
+        serializationMode = AS_PRIVATE;
+    }
 
     credential = serialize(lock, serializationMode, WITH_SIGNATURES);
 
     return proto::Validate<proto::Credential>(
         *credential,
         VERBOSE,
-        opentxs::identity::credential::internal::translate(mode_),
+        opentxs::crypto::key::internal::translate(mode_),
         opentxs::identity::credential::internal::translate(role_),
         true);  // with signatures
 }
@@ -305,9 +306,9 @@ auto Base::serialize(
     }
 
     if (asPrivate) {
-        if (identity::KeyMode::Private == mode_) {
+        if (crypto::key::asymmetric::Mode::Private == mode_) {
             serializedCredential->set_mode(
-                opentxs::identity::credential::internal::translate(mode_));
+                opentxs::crypto::key::internal::translate(mode_));
         } else {
             LogOutput(OT_METHOD)(__FUNCTION__)(
                 ": Can't serialize a public credential as a private "
@@ -316,8 +317,8 @@ auto Base::serialize(
         }
     } else {
         serializedCredential->set_mode(
-            opentxs::identity::credential::internal::translate(
-                identity::KeyMode::Public));
+            opentxs::crypto::key::internal::translate(
+                crypto::key::asymmetric::Mode::Public));
     }
 
     if (asSigned) {

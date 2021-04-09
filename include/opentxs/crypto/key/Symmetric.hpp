@@ -17,7 +17,7 @@
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 
 namespace opentxs
 {
@@ -85,8 +85,8 @@ public:
         const PasswordPrompt& reason,
         proto::Ciphertext& ciphertext,
         const bool attachKey = true,
-        const opentxs::crypto::SymmetricMode mode =
-            opentxs::crypto::SymmetricMode::Error,
+        const opentxs::crypto::key::symmetric::Algorithm mode =
+            opentxs::crypto::key::symmetric::Algorithm::Error,
         const ReadView iv = {}) const = 0;
     OPENTXS_EXPORT virtual OTIdentifier ID(
         const PasswordPrompt& reason) const = 0;

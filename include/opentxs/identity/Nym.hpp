@@ -21,7 +21,7 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/crypto/HashType.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/iterator/Bidirectional.hpp"
@@ -71,7 +71,7 @@ namespace identity
 class Nym
 {
 public:
-    using KeyTypes = std::vector<crypto::AsymmetricKeyType>;
+    using KeyTypes = std::vector<crypto::key::asymmetric::Algorithm>;
     using AuthorityKeys = std::pair<OTIdentifier, KeyTypes>;
     using NymKeys = std::pair<OTNymID, std::vector<AuthorityKeys>>;
     using Serialized = proto::Nym;
@@ -112,21 +112,21 @@ public:
         identifier::Nym& theIdentifier) const = 0;
     OPENTXS_EXPORT virtual void GetIdentifier(String& theIdentifier) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPrivateAuthKey(
-        crypto::AsymmetricKeyType keytype =
-            crypto::AsymmetricKeyType::Null) const = 0;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPrivateEncrKey(
-        crypto::AsymmetricKeyType keytype =
-            crypto::AsymmetricKeyType::Null) const = 0;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPrivateSignKey(
-        crypto::AsymmetricKeyType keytype =
-            crypto::AsymmetricKeyType::Null) const = 0;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const = 0;
 
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPublicAuthKey(
-        crypto::AsymmetricKeyType keytype =
-            crypto::AsymmetricKeyType::Null) const = 0;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPublicEncrKey(
-        crypto::AsymmetricKeyType keytype =
-            crypto::AsymmetricKeyType::Null) const = 0;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const = 0;
     // OT uses the signature's metadata to narrow down its search for the
     // correct public key.
     // 'S' (signing key) or
@@ -137,8 +137,8 @@ public:
         const Signature& theSignature,
         char cKeyType = '0') const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Asymmetric& GetPublicSignKey(
-        crypto::AsymmetricKeyType keytype =
-            crypto::AsymmetricKeyType::Null) const = 0;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const = 0;
     OPENTXS_EXPORT virtual bool HasCapability(
         const NymCapability& capability) const = 0;
     OPENTXS_EXPORT virtual const identifier::Nym& ID() const = 0;
@@ -174,7 +174,7 @@ public:
     OPENTXS_EXPORT virtual bool Unlock(
         const crypto::key::Asymmetric& dhKey,
         const std::uint32_t tag,
-        const crypto::AsymmetricKeyType type,
+        const crypto::key::asymmetric::Algorithm type,
         const crypto::key::Symmetric& key,
         PasswordPrompt& reason) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Verify(

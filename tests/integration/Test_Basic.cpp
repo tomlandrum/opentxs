@@ -37,7 +37,7 @@
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
@@ -45,7 +45,7 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/protobuf/Contact.hpp"
 #include "opentxs/ui/AccountActivity.hpp"
 #include "opentxs/ui/AccountList.hpp"
@@ -603,9 +603,9 @@ TEST_F(Integration, introduction_server)
     ASSERT_NE(0, task1.first);
     ASSERT_NE(0, task2.first);
     EXPECT_EQ(
-        ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, task1.second.get().first);
+        ot::otx::LastReplyStatus::MessageSuccess, task1.second.get().first);
     EXPECT_EQ(
-        ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, task2.second.get().first);
+        ot::otx::LastReplyStatus::MessageSuccess, task2.second.get().first);
 
     api_alex_.OTX().ContextIdle(alex_.nym_id_, server_1_.id_).get();
     api_bob_.OTX().ContextIdle(bob_.nym_id_, server_1_.id_).get();
@@ -1154,7 +1154,7 @@ TEST_F(Integration, issue_dollars)
         issuer_.Reason());
 
     EXPECT_EQ(UNIT_DEFINITION_CONTRACT_VERSION, contract->Version());
-    EXPECT_EQ(ot::core::UnitType::Currency, contract->Type());
+    EXPECT_EQ(ot::contract::UnitType::Currency, contract->Type());
     EXPECT_EQ(UNIT_DEFINITION_UNIT_OF_ACCOUNT, contract->UnitOfAccount());
     EXPECT_TRUE(unit_id_->empty());
 
@@ -1175,7 +1175,7 @@ TEST_F(Integration, issue_dollars)
     const auto result = future.get();
 
     EXPECT_NE(0, taskID);
-    EXPECT_EQ(ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, result.first);
+    EXPECT_EQ(ot::otx::LastReplyStatus::MessageSuccess, result.first);
     ASSERT_TRUE(result.second);
 
     EXPECT_TRUE(issuer_.SetAccount(
@@ -1243,7 +1243,7 @@ TEST_F(Integration, pay_alex)
     auto& [taskID, future] = task;
 
     ASSERT_NE(0, taskID);
-    EXPECT_EQ(ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, future.get().first);
+    EXPECT_EQ(ot::otx::LastReplyStatus::MessageSuccess, future.get().first);
 
     api_alex_.OTX().Refresh();
     idle();
@@ -1548,7 +1548,7 @@ TEST_F(Integration, process_inbox_issuer)
 
     const auto [status, message] = future.get();
 
-    EXPECT_EQ(ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    EXPECT_EQ(ot::otx::LastReplyStatus::MessageSuccess, status);
     ASSERT_TRUE(message);
 
     const auto account =

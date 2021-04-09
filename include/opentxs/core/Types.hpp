@@ -14,12 +14,6 @@ namespace opentxs
 namespace core
 {
 enum class AddressType : std::uint8_t;
-enum class ConnectionInfoType : std::uint8_t;
-enum class PeerObjectType : std::uint8_t;
-enum class PeerRequestType : std::uint8_t;
-enum class ProtocolVersion : std::uint8_t;
-enum class SecretType : std::uint8_t;
-enum class UnitType : std::uint8_t;
 }  // namespace core
 
 }  // namespace opentxs

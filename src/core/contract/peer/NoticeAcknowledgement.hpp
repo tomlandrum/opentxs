@@ -14,6 +14,7 @@
 #include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/NoticeAcknowledgement.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 
 namespace opentxs
 {
@@ -48,7 +49,7 @@ public:
         const identifier::Nym& initiator,
         const Identifier& request,
         const identifier::Server& server,
-        const core::PeerRequestType type,
+        const PeerRequestType type,
         const bool& ack);
     Acknowledgement(
         const api::internal::Core& api,

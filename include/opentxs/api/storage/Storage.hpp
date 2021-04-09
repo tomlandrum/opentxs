@@ -20,6 +20,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/api/client/Types.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -27,7 +28,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
-#include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 
 namespace opentxs
 {
@@ -281,16 +281,17 @@ public:
         const std::string& accountID) const = 0;
     OPENTXS_EXPORT virtual std::set<std::string> PaymentWorkflowsByState(
         const std::string& nymID,
-        const proto::PaymentWorkflowType type,
-        const proto::PaymentWorkflowState state) const = 0;
+        const api::client::PaymentWorkflowType type,
+        const api::client::PaymentWorkflowState state) const = 0;
     OPENTXS_EXPORT virtual std::set<std::string> PaymentWorkflowsByUnit(
         const std::string& nymID,
         const std::string& unitID) const = 0;
-    OPENTXS_EXPORT virtual std::
-        pair<proto::PaymentWorkflowType, proto::PaymentWorkflowState>
-        PaymentWorkflowState(
-            const std::string& nymID,
-            const std::string& workflowID) const = 0;
+    OPENTXS_EXPORT virtual std::pair<
+        api::client::PaymentWorkflowType,
+        api::client::PaymentWorkflowState>
+    PaymentWorkflowState(
+        const std::string& nymID,
+        const std::string& workflowID) const = 0;
     OPENTXS_EXPORT virtual bool RelabelThread(
         const std::string& threadID,
         const std::string& label) const = 0;

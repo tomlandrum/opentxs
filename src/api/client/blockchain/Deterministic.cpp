@@ -582,7 +582,7 @@ auto Deterministic::RootNode(const PasswordPrompt& reason) const noexcept
         EcdsaCurve::secp256k1,
         path,
         reason,
-        identity::KeyRole::Sign,
+        opentxs::crypto::key::asymmetric::Role::Sign,
         opentxs::crypto::key::EllipticCurve::MaxVersion);
 
     return key;

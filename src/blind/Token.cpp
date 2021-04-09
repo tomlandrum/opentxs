@@ -22,7 +22,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
-#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Token.pb.h"
 #include "util/Container.hpp"
@@ -54,7 +54,7 @@ auto Factory::Token(
     const proto::Token& serialized) noexcept(false)
     -> std::unique_ptr<blind::Token>
 {
-    switch (opentxs::blind::internal::translate(serialized.type())) {
+    switch (blind::internal::translate(serialized.type())) {
         case blind::CashType::Lucre: {
 
             return std::make_unique<ReturnType>(api, purse, serialized);
@@ -88,8 +88,8 @@ auto Factory::Token(
 
 namespace opentxs::blind::token::implementation
 {
-const opentxs::crypto::SymmetricMode Token::mode_{
-    opentxs::crypto::SymmetricMode::ChaCha20Poly1305};
+const opentxs::crypto::key::symmetric::Algorithm Token::mode_{
+    opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305};
 
 Token::Token(
     const api::internal::Core& api,
@@ -140,8 +140,8 @@ Token::Token(
     : Token(
           api,
           purse,
-          opentxs::blind::internal::translate(in.state()),
-          opentxs::blind::internal::translate(in.type()),
+          internal::translate(in.state()),
+          internal::translate(in.type()),
           identifier::Server::Factory(in.notary()),
           identifier::UnitDefinition::Factory(in.mint()),
           in.series(),
@@ -199,7 +199,7 @@ auto Token::reencrypt(
         newPassword,
         ciphertext,
         false,
-        opentxs::crypto::SymmetricMode::ChaCha20Poly1305);
+        opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305);
 
     if (false == output) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to encrypt ciphertext.")
@@ -215,8 +215,8 @@ auto Token::Serialize() const -> proto::Token
 {
     proto::Token output{};
     output.set_version(version_);
-    output.set_type(opentxs::blind::internal::translate(type_));
-    output.set_state(opentxs::blind::internal::translate(state_));
+    output.set_type(internal::translate(type_));
+    output.set_state(internal::translate(state_));
     output.set_notary(notary_->str());
     output.set_mint(unit_->str());
     output.set_series(series_);

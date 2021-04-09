@@ -31,7 +31,7 @@
 #include "opentxs/api/client/OTX.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Lockable.hpp"
-#include "opentxs/core/Types.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
@@ -221,7 +221,7 @@ private:
         const identifier::Nym& localNymID,
         const identifier::Nym& issuerNymID,
         const identifier::Server& serverID,
-        const core::ConnectionInfoType type) const
+        const contract::peer::ConnectionInfoType type) const
         -> std::pair<bool, OTIdentifier>;
     auto initiate_bailment(
         const identifier::Nym& nymID,

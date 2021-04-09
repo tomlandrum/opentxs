@@ -22,7 +22,7 @@ extern "C" {
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/crypto/Signature.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "util/Sodium.hpp"
 
 #define OT_METHOD "opentxs::crypto::AsymmetricProvider::"
@@ -30,18 +30,19 @@ extern "C" {
 namespace opentxs::crypto
 {
 auto AsymmetricProvider::CurveToKeyType(const EcdsaCurve& curve)
-    -> crypto::AsymmetricKeyType
+    -> crypto::key::asymmetric::Algorithm
 {
-    crypto::AsymmetricKeyType output = crypto::AsymmetricKeyType::Error;
+    crypto::key::asymmetric::Algorithm output =
+        crypto::key::asymmetric::Algorithm::Error;
 
     switch (curve) {
         case (EcdsaCurve::secp256k1): {
-            output = AsymmetricKeyType::Secp256k1;
+            output = key::asymmetric::Algorithm::Secp256k1;
 
             break;
         }
         case (EcdsaCurve::ed25519): {
-            output = AsymmetricKeyType::ED25519;
+            output = key::asymmetric::Algorithm::ED25519;
 
             break;
         }
@@ -52,18 +53,18 @@ auto AsymmetricProvider::CurveToKeyType(const EcdsaCurve& curve)
     return output;
 }
 
-auto AsymmetricProvider::KeyTypeToCurve(const crypto::AsymmetricKeyType& type)
-    -> EcdsaCurve
+auto AsymmetricProvider::KeyTypeToCurve(
+    const crypto::key::asymmetric::Algorithm& type) -> EcdsaCurve
 {
     EcdsaCurve output = EcdsaCurve::invalid;
 
     switch (type) {
-        case (AsymmetricKeyType::Secp256k1): {
+        case (key::asymmetric::Algorithm::Secp256k1): {
             output = EcdsaCurve::secp256k1;
 
             break;
         }
-        case (AsymmetricKeyType::ED25519): {
+        case (key::asymmetric::Algorithm::ED25519): {
             output = EcdsaCurve::ed25519;
 
             break;

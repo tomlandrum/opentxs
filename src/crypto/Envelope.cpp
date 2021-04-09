@@ -19,7 +19,7 @@
 
 #include "2_Factory.hpp"
 #include "internal/api/Api.hpp"
-#include "internal/crypto/Crypto.hpp"
+#include "internal/crypto/key/Key.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Core.hpp"
@@ -74,19 +74,19 @@ const VersionNumber Envelope::tagged_key_version_{1};
 const Envelope::SupportedKeys Envelope::supported_
 {
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
-    crypto::AsymmetricKeyType::Legacy,
+    crypto::key::asymmetric::Algorithm::Legacy,
 #endif  // OT_CRYPTO_SUPPORTED_KEY_RSA
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-        crypto::AsymmetricKeyType::Secp256k1,
+        crypto::key::asymmetric::Algorithm::Secp256k1,
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
-        crypto::AsymmetricKeyType::ED25519,
+        crypto::key::asymmetric::Algorithm::ED25519,
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 };
 const Envelope::WeightMap Envelope::key_weights_{
-    {crypto::AsymmetricKeyType::ED25519, 1},
-    {crypto::AsymmetricKeyType::Secp256k1, 2},
-    {crypto::AsymmetricKeyType::Legacy, 4},
+    {crypto::key::asymmetric::Algorithm::ED25519, 1},
+    {crypto::key::asymmetric::Algorithm::Secp256k1, 2},
+    {crypto::key::asymmetric::Algorithm::Legacy, 4},
 };
 const Envelope::Solutions Envelope::solutions_{calculate_solutions()};
 
@@ -260,11 +260,11 @@ auto Envelope::find_solution(const Nyms& recipients, Solution& map) noexcept
 }
 
 auto Envelope::get_dh_key(
-    const crypto::AsymmetricKeyType type,
+    const crypto::key::asymmetric::Algorithm type,
     const identity::Authority& nym,
     const PasswordPrompt& reason) noexcept -> const key::Asymmetric&
 {
-    if (crypto::AsymmetricKeyType::Legacy != type) {
+    if (crypto::key::asymmetric::Algorithm::Legacy != type) {
         const auto& set = dh_keys_.at(type);
 
         OT_ASSERT(1 == set.size());
@@ -323,7 +323,8 @@ auto Envelope::read_dh(const api::Core& api, const SerializedType& rhs) noexcept
     auto output = DHMap{};
 
     for (const auto& key : rhs.dhkey()) {
-        auto& set = output[opentxs::crypto::internal::translate(key.type())];
+        auto& set =
+            output[opentxs::crypto::key::internal::translate(key.type())];
         set.emplace_back(api.Factory().AsymmetricKey(key));
     }
 
@@ -338,10 +339,10 @@ auto Envelope::read_sk(const api::Core& api, const SerializedType& rhs) noexcept
     for (const auto& tagged : rhs.sessionkey()) {
         output.emplace_back(SessionKey{
             tagged.tag(),
-            opentxs::crypto::internal::translate(tagged.type()),
+            opentxs::crypto::key::internal::translate(tagged.type()),
             api.Symmetric().Key(
                 tagged.key(),
-                opentxs::crypto::SymmetricMode::ChaCha20Poly1305)});
+                opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305)});
     }
 
     return output;
@@ -444,14 +445,18 @@ auto Envelope::seal(
         try {
             const auto params = NymParameters{type};
 
-            if (crypto::AsymmetricKeyType::Legacy != type) {
+            if (crypto::key::asymmetric::Algorithm::Legacy != type) {
                 auto& set = dh_keys_[type];
                 set.emplace_back(api_.Factory().AsymmetricKey(
-                    params, reason, identity::KeyRole::Encrypt));
+                    params,
+                    reason,
+                    opentxs::crypto::key::asymmetric::Role::Encrypt));
                 const auto& key = set.crbegin()->get();
 
                 OT_ASSERT(key.keyType() == type);
-                OT_ASSERT(key.Role() == identity::KeyRole::Encrypt);
+                OT_ASSERT(
+                    key.Role() ==
+                    opentxs::crypto::key::asymmetric::Role::Encrypt);
             }
         } catch (...) {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to generate DH key")
@@ -512,7 +517,7 @@ auto Envelope::Serialize() const noexcept -> SerializedType
         auto& tagged = *output.add_sessionkey();
         tagged.set_version(tagged_key_version_);
         tagged.set_tag(tag);
-        tagged.set_type(opentxs::crypto::internal::translate(type));
+        tagged.set_type(opentxs::crypto::key::internal::translate(type));
         key->Serialize(*tagged.mutable_key());
     }
 

@@ -3,23 +3,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef OPENTXS_IDENTITY_KEY_ROLE_HPP
-#define OPENTXS_IDENTITY_KEY_ROLE_HPP
+#ifndef OPENTXS_OTX_SERVER_REQUEST_TYPE_HPP
+#define OPENTXS_OTX_SERVER_REQUEST_TYPE_HPP
 
-#include "opentxs/identity/Types.hpp"  // IWYU pragma: associated
+#include "opentxs/otx/Types.hpp"  // IWYU pragma: associated
 
 #include <cstdint>
 
 namespace opentxs
 {
-namespace identity
+namespace otx
 {
-enum class KeyRole : std::uint8_t {
+enum class ServerRequestType : std::uint8_t {
     Error = 0,
-    Auth = 1,
-    Encrypt = 2,
-    Sign = 3,
+    Activate = 1,
 };
-}  // namespace identity
+}  // namespace otx
 }  // namespace opentxs
 #endif

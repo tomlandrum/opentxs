@@ -27,6 +27,7 @@
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/api/client/Activity.hpp"
 #include "opentxs/api/client/Contacts.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #if OT_BLOCKCHAIN
@@ -242,16 +243,16 @@ auto Activity::Cheque(
     [[maybe_unused]] const auto& notUsed = state;
 
     switch (type) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE: {
+        case api::client::PaymentWorkflowType::OutgoingCheque:
+        case api::client::PaymentWorkflowType::IncomingCheque:
+        case api::client::PaymentWorkflowType::OutgoingInvoice:
+        case api::client::PaymentWorkflowType::IncomingInvoice: {
         } break;
 
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER:
+        case api::client::PaymentWorkflowType::Error:
+        case api::client::PaymentWorkflowType::OutgoingTransfer:
+        case api::client::PaymentWorkflowType::IncomingTransfer:
+        case api::client::PaymentWorkflowType::InternalTransfer:
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Wrong workflow type.")
                 .Flush();
@@ -302,16 +303,16 @@ auto Activity::Transfer(
         api_.Storage().PaymentWorkflowState(nym.str(), workflowID);
 
     switch (type) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+        case api::client::PaymentWorkflowType::OutgoingTransfer:
+        case api::client::PaymentWorkflowType::IncomingTransfer:
+        case api::client::PaymentWorkflowType::InternalTransfer: {
         } break;
 
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
+        case api::client::PaymentWorkflowType::Error:
+        case api::client::PaymentWorkflowType::OutgoingCheque:
+        case api::client::PaymentWorkflowType::IncomingCheque:
+        case api::client::PaymentWorkflowType::OutgoingInvoice:
+        case api::client::PaymentWorkflowType::IncomingInvoice:
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Wrong workflow type").Flush();
 
@@ -595,25 +596,25 @@ auto Activity::PaymentText(
     [[maybe_unused]] const auto& notUsed = state;
 
     switch (type) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE: {
+        case api::client::PaymentWorkflowType::OutgoingCheque: {
             output.reset(new std::string("Sent cheque"));
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE: {
+        case api::client::PaymentWorkflowType::IncomingCheque: {
             output.reset(new std::string("Received cheque"));
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER: {
+        case api::client::PaymentWorkflowType::OutgoingTransfer: {
             output.reset(new std::string("Sent transfer"));
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER: {
+        case api::client::PaymentWorkflowType::IncomingTransfer: {
             output.reset(new std::string("Received transfer"));
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+        case api::client::PaymentWorkflowType::InternalTransfer: {
             output.reset(new std::string("Internal transfer"));
         } break;
 
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
+        case api::client::PaymentWorkflowType::Error:
+        case api::client::PaymentWorkflowType::OutgoingInvoice:
+        case api::client::PaymentWorkflowType::IncomingInvoice:
         default: {
 
             return std::move(output);
@@ -634,10 +635,10 @@ auto Activity::PaymentText(
     OT_ASSERT(workflow)
 
     switch (type) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE: {
+        case api::client::PaymentWorkflowType::OutgoingCheque:
+        case api::client::PaymentWorkflowType::IncomingCheque:
+        case api::client::PaymentWorkflowType::OutgoingInvoice:
+        case api::client::PaymentWorkflowType::IncomingInvoice: {
             auto chequeData = Cheque(nym, id, workflowID);
             const auto& [cheque, contract] = chequeData;
 
@@ -656,9 +657,9 @@ auto Activity::PaymentText(
             }
         } break;
 
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+        case api::client::PaymentWorkflowType::OutgoingTransfer:
+        case api::client::PaymentWorkflowType::IncomingTransfer:
+        case api::client::PaymentWorkflowType::InternalTransfer: {
             auto transferData = Transfer(nym, id, workflowID);
             const auto& [transfer, contract] = transferData;
 
@@ -677,7 +678,7 @@ auto Activity::PaymentText(
             }
         } break;
 
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
+        case api::client::PaymentWorkflowType::Error:
         default: {
 
             return nullptr;

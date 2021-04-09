@@ -17,7 +17,7 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/identity/Types.hpp"
 
 namespace opentxs
@@ -60,14 +60,14 @@ class Key : virtual public credential::internal::Key,
             public credential::implementation::Base
 {
 public:
-    auto GetKeypair(const identity::KeyRole role) const
+    auto GetKeypair(const opentxs::crypto::key::asymmetric::Role role) const
         -> const crypto::key::Keypair& final
     {
-        return GetKeypair(crypto::AsymmetricKeyType::Null, role);
+        return GetKeypair(crypto::key::asymmetric::Algorithm::Null, role);
     }
     auto GetKeypair(
-        const crypto::AsymmetricKeyType type,
-        const identity::KeyRole role) const
+        const crypto::key::asymmetric::Algorithm type,
+        const opentxs::crypto::key::asymmetric::Role role) const
         -> const crypto::key::Keypair& final;
     auto GetPublicKeysBySignature(
         crypto::key::Keypair::Keys& listOutput,
@@ -78,13 +78,13 @@ public:
     auto Verify(
         const Data& plaintext,
         const proto::Signature& sig,
-        const identity::KeyRole key) const -> bool final;
+        const opentxs::crypto::key::asymmetric::Role key) const -> bool final;
     auto Sign(
         const GetPreimage input,
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
-        identity::KeyRole key,
+        opentxs::crypto::key::asymmetric::Role key,
         const crypto::HashType hash) const -> bool final;
     auto TransportKey(
         Data& publicKey,

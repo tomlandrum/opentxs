@@ -17,6 +17,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/otx/Types.hpp"
 #include "opentxs/otx/consensus/Client.hpp"
 #include "opentxs/otx/consensus/TransactionStatement.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
@@ -56,7 +57,7 @@ public:
     auto IssuedNumbers(const std::set<TransactionNumber>& exclude) const
         -> std::size_t final;
     auto OpenCronItems() const -> std::size_t final;
-    auto Type() const -> proto::ConsensusType final;
+    auto Type() const -> otx::ConsensusType final;
     auto ValidateContext(const Lock& lock) const -> bool final
     {
         return validate(lock);

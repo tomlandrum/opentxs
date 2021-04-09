@@ -12,8 +12,8 @@
 
 #include "2_Factory.hpp"
 #include "core/contract/UnitDefinition.hpp"
-#include "internal/core/Core.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "internal/core/contract/Contract.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -143,7 +143,8 @@ Currency::Currency(const Currency& rhs)
 auto Currency::IDVersion(const Lock& lock) const -> SerializedType
 {
     auto contract = Unit::IDVersion(lock);
-    contract.set_type(core::internal::translate(core::UnitType::Currency));
+    contract.set_type(
+        contract::internal::translate(contract::UnitType::Currency));
     auto& currency = *contract.mutable_currency();
     currency.set_version(1);
     currency.set_tla(tla_);

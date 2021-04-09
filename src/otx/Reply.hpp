@@ -19,7 +19,7 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/otx/Reply.hpp"
-#include "opentxs/protobuf/OTXEnums.pb.h"
+#include "opentxs/otx/Types.hpp"
 #include "opentxs/protobuf/ServerReply.pb.h"
 
 namespace opentxs
@@ -59,7 +59,7 @@ public:
     }
     auto Server() const -> const identifier::Server& final { return server_; }
     auto Success() const -> bool final { return success_; }
-    auto Type() const -> proto::ServerReplyType final { return type_; }
+    auto Type() const -> otx::ServerReplyType final { return type_; }
 
     ~Reply() final = default;
 
@@ -68,7 +68,7 @@ private:
 
     const OTNymID recipient_;
     const OTServerID server_;
-    const proto::ServerReplyType type_;
+    const otx::ServerReplyType type_;
     const bool success_;
     const RequestNumber number_;
     const std::shared_ptr<const proto::OTXPush> payload_;
@@ -95,7 +95,7 @@ private:
         const Nym_p signer,
         const identifier::Nym& recipient,
         const identifier::Server& server,
-        const proto::ServerReplyType type,
+        const otx::ServerReplyType type,
         const RequestNumber number,
         const bool success,
         std::shared_ptr<const proto::OTXPush>&& push);

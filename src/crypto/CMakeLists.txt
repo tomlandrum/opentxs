@@ -12,7 +12,6 @@ add_library(
   "Bip32.hpp"
   "Bip39.cpp"
   "Bip39.hpp"
-  "Crypto.cpp"
   "Envelope.cpp"
   "Envelope.hpp"
   "HDNode.cpp"

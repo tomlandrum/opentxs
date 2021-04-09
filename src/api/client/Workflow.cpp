@@ -3,17 +3,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"             // IWYU pragma: associated
-#include "1_Internal.hpp"           // IWYU pragma: associated
-#include "api/client/Workflow.hpp"  // IWYU pragma: associated
-
 #include <algorithm>
 #include <chrono>
 #include <iterator>
 #include <memory>
 #include <type_traits>
 
+#include "0_stdafx.hpp"             // IWYU pragma: associated
+#include "1_Internal.hpp"           // IWYU pragma: associated
+#include "api/client/Workflow.hpp"  // IWYU pragma: associated
 #include "internal/api/Api.hpp"
+#include "internal/api/client/Client.hpp"
 #include "internal/api/client/Factory.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.tpp"
@@ -22,6 +22,8 @@
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/client/Activity.hpp"
 #include "opentxs/api/client/Contacts.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #if OT_CASH
@@ -48,7 +50,6 @@
 #include "opentxs/protobuf/InstrumentRevision.pb.h"
 #include "opentxs/protobuf/PaymentEvent.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
-#include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
 #include "opentxs/protobuf/RPCEnums.pb.h"
 #include "opentxs/protobuf/RPCPush.pb.h"
@@ -79,19 +80,19 @@ namespace opentxs::api::client
 #if OT_CASH
 auto Workflow::ContainsCash(const proto::PaymentWorkflow& workflow) -> bool
 {
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH: {
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingCash:
+        case PaymentWorkflowType::IncomingCash: {
             return true;
         }
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER:
+        case PaymentWorkflowType::Error:
+        case PaymentWorkflowType::OutgoingCheque:
+        case PaymentWorkflowType::IncomingCheque:
+        case PaymentWorkflowType::OutgoingInvoice:
+        case PaymentWorkflowType::IncomingInvoice:
+        case PaymentWorkflowType::OutgoingTransfer:
+        case PaymentWorkflowType::IncomingTransfer:
+        case PaymentWorkflowType::InternalTransfer:
         default: {
         }
     }
@@ -102,20 +103,19 @@ auto Workflow::ContainsCash(const proto::PaymentWorkflow& workflow) -> bool
 
 auto Workflow::ContainsCheque(const proto::PaymentWorkflow& workflow) -> bool
 {
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE: {
-
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingCheque:
+        case PaymentWorkflowType::IncomingCheque:
+        case PaymentWorkflowType::OutgoingInvoice:
+        case PaymentWorkflowType::IncomingInvoice: {
             return true;
         }
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH:
+        case PaymentWorkflowType::Error:
+        case PaymentWorkflowType::OutgoingTransfer:
+        case PaymentWorkflowType::IncomingTransfer:
+        case PaymentWorkflowType::InternalTransfer:
+        case PaymentWorkflowType::OutgoingCash:
+        case PaymentWorkflowType::IncomingCash:
         default: {
         }
     }
@@ -125,20 +125,19 @@ auto Workflow::ContainsCheque(const proto::PaymentWorkflow& workflow) -> bool
 
 auto Workflow::ContainsTransfer(const proto::PaymentWorkflow& workflow) -> bool
 {
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
-
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingTransfer:
+        case PaymentWorkflowType::IncomingTransfer:
+        case PaymentWorkflowType::InternalTransfer: {
             return true;
         }
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH:
+        case PaymentWorkflowType::Error:
+        case PaymentWorkflowType::OutgoingCheque:
+        case PaymentWorkflowType::IncomingCheque:
+        case PaymentWorkflowType::OutgoingInvoice:
+        case PaymentWorkflowType::IncomingInvoice:
+        case PaymentWorkflowType::OutgoingCash:
+        case PaymentWorkflowType::IncomingCash:
         default: {
         }
     }
@@ -213,14 +212,14 @@ auto Workflow::InstantiateCheque(
     const api::internal::Core& core,
     const proto::PaymentWorkflow& workflow) -> Workflow::Cheque
 {
-    Cheque output{proto::PAYMENTWORKFLOWSTATE_ERROR, nullptr};
+    Cheque output{PaymentWorkflowState::Error, nullptr};
     auto& [state, cheque] = output;
 
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE: {
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingCheque:
+        case PaymentWorkflowType::IncomingCheque:
+        case PaymentWorkflowType::OutgoingInvoice:
+        case PaymentWorkflowType::IncomingInvoice: {
             cheque.reset(core.Factory().Cheque().release());
 
             OT_ASSERT(cheque)
@@ -241,14 +240,14 @@ auto Workflow::InstantiateCheque(
                 return output;
             }
 
-            state = workflow.state();
+            state = internal::translate(workflow.state());
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH:
+        case PaymentWorkflowType::Error:
+        case PaymentWorkflowType::OutgoingTransfer:
+        case PaymentWorkflowType::IncomingTransfer:
+        case PaymentWorkflowType::InternalTransfer:
+        case PaymentWorkflowType::OutgoingCash:
+        case PaymentWorkflowType::IncomingCash:
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow type")
                 .Flush();
@@ -263,12 +262,12 @@ auto Workflow::InstantiatePurse(
     const api::internal::Core& core,
     const proto::PaymentWorkflow& workflow) -> Workflow::Purse
 {
-    Purse output{proto::PAYMENTWORKFLOWSTATE_ERROR, nullptr};
+    Purse output{PaymentWorkflowState::Error, nullptr};
     auto& [state, purse] = output;
 
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH: {
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingCash:
+        case PaymentWorkflowType::IncomingCash: {
             const auto serialized = ExtractPurse(workflow);
 
             if (false == bool(serialized)) { return output; }
@@ -284,16 +283,16 @@ auto Workflow::InstantiatePurse(
                 return output;
             }
 
-            state = workflow.state();
+            state = internal::translate(workflow.state());
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER:
+        case PaymentWorkflowType::Error:
+        case PaymentWorkflowType::OutgoingCheque:
+        case PaymentWorkflowType::IncomingCheque:
+        case PaymentWorkflowType::OutgoingInvoice:
+        case PaymentWorkflowType::IncomingInvoice:
+        case PaymentWorkflowType::OutgoingTransfer:
+        case PaymentWorkflowType::IncomingTransfer:
+        case PaymentWorkflowType::InternalTransfer:
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow type")
                 .Flush();
@@ -308,13 +307,13 @@ auto Workflow::InstantiateTransfer(
     const api::internal::Core& core,
     const proto::PaymentWorkflow& workflow) -> Workflow::Transfer
 {
-    Transfer output{proto::PAYMENTWORKFLOWSTATE_ERROR, nullptr};
+    Transfer output{PaymentWorkflowState::Error, nullptr};
     auto& [state, transfer] = output;
 
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingTransfer:
+        case PaymentWorkflowType::IncomingTransfer:
+        case PaymentWorkflowType::InternalTransfer: {
             const auto serialized = ExtractTransfer(workflow);
 
             if (serialized.empty()) { return output; }
@@ -330,16 +329,16 @@ auto Workflow::InstantiateTransfer(
                 return output;
             }
 
-            state = workflow.state();
+            state = internal::translate(workflow.state());
         } break;
 
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH:
+        case PaymentWorkflowType::Error:
+        case PaymentWorkflowType::OutgoingCheque:
+        case PaymentWorkflowType::IncomingCheque:
+        case PaymentWorkflowType::OutgoingInvoice:
+        case PaymentWorkflowType::IncomingInvoice:
+        case PaymentWorkflowType::OutgoingCash:
+        case PaymentWorkflowType::IncomingCash:
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow type")
                 .Flush();
@@ -357,11 +356,11 @@ auto Workflow::UUID(
     auto notaryID = Identifier::Factory();
     TransactionNumber number{0};
 
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE: {
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingCheque:
+        case PaymentWorkflowType::IncomingCheque:
+        case PaymentWorkflowType::OutgoingInvoice:
+        case PaymentWorkflowType::IncomingInvoice: {
             [[maybe_unused]] auto [state, cheque] =
                 InstantiateCheque(core, workflow);
 
@@ -374,9 +373,9 @@ auto Workflow::UUID(
             notaryID = cheque->GetNotaryID();
             number = cheque->GetTransactionNum();
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+        case PaymentWorkflowType::OutgoingTransfer:
+        case PaymentWorkflowType::IncomingTransfer:
+        case PaymentWorkflowType::InternalTransfer: {
             [[maybe_unused]] auto [state, transfer] =
                 InstantiateTransfer(core, workflow);
 
@@ -390,8 +389,8 @@ auto Workflow::UUID(
             notaryID = transfer->GetPurportedNotaryID();
             number = transfer->GetTransactionNum();
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH: {
+        case PaymentWorkflowType::OutgoingCash:
+        case PaymentWorkflowType::IncomingCash: {
             // TODO
         } break;
         default: {
@@ -420,13 +419,13 @@ auto Workflow::UUID(const Identifier& notary, const TransactionNumber& number)
 namespace implementation
 {
 const Workflow::VersionMap Workflow::versions_{
-    {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE, {1, 1, 1}},
-    {proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE, {1, 1, 1}},
-    {proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER, {2, 1, 2}},
-    {proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER, {2, 1, 2}},
-    {proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER, {2, 1, 2}},
-    {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH, {3, 1, 3}},
-    {proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH, {3, 1, 3}},
+    {PaymentWorkflowType::OutgoingCheque, {1, 1, 1}},
+    {PaymentWorkflowType::IncomingCheque, {1, 1, 1}},
+    {PaymentWorkflowType::OutgoingTransfer, {2, 1, 2}},
+    {PaymentWorkflowType::IncomingTransfer, {2, 1, 2}},
+    {PaymentWorkflowType::InternalTransfer, {2, 1, 2}},
+    {PaymentWorkflowType::OutgoingCash, {3, 1, 3}},
+    {PaymentWorkflowType::IncomingCash, {3, 1, 3}},
 };
 
 Workflow::Workflow(
@@ -463,9 +462,9 @@ auto Workflow::AbortTransfer(
 
     const bool isInternal = isInternalTransfer(
         transfer.GetRealAccountID(), transfer.GetDestinationAcctID());
-    const std::set<proto::PaymentWorkflowType> type{
-        isInternal ? proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER
-                   : proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER};
+    const std::set<PaymentWorkflowType> type{
+        isInternal ? PaymentWorkflowType::InternalTransfer
+                   : PaymentWorkflowType::OutgoingTransfer};
     Lock global(lock_);
     const auto workflow = get_workflow(global, type, nymID.str(), transfer);
 
@@ -486,12 +485,11 @@ auto Workflow::AbortTransfer(
         nymID.str(),
         "",
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_ABORTED,
+        PaymentWorkflowState::Aborted,
         proto::PAYMENTEVENTTYPE_ABORT,
         (isInternal
-             ? versions_.at(proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER).event_
-             : versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER)
-                   .event_),
+             ? versions_.at(PaymentWorkflowType::InternalTransfer).event_
+             : versions_.at(PaymentWorkflowType::OutgoingTransfer).event_),
         reply,
         transfer.GetRealAccountID(),
         true);
@@ -527,8 +525,8 @@ auto Workflow::AcceptTransfer(
     // Ignore this event for internal transfers.
     if (isInternal) { return true; }
 
-    const std::set<proto::PaymentWorkflowType> type{
-        proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER};
+    const std::set<PaymentWorkflowType> type{
+        PaymentWorkflowType::IncomingTransfer};
     Lock global(lock_);
     const auto workflow = get_workflow(global, type, nymID.str(), *transfer);
 
@@ -549,9 +547,9 @@ auto Workflow::AcceptTransfer(
         nymID.str(),
         senderNymID,
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_COMPLETED,
+        PaymentWorkflowState::Completed,
         proto::PAYMENTEVENTTYPE_ACCEPT,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER).event_,
+        versions_.at(PaymentWorkflowType::OutgoingTransfer).event_,
         reply,
         accountID,
         true);
@@ -566,9 +564,9 @@ auto Workflow::AcknowledgeTransfer(
 
     const bool isInternal = isInternalTransfer(
         transfer.GetRealAccountID(), transfer.GetDestinationAcctID());
-    const std::set<proto::PaymentWorkflowType> type{
-        isInternal ? proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER
-                   : proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER};
+    const std::set<PaymentWorkflowType> type{
+        isInternal ? PaymentWorkflowType::InternalTransfer
+                   : PaymentWorkflowType::OutgoingTransfer};
     Lock global(lock_);
     const auto workflow = get_workflow(global, type, nymID.str(), transfer);
 
@@ -589,10 +587,10 @@ auto Workflow::AcknowledgeTransfer(
     // acknowledgement. The timing of those two events is indeterminate,
     // therefore if the state has already advanced, add the acknowledge event
     // but do not change the state.
-    const proto::PaymentWorkflowState state =
-        (proto::PAYMENTWORKFLOWSTATE_CONVEYED == workflow->state())
-            ? proto::PAYMENTWORKFLOWSTATE_CONVEYED
-            : proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED;
+    const PaymentWorkflowState state = (PaymentWorkflowState::Conveyed ==
+                                        internal::translate(workflow->state()))
+                                           ? PaymentWorkflowState::Conveyed
+                                           : PaymentWorkflowState::Acknowledged;
 
     return add_transfer_event(
         lock,
@@ -602,9 +600,8 @@ auto Workflow::AcknowledgeTransfer(
         state,
         proto::PAYMENTEVENTTYPE_ACKNOWLEDGE,
         (isInternal
-             ? versions_.at(proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER).event_
-             : versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER)
-                   .event_),
+             ? versions_.at(PaymentWorkflowType::InternalTransfer).event_
+             : versions_.at(PaymentWorkflowType::OutgoingTransfer).event_),
         reply,
         transfer.GetRealAccountID(),
         true);
@@ -619,20 +616,18 @@ auto Workflow::AllocateCash(
     auto workflowID = Identifier::Random();
     proto::PaymentWorkflow workflow{};
     workflow.set_version(
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH).workflow_);
+        versions_.at(api::client::PaymentWorkflowType::OutgoingCash).workflow_);
     workflow.set_id(workflowID->str());
-    workflow.set_type(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH);
-    workflow.set_state(proto::PAYMENTWORKFLOWSTATE_UNSENT);
+    workflow.set_type(internal::translate(PaymentWorkflowType::OutgoingCash));
+    workflow.set_state(internal::translate(PaymentWorkflowState::Unsent));
     auto& source = *(workflow.add_source());
-    source.set_version(
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH).source_);
+    source.set_version(versions_.at(PaymentWorkflowType::OutgoingCash).source_);
     source.set_id(workflowID->str());
     source.set_revision(1);
     source.set_item(proto::ToString(purse.Serialize()));
     workflow.set_notary(purse.Notary().str());
     auto& event = *workflow.add_event();
-    event.set_version(
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH).event_);
+    event.set_version(versions_.at(PaymentWorkflowType::OutgoingCash).event_);
     event.set_time(Clock::to_time_t(Clock::now()));
     event.set_type(proto::PAYMENTEVENTTYPE_CREATE);
     event.set_method(proto::TRANSPORTMETHOD_NONE);
@@ -655,7 +650,7 @@ auto Workflow::add_cheque_event(
     const std::string& nymID,
     const std::string&,
     proto::PaymentWorkflow& workflow,
-    const proto::PaymentWorkflowState newState,
+    const PaymentWorkflowState newState,
     const proto::PaymentEventType newEventType,
     const VersionNumber version,
     const Message& request,
@@ -666,7 +661,7 @@ auto Workflow::add_cheque_event(
     const bool success = cheque_deposit_success(reply);
 
     if (success) {
-        workflow.set_state(newState);
+        workflow.set_state(internal::translate(newState));
 
         if ((false == account.empty()) && (0 == workflow.account_size())) {
             workflow.add_account(account.str());
@@ -718,7 +713,7 @@ auto Workflow::add_cheque_event(
     const std::string& nymID,
     const Identifier& accountID,
     proto::PaymentWorkflow& workflow,
-    const proto::PaymentWorkflowState newState,
+    const PaymentWorkflowState newState,
     const proto::PaymentEventType newEventType,
     const VersionNumber version,
     const identifier::Nym& recipientNymID,
@@ -727,7 +722,7 @@ auto Workflow::add_cheque_event(
 {
     auto message = String::Factory();
     receipt.SaveContractRaw(message);
-    workflow.set_state(newState);
+    workflow.set_state(internal::translate(newState));
     auto& event = *(workflow.add_event());
     event.set_version(version);
     event.set_type(newEventType);
@@ -750,14 +745,14 @@ auto Workflow::add_transfer_event(
     const std::string& nymID,
     const std::string& eventNym,
     proto::PaymentWorkflow& workflow,
-    const proto::PaymentWorkflowState newState,
+    const PaymentWorkflowState newState,
     const proto::PaymentEventType newEventType,
     const VersionNumber version,
     const Message& message,
     const Identifier& account,
     const bool success) const -> bool
 {
-    if (success) { workflow.set_state(newState); }
+    if (success) { workflow.set_state(internal::translate(newState)); }
 
     auto& event = *(workflow.add_event());
     event.set_version(version);
@@ -798,14 +793,14 @@ auto Workflow::add_transfer_event(
     const std::string& notaryID,
     const std::string& eventNym,
     proto::PaymentWorkflow& workflow,
-    const proto::PaymentWorkflowState newState,
+    const api::client::PaymentWorkflowState newState,
     const proto::PaymentEventType newEventType,
     const VersionNumber version,
     const OTTransaction& receipt,
     const Identifier& account,
     const bool success) const -> bool
 {
-    if (success) { workflow.set_state(newState); }
+    if (success) { workflow.set_state(internal::translate(newState)); }
 
     auto& event = *(workflow.add_event());
     event.set_version(version);
@@ -845,8 +840,8 @@ auto Workflow::can_abort_transfer(const proto::PaymentWorkflow& workflow)
 {
     bool correctState{false};
 
-    switch (workflow.state()) {
-        case proto::PAYMENTWORKFLOWSTATE_INITIATED: {
+    switch (internal::translate(workflow.state())) {
+        case PaymentWorkflowState::Initiated: {
             correctState = true;
         } break;
         default: {
@@ -867,9 +862,9 @@ auto Workflow::can_accept_cheque(const proto::PaymentWorkflow& workflow) -> bool
 {
     bool correctState{false};
 
-    switch (workflow.state()) {
-        case proto::PAYMENTWORKFLOWSTATE_EXPIRED:
-        case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+    switch (internal::translate(workflow.state())) {
+        case PaymentWorkflowState::Expired:
+        case PaymentWorkflowState::Conveyed: {
             correctState = true;
         } break;
         default: {
@@ -891,8 +886,8 @@ auto Workflow::can_accept_transfer(const proto::PaymentWorkflow& workflow)
 {
     bool correctState{false};
 
-    switch (workflow.state()) {
-        case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+    switch (internal::translate(workflow.state())) {
+        case PaymentWorkflowState::Conveyed: {
             correctState = true;
         } break;
         default: {
@@ -914,9 +909,9 @@ auto Workflow::can_acknowledge_transfer(const proto::PaymentWorkflow& workflow)
 {
     bool correctState{false};
 
-    switch (workflow.state()) {
-        case proto::PAYMENTWORKFLOWSTATE_INITIATED:
-        case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+    switch (internal::translate(workflow.state())) {
+        case PaymentWorkflowState::Initiated:
+        case PaymentWorkflowState::Conveyed: {
             correctState = true;
         } break;
         default: {
@@ -938,9 +933,9 @@ auto Workflow::can_cancel_cheque(const proto::PaymentWorkflow& workflow) -> bool
 {
     bool correctState{false};
 
-    switch (workflow.state()) {
-        case proto::PAYMENTWORKFLOWSTATE_UNSENT:
-        case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+    switch (internal::translate(workflow.state())) {
+        case PaymentWorkflowState::Unsent:
+        case PaymentWorkflowState::Conveyed: {
             correctState = true;
         } break;
         default: {
@@ -962,14 +957,16 @@ auto Workflow::can_clear_transfer(const proto::PaymentWorkflow& workflow)
 {
     bool correctState{false};
 
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER: {
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingTransfer: {
             correctState =
-                (proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED == workflow.state());
+                (PaymentWorkflowState::Acknowledged ==
+                 internal::translate(workflow.state()));
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+        case PaymentWorkflowType::InternalTransfer: {
             correctState =
-                (proto::PAYMENTWORKFLOWSTATE_CONVEYED == workflow.state());
+                (PaymentWorkflowState::Conveyed ==
+                 internal::translate(workflow.state()));
         } break;
         default: {
         }
@@ -988,7 +985,8 @@ auto Workflow::can_clear_transfer(const proto::PaymentWorkflow& workflow)
 auto Workflow::can_complete_transfer(const proto::PaymentWorkflow& workflow)
     -> bool
 {
-    if (proto::PAYMENTWORKFLOWSTATE_ACCEPTED != workflow.state()) {
+    if (PaymentWorkflowState::Accepted !=
+        internal::translate(workflow.state())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow state (")(
             workflow.state())(")")
             .Flush();
@@ -1002,7 +1000,8 @@ auto Workflow::can_complete_transfer(const proto::PaymentWorkflow& workflow)
 #if OT_CASH
 auto Workflow::can_convey_cash(const proto::PaymentWorkflow& workflow) -> bool
 {
-    if (proto::PAYMENTWORKFLOWSTATE_EXPIRED == workflow.state()) {
+    if (PaymentWorkflowState::Expired ==
+        internal::translate(workflow.state())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow state.")
             .Flush();
 
@@ -1015,7 +1014,7 @@ auto Workflow::can_convey_cash(const proto::PaymentWorkflow& workflow) -> bool
 
 auto Workflow::can_convey_cheque(const proto::PaymentWorkflow& workflow) -> bool
 {
-    if (proto::PAYMENTWORKFLOWSTATE_UNSENT != workflow.state()) {
+    if (PaymentWorkflowState::Unsent != internal::translate(workflow.state())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow state.")
             .Flush();
 
@@ -1028,13 +1027,12 @@ auto Workflow::can_convey_cheque(const proto::PaymentWorkflow& workflow) -> bool
 auto Workflow::can_convey_transfer(const proto::PaymentWorkflow& workflow)
     -> bool
 {
-    switch (workflow.state()) {
-        case proto::PAYMENTWORKFLOWSTATE_INITIATED:
-        case proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED: {
-
+    switch (internal::translate(workflow.state())) {
+        case PaymentWorkflowState::Initiated:
+        case PaymentWorkflowState::Acknowledged: {
             return true;
         }
-        case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+        case PaymentWorkflowState::Conveyed: {
             break;
         }
         default: {
@@ -1049,7 +1047,8 @@ auto Workflow::can_convey_transfer(const proto::PaymentWorkflow& workflow)
 auto Workflow::can_deposit_cheque(const proto::PaymentWorkflow& workflow)
     -> bool
 {
-    if (proto::PAYMENTWORKFLOWSTATE_CONVEYED != workflow.state()) {
+    if (PaymentWorkflowState::Conveyed !=
+        internal::translate(workflow.state())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow state.")
             .Flush();
 
@@ -1065,20 +1064,20 @@ auto Workflow::can_expire_cheque(
 {
     bool correctState{false};
 
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE: {
-            switch (workflow.state()) {
-                case proto::PAYMENTWORKFLOWSTATE_UNSENT:
-                case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+    switch (internal::translate(workflow.type())) {
+        case PaymentWorkflowType::OutgoingCheque: {
+            switch (internal::translate(workflow.state())) {
+                case PaymentWorkflowState::Unsent:
+                case PaymentWorkflowState::Conveyed: {
                     correctState = true;
                 } break;
                 default: {
                 }
             }
         } break;
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE: {
-            switch (workflow.state()) {
-                case proto::PAYMENTWORKFLOWSTATE_CONVEYED: {
+        case PaymentWorkflowType::IncomingCheque: {
+            switch (internal::translate(workflow.state())) {
+                case PaymentWorkflowState::Conveyed: {
                     correctState = true;
                 } break;
                 default: {
@@ -1109,7 +1108,8 @@ auto Workflow::can_expire_cheque(
 
 auto Workflow::can_finish_cheque(const proto::PaymentWorkflow& workflow) -> bool
 {
-    if (proto::PAYMENTWORKFLOWSTATE_ACCEPTED != workflow.state()) {
+    if (PaymentWorkflowState::Accepted !=
+        internal::translate(workflow.state())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect workflow state.")
             .Flush();
 
@@ -1129,7 +1129,7 @@ auto Workflow::CancelCheque(
     const auto nymID = cheque.GetSenderNymID().str();
     Lock global(lock_);
     const auto workflow = get_workflow(
-        global, {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE}, nymID, cheque);
+        global, {PaymentWorkflowType::OutgoingCheque}, nymID, cheque);
 
     if (false == bool(workflow)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -1150,9 +1150,9 @@ auto Workflow::CancelCheque(
         nymID,
         "",
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_CANCELLED,
+        PaymentWorkflowState::Cancelled,
         proto::PAYMENTEVENTTYPE_CANCEL,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE).event_,
+        versions_.at(PaymentWorkflowType::OutgoingCheque).event_,
         request,
         reply,
         accountID);
@@ -1193,7 +1193,7 @@ auto Workflow::ClearCheque(
     const auto nymID = cheque->GetSenderNymID().str();
     Lock global(lock_);
     const auto workflow = get_workflow(
-        global, {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE}, nymID, *cheque);
+        global, {PaymentWorkflowType::OutgoingCheque}, nymID, *cheque);
 
     if (false == bool(workflow)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -1216,9 +1216,9 @@ auto Workflow::ClearCheque(
         nymID,
         api_.Factory().Identifier(workflow->account(0)),
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_ACCEPTED,
+        PaymentWorkflowState::Accepted,
         proto::PAYMENTEVENTTYPE_ACCEPT,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE).event_,
+        versions_.at(PaymentWorkflowType::OutgoingCheque).event_,
         recipientNymID,
         receipt,
         time);
@@ -1291,9 +1291,9 @@ auto Workflow::ClearTransfer(
     }
 
     const bool isInternal = isInternalTransfer(accountID, destinationAccountID);
-    const std::set<proto::PaymentWorkflowType> type{
-        isInternal ? proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER
-                   : proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER};
+    const std::set<PaymentWorkflowType> type{
+        isInternal ? PaymentWorkflowType::InternalTransfer
+                   : PaymentWorkflowType::OutgoingTransfer};
     Lock global(lock_);
     const auto workflow = get_workflow(global, type, nymID.str(), *transfer);
 
@@ -1315,12 +1315,11 @@ auto Workflow::ClearTransfer(
         notaryID.str(),
         (isInternal ? std::string{""} : depositorNymID->str()),
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_ACCEPTED,
+        PaymentWorkflowState::Accepted,
         proto::PAYMENTEVENTTYPE_ACCEPT,
         (isInternal
-             ? versions_.at(proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER).event_
-             : versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER)
-                   .event_),
+             ? versions_.at(PaymentWorkflowType::InternalTransfer).event_
+             : versions_.at(PaymentWorkflowType::OutgoingTransfer).event_),
         receipt,
         accountID,
         true);
@@ -1390,9 +1389,9 @@ auto Workflow::CompleteTransfer(
     }
 
     const bool isInternal = isInternalTransfer(accountID, destinationAccountID);
-    const std::set<proto::PaymentWorkflowType> type{
-        isInternal ? proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER
-                   : proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER};
+    const std::set<PaymentWorkflowType> type{
+        isInternal ? PaymentWorkflowType::InternalTransfer
+                   : PaymentWorkflowType::OutgoingTransfer};
     Lock global(lock_);
     const auto workflow = get_workflow(global, type, nymID.str(), *transfer);
 
@@ -1414,12 +1413,11 @@ auto Workflow::CompleteTransfer(
         notaryID.str(),
         (isInternal ? std::string{""} : depositorNymID->str()),
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_COMPLETED,
+        PaymentWorkflowState::Completed,
         proto::PAYMENTEVENTTYPE_COMPLETE,
         (isInternal
-             ? versions_.at(proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER).event_
-             : versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER)
-                   .event_),
+             ? versions_.at(PaymentWorkflowType::InternalTransfer).event_
+             : versions_.at(PaymentWorkflowType::OutgoingTransfer).event_),
         receipt,
         transfer->GetRealAccountID(),
         true);
@@ -1441,10 +1439,7 @@ auto Workflow::convey_incoming_transfer(
 {
     Lock global(lock_);
     const auto existing = get_workflow(
-        global,
-        {proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER},
-        nymID.str(),
-        transfer);
+        global, {PaymentWorkflowType::IncomingTransfer}, nymID.str(), transfer);
 
     if (existing) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -1459,11 +1454,11 @@ auto Workflow::convey_incoming_transfer(
         global,
         nymID.str(),
         transfer,
-        proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER).workflow_,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER).source_,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER).event_,
+        PaymentWorkflowType::IncomingTransfer,
+        PaymentWorkflowState::Conveyed,
+        versions_.at(PaymentWorkflowType::IncomingTransfer).workflow_,
+        versions_.at(PaymentWorkflowType::IncomingTransfer).source_,
+        versions_.at(PaymentWorkflowType::IncomingTransfer).event_,
         senderNymID,
         accountID,
         notaryID.str(),
@@ -1510,10 +1505,7 @@ auto Workflow::convey_internal_transfer(
 {
     Lock global(lock_);
     const auto workflow = get_workflow(
-        global,
-        {proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER},
-        nymID.str(),
-        transfer);
+        global, {PaymentWorkflowType::InternalTransfer}, nymID.str(), transfer);
 
     if (false == bool(workflow)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -1535,18 +1527,16 @@ auto Workflow::convey_internal_transfer(
         notaryID.str(),
         "",
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED,
+        PaymentWorkflowState::Conveyed,
         proto::PAYMENTEVENTTYPE_CONVEY,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER).event_,
+        versions_.at(PaymentWorkflowType::InternalTransfer).event_,
         pending,
         transfer.GetDestinationAcctID(),
         true);
 
     if (output) {
-
         return Identifier::Factory(workflow->id());
     } else {
-
         return Identifier::Factory();
     }
 }
@@ -1577,11 +1567,9 @@ auto Workflow::ConveyTransfer(
     const bool isInternal = (0 == senderNymID.compare(recipientNymID));
 
     if (isInternal) {
-
         return convey_internal_transfer(
             nymID, notaryID, pending, senderNymID, *transfer);
     } else {
-
         return convey_incoming_transfer(
 
             nymID, notaryID, pending, senderNymID, recipientNymID, *transfer);
@@ -1592,8 +1580,8 @@ auto Workflow::create_cheque(
     const Lock& lock,
     const std::string& nymID,
     const opentxs::Cheque& cheque,
-    const proto::PaymentWorkflowType workflowType,
-    const proto::PaymentWorkflowState workflowState,
+    const PaymentWorkflowType workflowType,
+    const PaymentWorkflowState workflowState,
     const VersionNumber workflowVersion,
     const VersionNumber sourceVersion,
     const VersionNumber eventVersion,
@@ -1612,8 +1600,8 @@ auto Workflow::create_cheque(
     workflowID = Identifier::Random();
     workflow.set_version(workflowVersion);
     workflow.set_id(workflowID->str());
-    workflow.set_type(workflowType);
-    workflow.set_state(workflowState);
+    workflow.set_type(internal::translate(workflowType));
+    workflow.set_state(internal::translate(workflowState));
     auto& source = *(workflow.add_source());
     source.set_version(sourceVersion);
     source.set_id(chequeID->str());
@@ -1637,10 +1625,10 @@ auto Workflow::create_cheque(
     } else {
         event.set_time(Clock::to_time_t(Clock::now()));
 
-        if (proto::PAYMENTWORKFLOWSTATE_UNSENT == workflowState) {
+        if (PaymentWorkflowState::Unsent == workflowState) {
             event.set_type(proto::PAYMENTEVENTTYPE_CREATE);
             event.set_method(proto::TRANSPORTMETHOD_NONE);
-        } else if (proto::PAYMENTWORKFLOWSTATE_CONVEYED == workflowState) {
+        } else if (PaymentWorkflowState::Conveyed == workflowState) {
             event.set_type(proto::PAYMENTEVENTTYPE_CONVEY);
             event.set_method(proto::TRANSPORTMETHOD_OOB);
         } else {
@@ -1674,8 +1662,8 @@ auto Workflow::create_transfer(
     const Lock& global,
     const std::string& nymID,
     const Item& transfer,
-    const proto::PaymentWorkflowType workflowType,
-    const proto::PaymentWorkflowState workflowState,
+    const PaymentWorkflowType workflowType,
+    const PaymentWorkflowState workflowState,
     const VersionNumber workflowVersion,
     const VersionNumber sourceVersion,
     const VersionNumber eventVersion,
@@ -1710,8 +1698,8 @@ auto Workflow::create_transfer(
     workflowID = Identifier::Random();
     workflow.set_version(workflowVersion);
     workflow.set_id(workflowID->str());
-    workflow.set_type(workflowType);
-    workflow.set_state(workflowState);
+    workflow.set_type(internal::translate(workflowType));
+    workflow.set_state(internal::translate(workflowState));
     auto& source = *(workflow.add_source());
     source.set_version(sourceVersion);
     source.set_id(transferID->str());
@@ -1728,10 +1716,10 @@ auto Workflow::create_transfer(
     event.set_version(eventVersion);
     event.set_time(Clock::to_time_t(Clock::now()));
 
-    if (proto::PAYMENTWORKFLOWSTATE_INITIATED == workflowState) {
+    if (PaymentWorkflowState::Initiated == workflowState) {
         event.set_type(proto::PAYMENTEVENTTYPE_CREATE);
         event.set_method(proto::TRANSPORTMETHOD_OT);
-    } else if (proto::PAYMENTWORKFLOWSTATE_CONVEYED == workflowState) {
+    } else if (PaymentWorkflowState::Conveyed == workflowState) {
         event.set_type(proto::PAYMENTEVENTTYPE_CONVEY);
         event.set_method(proto::TRANSPORTMETHOD_OT);
     } else {
@@ -1776,8 +1764,8 @@ auto Workflow::CreateTransfer(const Item& transfer, const Message& request)
     Lock global(lock_);
     const auto existing = get_workflow(
         global,
-        {isInternal ? proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER
-                    : proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER},
+        {isInternal ? PaymentWorkflowType::InternalTransfer
+                    : PaymentWorkflowType::OutgoingTransfer},
         senderNymID.Get(),
         transfer);
 
@@ -1793,21 +1781,18 @@ auto Workflow::CreateTransfer(const Item& transfer, const Message& request)
         global,
         senderNymID.Get(),
         transfer,
-        (isInternal ? proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER
-                    : proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER),
-        proto::PAYMENTWORKFLOWSTATE_INITIATED,
-        (isInternal ? versions_.at(proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER)
-                          .workflow_
-                    : versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER)
-                          .workflow_),
+        (isInternal ? PaymentWorkflowType::InternalTransfer
+                    : PaymentWorkflowType::OutgoingTransfer),
+        PaymentWorkflowState::Initiated,
         (isInternal
-             ? versions_.at(proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER).source_
-             : versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER)
-                   .source_),
+             ? versions_.at(PaymentWorkflowType::InternalTransfer).workflow_
+             : versions_.at(PaymentWorkflowType::OutgoingTransfer).workflow_),
         (isInternal
-             ? versions_.at(proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER).event_
-             : versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER)
-                   .event_),
+             ? versions_.at(PaymentWorkflowType::InternalTransfer).source_
+             : versions_.at(PaymentWorkflowType::OutgoingTransfer).source_),
+        (isInternal
+             ? versions_.at(PaymentWorkflowType::InternalTransfer).event_
+             : versions_.at(PaymentWorkflowType::OutgoingTransfer).event_),
         "",
         accountID,
         request.m_strNotaryID->Get(),
@@ -1845,7 +1830,7 @@ auto Workflow::DepositCheque(
     const auto nymID = receiver.str();
     Lock global(lock_);
     const auto workflow = get_workflow(
-        global, {proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE}, nymID, cheque);
+        global, {PaymentWorkflowType::IncomingCheque}, nymID, cheque);
 
     if (false == bool(workflow)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -1864,9 +1849,9 @@ auto Workflow::DepositCheque(
         nymID,
         cheque.GetSenderNymID().str(),
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_COMPLETED,
+        PaymentWorkflowState::Completed,
         proto::PAYMENTEVENTTYPE_ACCEPT,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE).event_,
+        versions_.at(PaymentWorkflowType::IncomingCheque).event_,
         request,
         reply,
         accountID);
@@ -1898,8 +1883,8 @@ auto Workflow::ExpireCheque(
     Lock global(lock_);
     const auto workflow = get_workflow(
         global,
-        {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE,
-         proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE},
+        {PaymentWorkflowType::OutgoingCheque,
+         PaymentWorkflowType::IncomingCheque},
         nymID,
         cheque);
 
@@ -1915,7 +1900,7 @@ auto Workflow::ExpireCheque(
 
     if (false == can_expire_cheque(cheque, *workflow)) { return false; }
 
-    workflow->set_state(proto::PAYMENTWORKFLOWSTATE_EXPIRED);
+    workflow->set_state(internal::translate(PaymentWorkflowState::Expired));
 
     return save_workflow(nymID, cheque.GetSenderAcctID(), *workflow);
 }
@@ -1940,10 +1925,9 @@ auto Workflow::ExportCheque(const opentxs::Cheque& cheque) const -> bool
 
     if (false == can_convey_cheque(*workflow)) { return false; }
 
-    workflow->set_state(proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+    workflow->set_state(internal::translate(PaymentWorkflowState::Conveyed));
     auto& event = *(workflow->add_event());
-    event.set_version(
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE).event_);
+    event.set_version(versions_.at(PaymentWorkflowType::OutgoingCheque).event_);
     event.set_type(proto::PAYMENTEVENTTYPE_CONVEY);
     event.set_time(Clock::to_time_t(Clock::now()));
     event.set_method(proto::TRANSPORTMETHOD_OOB);
@@ -2011,7 +1995,6 @@ auto Workflow::extract_transfer_from_receipt(
 {
     if (transactionType::transferReceipt != receipt.GetType()) {
         if (transactionType::pending == receipt.GetType()) {
-
             return extract_transfer_from_pending(receipt);
         } else {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect receipt type: ")(
@@ -2134,7 +2117,7 @@ auto Workflow::FinishCheque(
     const auto nymID = cheque.GetSenderNymID().str();
     Lock global(lock_);
     const auto workflow = get_workflow(
-        global, {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE}, nymID, cheque);
+        global, {PaymentWorkflowType::OutgoingCheque}, nymID, cheque);
 
     if (false == bool(workflow)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -2155,9 +2138,9 @@ auto Workflow::FinishCheque(
         nymID,
         "",
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_COMPLETED,
+        PaymentWorkflowState::Completed,
         proto::PAYMENTEVENTTYPE_COMPLETE,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE).event_,
+        versions_.at(PaymentWorkflowType::OutgoingCheque).event_,
         request,
         reply,
         accountID);
@@ -2166,7 +2149,7 @@ auto Workflow::FinishCheque(
 template <typename T>
 auto Workflow::get_workflow(
     const Lock& global,
-    const std::set<proto::PaymentWorkflowType>& types,
+    const std::set<PaymentWorkflowType>& types,
     const std::string& nymID,
     const T& source) const -> std::shared_ptr<proto::PaymentWorkflow>
 {
@@ -2198,14 +2181,14 @@ auto Workflow::get_workflow_by_id(
 }
 
 auto Workflow::get_workflow_by_id(
-    const std::set<proto::PaymentWorkflowType>& types,
+    const std::set<PaymentWorkflowType>& types,
     const std::string& nymID,
     const std::string& workflowID) const
     -> std::shared_ptr<proto::PaymentWorkflow>
 {
     auto output = get_workflow_by_id(nymID, workflowID);
 
-    if (0 == types.count(output->type())) {
+    if (0 == types.count(internal::translate(output->type()))) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect type (")(
             output->type())(") on workflow ")(workflowID)(" for nym ")(nymID)
             .Flush();
@@ -2217,7 +2200,7 @@ auto Workflow::get_workflow_by_id(
 }
 
 auto Workflow::get_workflow_by_source(
-    const std::set<proto::PaymentWorkflowType>& types,
+    const std::set<PaymentWorkflowType>& types,
     const std::string& nymID,
     const std::string& sourceID) const
     -> std::shared_ptr<proto::PaymentWorkflow>
@@ -2257,10 +2240,7 @@ auto Workflow::ImportCheque(
 
     Lock global(lock_);
     const auto existing = get_workflow(
-        global,
-        {proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE},
-        nymID.str(),
-        cheque);
+        global, {PaymentWorkflowType::IncomingCheque}, nymID.str(), cheque);
 
     if (existing) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -2276,11 +2256,11 @@ auto Workflow::ImportCheque(
         global,
         nymID.str(),
         cheque,
-        proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE).workflow_,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE).source_,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE).event_,
+        PaymentWorkflowType::IncomingCheque,
+        PaymentWorkflowState::Conveyed,
+        versions_.at(PaymentWorkflowType::IncomingCheque).workflow_,
+        versions_.at(PaymentWorkflowType::IncomingCheque).source_,
+        versions_.at(PaymentWorkflowType::IncomingCheque).event_,
         party,
         accountID);
 
@@ -2359,8 +2339,8 @@ auto Workflow::isTransfer(const Item& item) -> bool
 
 auto Workflow::List(
     const identifier::Nym& nymID,
-    const proto::PaymentWorkflowType type,
-    const proto::PaymentWorkflowState state) const -> std::set<OTIdentifier>
+    const PaymentWorkflowType type,
+    const PaymentWorkflowState state) const -> std::set<OTIdentifier>
 {
     const auto input =
         api_.Storage().PaymentWorkflowsByState(nymID.str(), type, state);
@@ -2381,8 +2361,8 @@ auto Workflow::LoadCheque(
     const Identifier& chequeID) const -> Workflow::Cheque
 {
     auto workflow = get_workflow_by_source(
-        {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE,
-         proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE},
+        {PaymentWorkflowType::OutgoingCheque,
+         PaymentWorkflowType::IncomingCheque},
         nymID.str(),
         chequeID.str());
 
@@ -2402,8 +2382,8 @@ auto Workflow::LoadChequeByWorkflow(
     const Identifier& workflowID) const -> Workflow::Cheque
 {
     auto workflow = get_workflow_by_id(
-        {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE,
-         proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE},
+        {PaymentWorkflowType::OutgoingCheque,
+         PaymentWorkflowType::IncomingCheque},
         nymID.str(),
         workflowID.str());
 
@@ -2423,9 +2403,9 @@ auto Workflow::LoadTransfer(
     const Identifier& transferID) const -> Workflow::Transfer
 {
     auto workflow = get_workflow_by_source(
-        {proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER,
-         proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER,
-         proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER},
+        {PaymentWorkflowType::OutgoingTransfer,
+         PaymentWorkflowType::IncomingTransfer,
+         PaymentWorkflowType::InternalTransfer},
         nymID.str(),
         transferID.str());
 
@@ -2445,9 +2425,9 @@ auto Workflow::LoadTransferByWorkflow(
     const Identifier& workflowID) const -> Workflow::Transfer
 {
     auto workflow = get_workflow_by_id(
-        {proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER,
-         proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER,
-         proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER},
+        {PaymentWorkflowType::OutgoingTransfer,
+         PaymentWorkflowType::IncomingTransfer,
+         PaymentWorkflowType::InternalTransfer},
         nymID.str(),
         workflowID.str());
 
@@ -2482,20 +2462,18 @@ auto Workflow::ReceiveCash(
     auto workflowID = Identifier::Random();
     proto::PaymentWorkflow workflow{};
     workflow.set_version(
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH).workflow_);
+        versions_.at(PaymentWorkflowType::IncomingCash).workflow_);
     workflow.set_id(workflowID->str());
-    workflow.set_type(proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH);
-    workflow.set_state(proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+    workflow.set_type(internal::translate(PaymentWorkflowType::IncomingCash));
+    workflow.set_state(internal::translate(PaymentWorkflowState::Conveyed));
     auto& source = *(workflow.add_source());
-    source.set_version(
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH).source_);
+    source.set_version(versions_.at(PaymentWorkflowType::IncomingCash).source_);
     source.set_id(workflowID->str());
     source.set_revision(1);
     source.set_item(proto::ToString(purse.Serialize()));
     workflow.set_notary(purse.Notary().str());
     auto& event = *workflow.add_event();
-    event.set_version(
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH).event_);
+    event.set_version(versions_.at(PaymentWorkflowType::IncomingCash).event_);
     event.set_time(message.m_lTime);
     event.set_type(proto::PAYMENTEVENTTYPE_CONVEY);
     event.set_method(proto::TRANSPORTMETHOD_OT);
@@ -2534,10 +2512,7 @@ auto Workflow::ReceiveCheque(
 
     Lock global(lock_);
     const auto existing = get_workflow(
-        global,
-        {proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE},
-        nymID.str(),
-        cheque);
+        global, {PaymentWorkflowType::IncomingCheque}, nymID.str(), cheque);
 
     if (existing) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -2553,11 +2528,11 @@ auto Workflow::ReceiveCheque(
         global,
         nymID.str(),
         cheque,
-        proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE).workflow_,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE).source_,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE).event_,
+        PaymentWorkflowType::IncomingCheque,
+        PaymentWorkflowState::Conveyed,
+        versions_.at(PaymentWorkflowType::IncomingCheque).workflow_,
+        versions_.at(PaymentWorkflowType::IncomingCheque).source_,
+        versions_.at(PaymentWorkflowType::IncomingCheque).event_,
         party,
         accountID,
         &message);
@@ -2668,11 +2643,12 @@ auto Workflow::SendCash(
 
     const bool haveReply = (nullptr != reply);
 
-    if (haveReply) { workflow.set_state(proto::PAYMENTWORKFLOWSTATE_CONVEYED); }
+    if (haveReply) {
+        workflow.set_state(internal::translate(PaymentWorkflowState::Conveyed));
+    }
 
     auto& event = *(workflow.add_event());
-    event.set_version(
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCASH).event_);
+    event.set_version(versions_.at(PaymentWorkflowType::OutgoingCash).event_);
     event.set_type(proto::PAYMENTEVENTTYPE_CONVEY);
     event.add_item(String::Factory(request)->Get());
     event.set_method(proto::TRANSPORTMETHOD_OT);
@@ -2704,7 +2680,7 @@ auto Workflow::SendCheque(
     const auto nymID = cheque.GetSenderNymID().str();
     Lock global(lock_);
     const auto workflow = get_workflow(
-        global, {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE}, nymID, cheque);
+        global, {PaymentWorkflowType::OutgoingCheque}, nymID, cheque);
 
     if (false == bool(workflow)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -2725,9 +2701,9 @@ auto Workflow::SendCheque(
         nymID,
         request.m_strNymID2->Get(),
         *workflow,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED,
+        PaymentWorkflowState::Conveyed,
         proto::PAYMENTEVENTTYPE_CONVEY,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE).event_,
+        versions_.at(PaymentWorkflowType::OutgoingCheque).event_,
         request,
         reply,
         accountID);
@@ -2852,7 +2828,7 @@ auto Workflow::WriteCheque(const opentxs::Cheque& cheque) const -> OTIdentifier
     const auto nymID = cheque.GetSenderNymID().str();
     Lock global(lock_);
     const auto existing = get_workflow(
-        global, {proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE}, nymID, cheque);
+        global, {PaymentWorkflowType::OutgoingCheque}, nymID, cheque);
 
     if (existing) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -2881,11 +2857,11 @@ auto Workflow::WriteCheque(const opentxs::Cheque& cheque) const -> OTIdentifier
         global,
         nymID,
         cheque,
-        proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE,
-        proto::PAYMENTWORKFLOWSTATE_UNSENT,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE).workflow_,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE).source_,
-        versions_.at(proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE).event_,
+        PaymentWorkflowType::OutgoingCheque,
+        PaymentWorkflowState::Unsent,
+        versions_.at(PaymentWorkflowType::OutgoingCheque).workflow_,
+        versions_.at(PaymentWorkflowType::OutgoingCheque).source_,
+        versions_.at(PaymentWorkflowType::OutgoingCheque).event_,
         party,
         cheque.GetSenderAcctID());
     global.unlock();

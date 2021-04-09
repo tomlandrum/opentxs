@@ -3,10 +3,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef OPENTXS_CRYPTO_SYMMETRIC_MODE_HPP
-#define OPENTXS_CRYPTO_SYMMETRIC_MODE_HPP
+#ifndef OPENTXS_CRYPTO_KEY_SYMMETRIC_SOURCE_HPP
+#define OPENTXS_CRYPTO_KEY_SYMMETRIC_SOURCE_HPP
 
-#include "opentxs/crypto/Types.hpp"  // IWYU pragma: associated
+#include "opentxs/crypto/key/Types.hpp"  // IWYU pragma: associated
 
 #include <cstdint>
 
@@ -14,16 +14,24 @@ namespace opentxs
 {
 namespace crypto
 {
-enum class SymmetricMode : std::uint8_t {
+namespace key
+{
+namespace symmetric
+{
+
+enum class Source : std::uint8_t {
     Error = 0,
-    ChaCha20Poly1305 = 1,
+    Raw = 1,
+    ECDH = 2,
+    Argon2 = 3,
 };
 
-constexpr auto value(const SymmetricMode in) noexcept
+constexpr auto value(const Source in) noexcept
 {
     return static_cast<std::uint8_t>(in);
 }
-
+}  // namespace symmetric
+}  // namespace key
 }  // namespace crypto
 }  // namespace opentxs
 #endif

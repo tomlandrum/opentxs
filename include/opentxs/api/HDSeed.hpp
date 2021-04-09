@@ -24,7 +24,7 @@
 #include "opentxs/crypto/key/HD.hpp"
 #include "opentxs/crypto/key/Secp256k1.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
-#include "opentxs/identity/KeyRole.hpp"
+#include "opentxs/crypto/key/asymmetric/Role.hpp"
 
 namespace opentxs
 {
@@ -72,7 +72,8 @@ public:
         const EcdsaCurve& curve,
         const Path& path,
         const PasswordPrompt& reason,
-        const identity::KeyRole role = identity::KeyRole::Sign,
+        const opentxs::crypto::key::asymmetric::Role role =
+            opentxs::crypto::key::asymmetric::Role::Sign,
         const VersionNumber version =
             opentxs::crypto::key::EllipticCurve::DefaultVersion) const = 0;
     OPENTXS_EXPORT virtual OTSecret GetOrCreateDefaultSeed(

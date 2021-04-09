@@ -15,7 +15,7 @@ public:
     auto RandomKeypair(
         const AllocateOutput,
         const AllocateOutput,
-        const identity::KeyRole,
+        const opentxs::crypto::key::asymmetric::Role,
         const NymParameters&,
         const AllocateOutput) const noexcept -> bool final
     {

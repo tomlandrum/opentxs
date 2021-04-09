@@ -30,7 +30,7 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
@@ -38,7 +38,7 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"             // IWYU pragma: keep
 #include "opentxs/protobuf/ServerContract.pb.h"  // IWYU pragma: keep
@@ -259,8 +259,8 @@ TEST_F(Test_DepositCheques, introduction_server)
 
     ASSERT_NE(0, task1.first);
     ASSERT_NE(0, task2.first);
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, task1.second.get().first);
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, task2.second.get().first);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, task1.second.get().first);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, task2.second.get().first);
 
     alice_client_.OTX().ContextIdle(alice_nym_id_, server_1_.ID()).get();
     bob_client_.OTX().ContextIdle(bob_nym_id_, server_1_.ID()).get();
@@ -337,7 +337,7 @@ TEST_F(Test_DepositCheques, issue_dollars)
         UNIT_DEFINITION_UNIT_OF_ACCOUNT,
         reasonI);
 
-    EXPECT_EQ(core::UnitType::Currency, contract->Type());
+    EXPECT_EQ(contract::UnitType::Currency, contract->Type());
     EXPECT_TRUE(unit_id_->empty());
 
     unit_id_->Assign(contract->ID());
@@ -358,7 +358,7 @@ TEST_F(Test_DepositCheques, issue_dollars)
     const auto result = future.get();
 
     EXPECT_NE(0, taskID);
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, result.first);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, result.first);
     ASSERT_TRUE(result.second);
 
     issuer_account_id_->SetString(result.second->m_strAcctID);
@@ -379,7 +379,7 @@ TEST_F(Test_DepositCheques, pay_alice)
     auto& [taskID, future] = task;
 
     ASSERT_NE(0, taskID);
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, future.get().first);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, future.get().first);
 
     issuer_client_.OTX().ContextIdle(issuer_nym_id_, server_1_.ID()).get();
     alice_client_.OTX().ContextIdle(alice_nym_id_, server_1_.ID()).get();
@@ -411,7 +411,7 @@ TEST_F(Test_DepositCheques, process_inbox_issuer)
 
     const auto [status, message] = future.get();
 
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, status);
     ASSERT_TRUE(message);
 
     const auto account = issuer_client_.Wallet().Account(issuer_account_id_);

@@ -12,6 +12,7 @@ add_library(
   "EllipticCurve.hpp"
   "HD.cpp"
   "HD.hpp"
+  "Key.cpp"
   "Keypair.cpp"
   "Keypair.hpp"
   "Null.hpp"

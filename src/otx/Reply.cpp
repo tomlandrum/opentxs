@@ -12,6 +12,7 @@
 
 #include "core/contract/Signable.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/otx/OTX.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -24,8 +25,8 @@
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/otx/Reply.hpp"
+#include "opentxs/otx/Types.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/OTXPush.pb.h"
 #include "opentxs/protobuf/ServerReply.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
@@ -45,7 +46,7 @@ auto Reply::Factory(
     const Nym_p signer,
     const identifier::Nym& recipient,
     const identifier::Server& server,
-    const proto::ServerReplyType type,
+    const otx::ServerReplyType type,
     const RequestNumber number,
     const bool success,
     const PasswordPrompt& reason,
@@ -88,7 +89,7 @@ Reply::Reply(
     const Nym_p signer,
     const identifier::Nym& recipient,
     const identifier::Server& server,
-    const proto::ServerReplyType type,
+    const otx::ServerReplyType type,
     const RequestNumber number,
     const bool success,
     std::shared_ptr<const proto::OTXPush>&& push)
@@ -120,7 +121,7 @@ Reply::Reply(
               : Signatures{})
     , recipient_(identifier::Nym::Factory(serialized.nym()))
     , server_(identifier::Server::Factory(serialized.server()))
-    , type_(serialized.type())
+    , type_(otx::internal::translate(serialized.type()))
     , success_(serialized.success())
     , number_(serialized.request())
     , payload_(
@@ -187,7 +188,7 @@ auto Reply::id_version(const Lock& lock) const -> proto::ServerReply
     proto::ServerReply output{};
     output.set_version(version_);
     output.clear_id();  // Must be blank
-    output.set_type(type_);
+    output.set_type(otx::internal::translate(type_));
     output.set_nym(recipient_->str());
     output.set_server(server_->str());
     output.set_request(number_);

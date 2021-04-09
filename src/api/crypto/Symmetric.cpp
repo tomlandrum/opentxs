@@ -39,14 +39,14 @@ Symmetric::Symmetric(const api::internal::Core& api) noexcept
 {
 }
 
-auto Symmetric::GetEngine(const opentxs::crypto::SymmetricMode mode) const
-    -> const opentxs::crypto::SymmetricProvider*
+auto Symmetric::GetEngine(const opentxs::crypto::key::symmetric::Algorithm mode)
+    const -> const opentxs::crypto::SymmetricProvider*
 {
     const opentxs::crypto::SymmetricProvider* engine{nullptr};
 
     // Add support for other crypto engines here
     switch (mode) {
-        case opentxs::crypto::SymmetricMode::ChaCha20Poly1305: {
+        case opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305: {
             engine = &api_.Crypto().Sodium();
         } break;
         default: {
@@ -57,8 +57,8 @@ auto Symmetric::GetEngine(const opentxs::crypto::SymmetricMode mode) const
     return engine;
 }
 
-auto Symmetric::IvSize(const opentxs::crypto::SymmetricMode mode) const
-    -> std::size_t
+auto Symmetric::IvSize(
+    const opentxs::crypto::key::symmetric::Algorithm mode) const -> std::size_t
 {
     auto pEngine = GetEngine(mode);
 
@@ -75,7 +75,8 @@ auto Symmetric::IvSize(const opentxs::crypto::SymmetricMode mode) const
 
 auto Symmetric::Key(
     const PasswordPrompt& password,
-    const opentxs::crypto::SymmetricMode mode) const -> OTSymmetricKey
+    const opentxs::crypto::key::symmetric::Algorithm mode) const
+    -> OTSymmetricKey
 {
     auto engine = GetEngine(mode);
 
@@ -86,7 +87,8 @@ auto Symmetric::Key(
 
 auto Symmetric::Key(
     const proto::SymmetricKey& serialized,
-    const opentxs::crypto::SymmetricMode mode) const -> OTSymmetricKey
+    const opentxs::crypto::key::symmetric::Algorithm mode) const
+    -> OTSymmetricKey
 {
     auto engine = GetEngine(mode);
 
@@ -99,8 +101,8 @@ auto Symmetric::Key(
     const Secret& seed,
     const std::uint64_t operations,
     const std::uint64_t difficulty,
-    const opentxs::crypto::SymmetricMode mode,
-    const opentxs::crypto::SymmetricKeyType type) const -> OTSymmetricKey
+    const opentxs::crypto::key::symmetric::Algorithm mode,
+    const opentxs::crypto::key::symmetric::Source type) const -> OTSymmetricKey
 {
     auto engine = GetEngine(mode);
 

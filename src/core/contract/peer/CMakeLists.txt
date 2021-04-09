@@ -21,6 +21,7 @@ add_library(
   "OutBailmentReply.cpp"
   "OutBailmentRequest.cpp"
   "OutBailmentRequest.cpp"
+  "Peer.cpp"
   "PeerObject.cpp"
   "PeerObject.hpp"
   "PeerReply.cpp"

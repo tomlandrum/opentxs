@@ -1360,8 +1360,8 @@ TEST_F(Test_Rpc, Get_Workflow)
     const auto& workflow = client.Workflow();
     auto workflows = workflow.List(
         nym3id,
-        proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER,
-        proto::PAYMENTWORKFLOWSTATE_COMPLETED);
+        api::client::PaymentWorkflowType::InternalTransfer,
+        api::client::PaymentWorkflowState::Completed);
 
     EXPECT_TRUE(!workflows.empty());
 
@@ -1392,8 +1392,10 @@ TEST_F(Test_Rpc, Get_Workflow)
     const auto& paymentworkflow = response.workflow(0);
     EXPECT_STREQ(workflowid->str().c_str(), paymentworkflow.id().c_str());
     EXPECT_EQ(
-        proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER, paymentworkflow.type());
-    EXPECT_EQ(proto::PAYMENTWORKFLOWSTATE_COMPLETED, paymentworkflow.state());
+        api::client::PaymentWorkflowType::InternalTransfer,
+        paymentworkflow.type());
+    EXPECT_EQ(
+        api::client::PaymentWorkflowState::Completed, paymentworkflow.state());
 
     workflow_id_ = workflowid->str();
 }

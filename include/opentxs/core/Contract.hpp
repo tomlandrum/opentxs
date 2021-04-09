@@ -24,7 +24,6 @@
 #include "opentxs/core/StringXML.hpp"
 #include "opentxs/core/crypto/Signature.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace irr
 {

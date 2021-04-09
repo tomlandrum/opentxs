@@ -316,16 +316,18 @@ public:
         const std::string& accountID) const -> std::set<std::string> final;
     auto PaymentWorkflowsByState(
         const std::string& nymID,
-        const proto::PaymentWorkflowType type,
-        const proto::PaymentWorkflowState state) const
+        const api::client::PaymentWorkflowType type,
+        const api::client::PaymentWorkflowState state) const
         -> std::set<std::string> final;
     auto PaymentWorkflowsByUnit(
         const std::string& nymID,
         const std::string& unitID) const -> std::set<std::string> final;
     auto PaymentWorkflowState(
         const std::string& nymID,
-        const std::string& workflowID) const -> std::
-        pair<proto::PaymentWorkflowType, proto::PaymentWorkflowState> final;
+        const std::string& workflowID) const
+        -> std::pair<
+            api::client::PaymentWorkflowType,
+            api::client::PaymentWorkflowState> final;
     auto RelabelThread(const std::string& threadID, const std::string& label)
         const -> bool final;
     auto RemoveBlockchainThreadItem(

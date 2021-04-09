@@ -33,7 +33,7 @@ extern "C" {
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Secret.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/identity/Types.hpp"
@@ -166,7 +166,7 @@ auto Secp256k1::PubkeyAdd(
 auto Secp256k1::RandomKeypair(
     const AllocateOutput privateKey,
     const AllocateOutput publicKey,
-    const identity::KeyRole,
+    const opentxs::crypto::key::asymmetric::Role,
     const NymParameters&,
     const AllocateOutput) const noexcept -> bool
 {
@@ -305,14 +305,14 @@ auto Secp256k1::SharedSecret(
     const PasswordPrompt& reason,
     Secret& secret) const noexcept -> bool
 {
-    if (publicKey.keyType() != crypto::AsymmetricKeyType::Secp256k1) {
+    if (publicKey.keyType() != crypto::key::asymmetric::Algorithm::Secp256k1) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Public key is wrong type")
             .Flush();
 
         return false;
     }
 
-    if (privateKey.keyType() != crypto::AsymmetricKeyType::Secp256k1) {
+    if (privateKey.keyType() != crypto::key::asymmetric::Algorithm::Secp256k1) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Private key is wrong type")
             .Flush();
 
@@ -375,7 +375,7 @@ auto Secp256k1::Sign(
     const AllocateOutput signature,
     const PasswordPrompt& reason) const -> bool
 {
-    if (crypto::AsymmetricKeyType::Secp256k1 != key.keyType()) {
+    if (crypto::key::asymmetric::Algorithm::Secp256k1 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;
@@ -455,7 +455,7 @@ auto Secp256k1::SignDER(
     Space& output,
     const PasswordPrompt& reason) const noexcept -> bool
 {
-    if (crypto::AsymmetricKeyType::Secp256k1 != key.keyType()) {
+    if (crypto::key::asymmetric::Algorithm::Secp256k1 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;
@@ -535,7 +535,7 @@ auto Secp256k1::Verify(
     const Data& signature,
     const crypto::HashType type) const -> bool
 {
-    if (crypto::AsymmetricKeyType::Secp256k1 != key.keyType()) {
+    if (crypto::key::asymmetric::Algorithm::Secp256k1 != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;

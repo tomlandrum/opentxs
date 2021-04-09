@@ -20,6 +20,7 @@
 #include "internal/api/client/Factory.hpp"
 #include "internal/core/Core.hpp"
 #include "internal/identity/Identity.hpp"
+#include "internal/otx/OTX.hpp"
 #include "internal/otx/consensus/Consensus.hpp"
 #include "opentxs/Exclusive.hpp"
 #include "opentxs/Pimpl.hpp"
@@ -39,11 +40,11 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/NymFile.hpp"
-#include "opentxs/core/PeerObjectType.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
 #include "opentxs/core/contract/peer/PeerObject.hpp"
+#include "opentxs/core/contract/peer/PeerObjectType.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -54,6 +55,7 @@
 #include "opentxs/network/zeromq/Message.hpp"
 #include "opentxs/network/zeromq/socket/Push.hpp"
 #include "opentxs/network/zeromq/socket/Socket.hpp"
+#include "opentxs/otx/ConsensusType.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
@@ -799,11 +801,11 @@ auto Wallet::context(
         return nullptr;
     }
 
-    switch (serialized->type()) {
-        case proto::CONSENSUSTYPE_SERVER: {
+    switch (otx::internal::translate(serialized->type())) {
+        case otx::ConsensusType::Server: {
             instantiate_server_context(*serialized, localNym, remoteNym, entry);
         } break;
-        case proto::CONSENSUSTYPE_CLIENT: {
+        case otx::ConsensusType::Client: {
             instantiate_client_context(*serialized, localNym, remoteNym, entry);
         } break;
         default: {
@@ -1578,7 +1580,7 @@ auto Wallet::PeerReplyReceive(
     const identifier::Nym& nym,
     const PeerObject& reply) const -> bool
 {
-    if (core::PeerObjectType::Response != reply.Type()) {
+    if (contract::peer::PeerObjectType::Response != reply.Type()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": This is not a peer reply.")
             .Flush();
 
@@ -1801,7 +1803,7 @@ auto Wallet::PeerRequestReceive(
     const identifier::Nym& nym,
     const PeerObject& request) const -> bool
 {
-    if (core::PeerObjectType::Request != request.Type()) {
+    if (contract::peer::PeerObjectType::Request != request.Type()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": This is not a peer request.")
             .Flush();
 

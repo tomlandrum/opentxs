@@ -19,6 +19,7 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/otx/Request.hpp"
+#include "opentxs/otx/Types.hpp"
 #include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/ServerRequest.pb.h"
 
@@ -53,7 +54,7 @@ public:
     }
     auto Number() const -> RequestNumber final;
     auto Server() const -> const identifier::Server& final { return server_; }
-    auto Type() const -> proto::ServerRequestType final { return type_; }
+    auto Type() const -> otx::ServerRequestType final { return type_; }
 
     auto SetIncludeNym(const bool include, const PasswordPrompt& reason)
         -> bool final;
@@ -65,7 +66,7 @@ private:
 
     const OTNymID initiator_;
     const OTServerID server_;
-    const proto::ServerRequestType type_;
+    const otx::ServerRequestType type_;
     const RequestNumber number_;
     OTFlag include_nym_;
 
@@ -91,7 +92,7 @@ private:
         const Nym_p signer,
         const identifier::Nym& initiator,
         const identifier::Server& server,
-        const proto::ServerRequestType type,
+        const otx::ServerRequestType type,
         const RequestNumber number);
     Request(
         const api::internal::Core& api,

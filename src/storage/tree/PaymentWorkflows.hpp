@@ -45,15 +45,16 @@ namespace opentxs::storage
 class PaymentWorkflows final : public Node
 {
 public:
-    using State =
-        std::pair<proto::PaymentWorkflowType, proto::PaymentWorkflowState>;
+    using State = std::pair<
+        api::client::PaymentWorkflowType,
+        api::client::PaymentWorkflowState>;
     using Workflows = std::set<std::string>;
 
     auto GetState(const std::string& workflowID) const -> State;
     auto ListByAccount(const std::string& accountID) const -> Workflows;
     auto ListByState(
-        proto::PaymentWorkflowType type,
-        proto::PaymentWorkflowState state) const -> Workflows;
+        api::client::PaymentWorkflowType type,
+        api::client::PaymentWorkflowState state) const -> Workflows;
     auto ListByUnit(const std::string& unitID) const -> Workflows;
     auto Load(
         const std::string& id,
@@ -75,7 +76,7 @@ private:
     std::map<std::string, Workflows> account_workflow_map_;
     std::map<std::string, Workflows> unit_workflow_map_;
     std::map<std::string, State> workflow_state_map_;
-    std::map<proto::PaymentWorkflowType, Workflows> type_workflow_map_;
+    std::map<api::client::PaymentWorkflowType, Workflows> type_workflow_map_;
     std::map<State, Workflows> state_workflow_map_;
 
     auto save(const Lock& lock) const -> bool final;
@@ -84,16 +85,16 @@ private:
     void add_state_index(
         const Lock& lock,
         const std::string& workflowID,
-        proto::PaymentWorkflowType type,
-        proto::PaymentWorkflowState state);
+        api::client::PaymentWorkflowType type,
+        api::client::PaymentWorkflowState state);
     void delete_by_value(const std::string& value);
     void init(const std::string& hash) final;
     void reindex(
         const Lock& lock,
         const std::string& workflowID,
-        const proto::PaymentWorkflowType type,
-        const proto::PaymentWorkflowState newState,
-        proto::PaymentWorkflowState& state);
+        const api::client::PaymentWorkflowType type,
+        const api::client::PaymentWorkflowState newState,
+        api::client::PaymentWorkflowState& state);
 
     PaymentWorkflows(
         const opentxs::api::storage::Driver& storage,

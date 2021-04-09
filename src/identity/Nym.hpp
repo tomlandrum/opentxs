@@ -23,12 +23,13 @@
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
+#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {
@@ -114,25 +115,30 @@ public:
     void GetIdentifier(identifier::Nym& theIdentifier) const final;
     void GetIdentifier(String& theIdentifier) const final;
     auto GetPrivateAuthKey(
-        crypto::AsymmetricKeyType keytype = crypto::AsymmetricKeyType::Null)
-        const -> const crypto::key::Asymmetric& final;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const
+        -> const crypto::key::Asymmetric& final;
     auto GetPrivateEncrKey(
-        crypto::AsymmetricKeyType keytype = crypto::AsymmetricKeyType::Null)
-        const -> const crypto::key::Asymmetric& final;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const
+        -> const crypto::key::Asymmetric& final;
     auto GetPrivateSignKey(
-        crypto::AsymmetricKeyType keytype = crypto::AsymmetricKeyType::Null)
-        const -> const crypto::key::Asymmetric& final;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const
+        -> const crypto::key::Asymmetric& final;
     auto GetPublicAuthKey(
-        crypto::AsymmetricKeyType keytype = crypto::AsymmetricKeyType::Null)
-        const -> const crypto::key::Asymmetric& final;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const
+        -> const crypto::key::Asymmetric& final;
     auto GetPublicEncrKey(
-        crypto::AsymmetricKeyType keytype = crypto::AsymmetricKeyType::Null)
-        const -> const crypto::key::Asymmetric& final;
+        crypto::key::asymmetric::Algorithm keytype =
+            crypto::key::asymmetric::Algorithm::Null) const
+        -> const crypto::key::Asymmetric& final;
     auto GetPublicKeysBySignature(
         crypto::key::Keypair::Keys& listOutput,
         const Signature& theSignature,
         char cKeyType) const -> std::int32_t final;
-    auto GetPublicSignKey(crypto::AsymmetricKeyType keytype) const
+    auto GetPublicSignKey(crypto::key::asymmetric::Algorithm keytype) const
         -> const crypto::key::Asymmetric& final;
     auto HasCapability(const NymCapability& capability) const -> bool final;
     auto ID() const -> const identifier::Nym& final { return id_; }
@@ -155,7 +161,7 @@ public:
     auto Unlock(
         const crypto::key::Asymmetric& dhKey,
         const std::uint32_t tag,
-        const crypto::AsymmetricKeyType type,
+        const crypto::key::asymmetric::Algorithm type,
         const crypto::key::Symmetric& key,
         PasswordPrompt& reason) const noexcept -> bool final;
     auto VerifyPseudonym() const -> bool final;
@@ -274,14 +280,20 @@ private:
         const PasswordPrompt& reason) noexcept(false) -> NymParameters;
 
     template <typename T>
-    auto get_private_auth_key(const T& lock, crypto::AsymmetricKeyType keytype)
-        const -> const crypto::key::Asymmetric&;
+    auto get_private_auth_key(
+        const T& lock,
+        crypto::key::asymmetric::Algorithm keytype) const
+        -> const crypto::key::Asymmetric&;
     template <typename T>
-    auto get_private_sign_key(const T& lock, crypto::AsymmetricKeyType keytype)
-        const -> const crypto::key::Asymmetric&;
+    auto get_private_sign_key(
+        const T& lock,
+        crypto::key::asymmetric::Algorithm keytype) const
+        -> const crypto::key::Asymmetric&;
     template <typename T>
-    auto get_public_sign_key(const T& lock, crypto::AsymmetricKeyType keytype)
-        const -> const crypto::key::Asymmetric&;
+    auto get_public_sign_key(
+        const T& lock,
+        crypto::key::asymmetric::Algorithm keytype) const
+        -> const crypto::key::Asymmetric&;
     auto has_capability(const eLock& lock, const NymCapability& capability)
         const -> bool;
     void init_claims(const eLock& lock) const;

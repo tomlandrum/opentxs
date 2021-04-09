@@ -14,6 +14,7 @@
 #include "2_Factory.hpp"
 #include "identity/credential/Base.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/crypto/key/Key.hpp"
 #include "internal/identity/Identity.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -21,9 +22,9 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
+#include "opentxs/crypto/key/asymmetric/Mode.hpp"
 #include "opentxs/identity/credential/Verification.hpp"
 #include "opentxs/identity/CredentialRole.hpp"
-#include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/Verification.pb.h"
@@ -119,7 +120,7 @@ Verification::Verification(
           params,
           version,
           identity::CredentialRole::Verify,
-          identity::KeyMode::Null,
+          crypto::key::asymmetric::Mode::Null,
           get_master_id(master))
     , data_(
           params.VerificationSet() ? *params.VerificationSet()
@@ -166,9 +167,8 @@ auto Verification::serialize(
     -> std::shared_ptr<Base::SerializedType>
 {
     auto serializedCredential = Base::serialize(lock, asPrivate, asSigned);
-    serializedCredential->set_mode(
-        opentxs::identity::credential::internal::translate(
-            identity::KeyMode::Null));
+    serializedCredential->set_mode(opentxs::crypto::key::internal::translate(
+        crypto::key::asymmetric::Mode::Null));
     serializedCredential->clear_signature();  // this fixes a bug, but shouldn't
 
     if (asSigned) {

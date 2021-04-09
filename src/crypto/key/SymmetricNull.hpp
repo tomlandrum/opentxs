@@ -28,7 +28,7 @@ public:
         const PasswordPrompt&,
         proto::Ciphertext&,
         const bool,
-        const opentxs::crypto::SymmetricMode,
+        const opentxs::crypto::key::symmetric::Algorithm,
         const ReadView) const -> bool final
     {
         return false;

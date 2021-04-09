@@ -16,9 +16,9 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/core/contract/peer/PeerObject.hpp"
+#include "opentxs/core/contract/peer/PeerObjectType.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
-#include "opentxs/core/PeerObjectType.hpp"
 #include "opentxs/protobuf/PeerObject.pb.h"
 
 namespace opentxs
@@ -66,7 +66,7 @@ public:
     auto Request() const -> const OTPeerRequest final { return request_; }
     auto Reply() const -> const OTPeerReply final { return reply_; }
     auto Serialize() const -> proto::PeerObject final;
-    auto Type() const -> core::PeerObjectType final { return type_; }
+    auto Type() const -> contract::peer::PeerObjectType final { return type_; }
     auto Validate() const -> bool final;
 
     auto Message() -> std::unique_ptr<std::string>& final { return message_; }
@@ -89,7 +89,7 @@ private:
 #if OT_CASH
     std::shared_ptr<blind::Purse> purse_{nullptr};
 #endif
-    core::PeerObjectType type_{core::PeerObjectType::Error};
+    contract::peer::PeerObjectType type_{contract::peer::PeerObjectType::Error};
     VersionNumber version_{0};
 
     Object(
@@ -130,7 +130,7 @@ private:
 #if OT_CASH
         const std::shared_ptr<blind::Purse> purse,
 #endif
-        const core::PeerObjectType type,
+        const contract::peer::PeerObjectType type,
         const VersionNumber version);
     Object() = delete;
 };

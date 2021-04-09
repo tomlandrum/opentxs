@@ -15,11 +15,11 @@
 
 #include "2_Factory.hpp"
 #include "core/contract/UnitDefinition.hpp"
-#include "internal/core/Core.hpp"
+#include "internal/core/contract/Contract.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
 #include "opentxs/protobuf/BasketItem.pb.h"
@@ -196,7 +196,8 @@ auto Basket::BasketID() const -> OTIdentifier
 auto Basket::IDVersion(const Lock& lock) const -> SerializedType
 {
     auto contract = Unit::IDVersion(lock);
-    contract.set_type(core::internal::translate(core::UnitType::Basket));
+    contract.set_type(
+        contract::internal::translate(contract::UnitType::Basket));
     auto basket = contract.mutable_basket();
     basket->set_version(1);
     basket->set_weight(weight_);

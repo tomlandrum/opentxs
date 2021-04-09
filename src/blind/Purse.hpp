@@ -144,7 +144,7 @@ public:
 private:
     friend opentxs::Factory;
 
-    static const opentxs::crypto::SymmetricMode mode_;
+    static const opentxs::crypto::key::symmetric::Algorithm mode_;
 
     const api::internal::Core& api_;
     const VersionNumber version_;

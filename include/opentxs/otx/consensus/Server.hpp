@@ -11,9 +11,9 @@
 #include <future>
 #include <tuple>
 
+#include "opentxs/otx/Types.hpp"
 #include "opentxs/otx/consensus/Base.hpp"
 #include "opentxs/otx/consensus/ManagedNumber.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 
 namespace opentxs
 {
@@ -68,7 +68,7 @@ class Server : virtual public Base
 {
 public:
     using DeliveryResult =
-        std::pair<proto::LastReplyStatus, std::shared_ptr<Message>>;
+        std::pair<otx::LastReplyStatus, std::shared_ptr<Message>>;
     using SendFuture = std::future<DeliveryResult>;
     using QueueResult = std::unique_ptr<SendFuture>;
     // account label, resync nym

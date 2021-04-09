@@ -16,7 +16,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/contract/Signable.hpp"
-#include "opentxs/protobuf/OTXEnums.pb.h"
+#include "opentxs/otx/Types.hpp"
 
 namespace opentxs
 {
@@ -55,7 +55,7 @@ public:
         const api::internal::Core& api,
         const Nym_p signer,
         const identifier::Server& server,
-        const proto::ServerRequestType type,
+        const otx::ServerRequestType type,
         const RequestNumber number,
         const PasswordPrompt& reason);
     OPENTXS_EXPORT static Pimpl<opentxs::otx::Request> Factory(
@@ -66,7 +66,7 @@ public:
     OPENTXS_EXPORT virtual const identifier::Nym& Initiator() const = 0;
     OPENTXS_EXPORT virtual RequestNumber Number() const = 0;
     OPENTXS_EXPORT virtual const identifier::Server& Server() const = 0;
-    OPENTXS_EXPORT virtual proto::ServerRequestType Type() const = 0;
+    OPENTXS_EXPORT virtual otx::ServerRequestType Type() const = 0;
 
     OPENTXS_EXPORT virtual bool SetIncludeNym(
         const bool include,

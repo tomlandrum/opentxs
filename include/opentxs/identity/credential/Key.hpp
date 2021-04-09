@@ -30,10 +30,10 @@ class Key : virtual public Base
 {
 public:
     OPENTXS_EXPORT virtual const crypto::key::Keypair& GetKeypair(
-        const crypto::AsymmetricKeyType type,
-        const identity::KeyRole role) const = 0;
+        const crypto::key::asymmetric::Algorithm type,
+        const opentxs::crypto::key::asymmetric::Role role) const = 0;
     OPENTXS_EXPORT virtual const crypto::key::Keypair& GetKeypair(
-        const identity::KeyRole role) const = 0;
+        const opentxs::crypto::key::asymmetric::Role role) const = 0;
     OPENTXS_EXPORT virtual std::int32_t GetPublicKeysBySignature(
         crypto::key::Keypair::Keys& listOutput,
         const opentxs::Signature& theSignature,
@@ -43,7 +43,8 @@ public:
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
-        identity::KeyRole key = identity::KeyRole::Sign,
+        opentxs::crypto::key::asymmetric::Role key =
+            opentxs::crypto::key::asymmetric::Role::Sign,
         const crypto::HashType hash = crypto::HashType::Error) const = 0;
 
     OPENTXS_EXPORT ~Key() override = default;

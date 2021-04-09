@@ -19,8 +19,8 @@
 
 #include "core/OTStorage.hpp"
 #include "internal/api/Api.hpp"
-#include "internal/core/Core.hpp"
 #include "internal/api/client/Client.hpp"
+#include "internal/core/contract/Contract.hpp"
 #include "opentxs/Shared.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/api/Editor.hpp"
@@ -42,7 +42,7 @@
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/NymFile.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/basket/Basket.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
 #include "opentxs/core/cron/OTCronItem.hpp"
@@ -2367,7 +2367,8 @@ auto OT_API::IsBasketCurrency(
     if (!loaded) { return false; }
 
     return (
-        core::UnitType::Basket == core::internal::translate(contract->type()));
+        contract::UnitType::Basket ==
+        contract::internal::translate(contract->type()));
 }
 
 // Get Basket Count (of member currency types.)
@@ -2385,8 +2386,8 @@ auto OT_API::GetBasketMemberCount(
 
     if (!serialized) { return 0; }
 
-    if (core::UnitType::Basket !=
-        core::internal::translate(serialized->type())) {
+    if (contract::UnitType::Basket !=
+        contract::internal::translate(serialized->type())) {
         return 0;
     }
 
@@ -2410,8 +2411,8 @@ auto OT_API::GetBasketMemberType(
 
     if (!serialized) { return false; }
 
-    if (core::UnitType::Basket !=
-        core::internal::translate(serialized->type())) {
+    if (contract::UnitType::Basket !=
+        contract::internal::translate(serialized->type())) {
         return false;
     }
 
@@ -2445,8 +2446,8 @@ auto OT_API::GetBasketMemberMinimumTransferAmount(
 
     if (!serialized) { return 0; }
 
-    if (core::UnitType::Basket !=
-        core::internal::translate(serialized->type())) {
+    if (contract::UnitType::Basket !=
+        contract::internal::translate(serialized->type())) {
         return 0;
     }
 
@@ -2475,8 +2476,8 @@ auto OT_API::GetBasketMinimumTransferAmount(
 
     if (!serialized) { return 0; }
 
-    if (core::UnitType::Basket !=
-        core::internal::translate(serialized->type())) {
+    if (contract::UnitType::Basket !=
+        contract::internal::translate(serialized->type())) {
         return 0;
     }
 

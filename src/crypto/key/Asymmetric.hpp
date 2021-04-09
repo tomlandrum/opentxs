@@ -69,7 +69,7 @@ public:
         const PasswordPrompt& password) const noexcept -> OTData final;
     auto CalculateTag(
         const identity::Authority& nym,
-        const crypto::AsymmetricKeyType type,
+        const crypto::key::asymmetric::Algorithm type,
         const PasswordPrompt& reason,
         std::uint32_t& tag,
         Secret& password) const noexcept -> bool final;
@@ -95,7 +95,7 @@ public:
         -> bool override;
     auto HasPrivate() const noexcept -> bool final { return has_private_; }
     auto HasPublic() const noexcept -> bool final { return has_public_; }
-    auto keyType() const noexcept -> crypto::AsymmetricKeyType final
+    auto keyType() const noexcept -> crypto::key::asymmetric::Algorithm final
     {
         return type_;
     }
@@ -109,7 +109,10 @@ public:
     auto PrivateKey(const PasswordPrompt& reason) const noexcept
         -> ReadView final;
     auto PublicKey() const noexcept -> ReadView final { return key_->Bytes(); }
-    auto Role() const noexcept -> identity::KeyRole final { return role_; }
+    auto Role() const noexcept -> opentxs::crypto::key::asymmetric::Role final
+    {
+        return role_;
+    }
     auto Serialize() const noexcept
         -> std::shared_ptr<proto::AsymmetricKey> override;
     auto SigHashType() const noexcept -> crypto::HashType override
@@ -150,8 +153,8 @@ protected:
     const api::internal::Core& api_;
     const crypto::AsymmetricProvider& provider_;
     const VersionNumber version_;
-    const crypto::AsymmetricKeyType type_;
-    const identity::KeyRole role_;
+    const crypto::key::asymmetric::Algorithm type_;
+    const opentxs::crypto::key::asymmetric::Role role_;
     bool has_public_;
     bool has_private_;
     OTSignatureMetadata* m_pMetadata;
@@ -212,7 +215,7 @@ protected:
     Asymmetric(
         const api::internal::Core& api,
         const crypto::AsymmetricProvider& engine,
-        const crypto::AsymmetricKeyType keyType,
+        const crypto::key::asymmetric::Algorithm keyType,
         const proto::KeyRole role,
         const bool hasPublic,
         const bool hasPrivate,
@@ -222,7 +225,7 @@ protected:
     Asymmetric(
         const api::internal::Core& api,
         const crypto::AsymmetricProvider& engine,
-        const crypto::AsymmetricKeyType keyType,
+        const crypto::key::asymmetric::Algorithm keyType,
         const proto::KeyRole role,
         const VersionNumber version,
         EncryptedExtractor) noexcept(false);

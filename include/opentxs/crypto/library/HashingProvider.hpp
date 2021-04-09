@@ -16,7 +16,6 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {

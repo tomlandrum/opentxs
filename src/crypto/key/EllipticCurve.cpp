@@ -53,7 +53,7 @@ EllipticCurve::EllipticCurve(
 EllipticCurve::EllipticCurve(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const crypto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const proto::KeyRole role,
     const VersionNumber version,
     const PasswordPrompt& reason) noexcept(false)
@@ -85,7 +85,7 @@ EllipticCurve::EllipticCurve(
 EllipticCurve::EllipticCurve(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const crypto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const Secret& privateKey,
     const Data& publicKey,
     const proto::KeyRole role,
@@ -114,7 +114,7 @@ EllipticCurve::EllipticCurve(
 EllipticCurve::EllipticCurve(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const proto::AsymmetricKeyType keyType,
+    const crypto::key::asymmetric::Algorithm keyType,
     const Secret& privateKey,
     const Data& publicKey,
     const proto::KeyRole role,

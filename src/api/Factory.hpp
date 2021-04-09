@@ -44,7 +44,6 @@
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/CurrencyContract.hpp"
 #include "opentxs/core/contract/SecurityContract.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
@@ -61,6 +60,7 @@
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/contract/peer/StoreSecret.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/core/crypto/PaymentCode.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
@@ -185,7 +185,7 @@ public:
     auto AsymmetricKey(
         const NymParameters& params,
         const opentxs::PasswordPrompt& reason,
-        const identity::KeyRole role,
+        const opentxs::crypto::key::asymmetric::Role role,
         const VersionNumber version) const -> OTAsymmetricKey final;
     auto AsymmetricKey(const proto::AsymmetricKey& serialized) const
         -> OTAsymmetricKey final;
@@ -366,7 +366,7 @@ public:
     auto ConnectionRequest(
         const Nym_p& nym,
         const identifier::Nym& recipient,
-        const core::ConnectionInfoType type,
+        const contract::peer::ConnectionInfoType type,
         const identifier::Server& server,
         const opentxs::PasswordPrompt& reason) const noexcept(false)
         -> OTConnectionRequest final;
@@ -449,7 +449,7 @@ public:
     auto Keypair(
         const NymParameters& nymParameters,
         const VersionNumber version,
-        const identity::KeyRole role,
+        const opentxs::crypto::key::asymmetric::Role role,
         const opentxs::PasswordPrompt& reason) const -> OTKeypair final;
     auto Keypair(
         const proto::AsymmetricKey& serializedPubkey,
@@ -463,7 +463,7 @@ public:
         const Bip32Index credset,
         const Bip32Index credindex,
         const EcdsaCurve& curve,
-        const identity::KeyRole role,
+        const opentxs::crypto::key::asymmetric::Role role,
         const opentxs::PasswordPrompt& reason) const -> OTKeypair final;
 #endif  // OT_CRYPTO_WITH_BIP32
     auto Ledger(
@@ -640,7 +640,7 @@ public:
         const identifier::Nym& initiator,
         const opentxs::Identifier& request,
         const identifier::Server& server,
-        const core::PeerRequestType type,
+        const contract::peer::PeerRequestType type,
         const bool& ack,
         const opentxs::PasswordPrompt& reason) const noexcept(false)
         -> OTReplyAcknowledgement final;
@@ -693,7 +693,7 @@ public:
     auto StoreSecret(
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const core::SecretType type,
+        const contract::peer::SecretType type,
         const std::string& primary,
         const std::string& secondary,
         const identifier::Server& server,
@@ -709,7 +709,7 @@ public:
     auto SymmetricKey(
         const opentxs::crypto::SymmetricProvider& engine,
         const opentxs::PasswordPrompt& password,
-        const opentxs::crypto::SymmetricMode mode) const
+        const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> OTSymmetricKey final;
     auto SymmetricKey(
         const opentxs::crypto::SymmetricProvider& engine,
@@ -720,7 +720,7 @@ public:
         const std::uint64_t operations,
         const std::uint64_t difficulty,
         const std::size_t size,
-        const opentxs::crypto::SymmetricKeyType type) const
+        const opentxs::crypto::key::symmetric::Source type) const
         -> OTSymmetricKey final;
     auto SymmetricKey(
         const opentxs::crypto::SymmetricProvider& engine,

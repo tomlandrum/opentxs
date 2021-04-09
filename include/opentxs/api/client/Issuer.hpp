@@ -17,7 +17,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/core/Types.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 
 namespace opentxs
@@ -68,18 +68,18 @@ public:
         const identifier::UnitDefinition& unitID,
         const bool onlyUnused = true) const = 0;
     virtual std::vector<ConnectionDetails> ConnectionInfo(
-        const core::ConnectionInfoType type) const = 0;
+        const contract::peer::ConnectionInfoType type) const = 0;
     virtual bool ConnectionInfoInitiated(
-        const core::ConnectionInfoType type) const = 0;
+        const contract::peer::ConnectionInfoType type) const = 0;
     virtual std::set<std::tuple<OTIdentifier, OTIdentifier, bool>> GetRequests(
-        const core::PeerRequestType type,
+        const contract::peer::PeerRequestType type,
         const RequestStatus state = RequestStatus::All) const = 0;
     virtual const identifier::Nym& IssuerID() const = 0;
     virtual const identifier::Nym& LocalNymID() const = 0;
     virtual bool Paired() const = 0;
     virtual const std::string& PairingCode() const = 0;
     virtual OTServerID PrimaryServer() const = 0;
-    virtual std::set<core::PeerRequestType> RequestTypes() const = 0;
+    virtual std::set<contract::peer::PeerRequestType> RequestTypes() const = 0;
     virtual proto::Issuer Serialize() const = 0;
     virtual bool StoreSecretComplete() const = 0;
     virtual bool StoreSecretInitiated() const = 0;
@@ -89,11 +89,11 @@ public:
         const identifier::UnitDefinition& unitID,
         const Identifier& accountID) = 0;
     virtual bool AddReply(
-        const core::PeerRequestType type,
+        const contract::peer::PeerRequestType type,
         const Identifier& requestID,
         const Identifier& replyID) = 0;
     virtual bool AddRequest(
-        const core::PeerRequestType type,
+        const contract::peer::PeerRequestType type,
         const Identifier& requestID) = 0;
     virtual bool RemoveAccount(
         const proto::ContactItemType type,
@@ -102,7 +102,7 @@ public:
     virtual void SetPaired(const bool paired) = 0;
     virtual void SetPairingCode(const std::string& code) = 0;
     virtual bool SetUsed(
-        const core::PeerRequestType type,
+        const contract::peer::PeerRequestType type,
         const Identifier& requestID,
         const bool isUsed = true) = 0;
 

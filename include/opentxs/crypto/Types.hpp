@@ -15,15 +15,12 @@ namespace opentxs
 {
 namespace crypto
 {
-enum class AsymmetricKeyType : std::uint8_t;
 enum class HashType : std::uint8_t;
 enum class Language : std::uint8_t;
 enum class SeedStrength : std::size_t;
 enum class SeedStyle : std::uint8_t;
 enum class SecretStyle : std::uint8_t;
 enum class SignatureRole : std::uint16_t;
-enum class SymmetricKeyType : std::uint8_t;
-enum class SymmetricMode : std::uint8_t;
 }  // namespace crypto
 
 using Bip32Network = std::uint32_t;

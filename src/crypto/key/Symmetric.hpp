@@ -21,7 +21,7 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
-#include "opentxs/crypto/SymmetricKeyType.hpp"
+#include "opentxs/crypto/key/symmetric/Source.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 
 namespace opentxs
@@ -55,8 +55,8 @@ public:
         const PasswordPrompt& reason,
         proto::Ciphertext& ciphertext,
         const bool attachKey = true,
-        const opentxs::crypto::SymmetricMode mode =
-            opentxs::crypto::SymmetricMode::Error,
+        const opentxs::crypto::key::symmetric::Algorithm mode =
+            opentxs::crypto::key::symmetric::Algorithm::Error,
         const ReadView iv = {}) const -> bool final;
     auto ID(const PasswordPrompt& reason) const -> OTIdentifier final;
     auto RawKey(const PasswordPrompt& reason, Secret& output) const
@@ -82,7 +82,8 @@ public:
         const std::size_t size,
         const std::uint64_t operations,
         const std::uint64_t difficulty,
-        const crypto::SymmetricKeyType type = crypto::SymmetricKeyType::Argon2);
+        const crypto::key::symmetric::Source type =
+            crypto::key::symmetric::Source::Argon2);
 
     ~Symmetric() final = default;
 
@@ -92,7 +93,7 @@ private:
             const api::internal::Core&,
             const crypto::SymmetricProvider&,
             const opentxs::PasswordPrompt&,
-            const crypto::SymmetricMode) noexcept;
+            const crypto::key::symmetric::Algorithm) noexcept;
     friend std::unique_ptr<crypto::key::Symmetric> opentxs::factory::
         SymmetricKey(
             const api::internal::Core&,
@@ -101,7 +102,7 @@ private:
             const std::uint64_t,
             const std::uint64_t,
             const std::size_t,
-            const crypto::SymmetricKeyType) noexcept;
+            const crypto::key::symmetric::Source) noexcept;
     friend std::unique_ptr<crypto::key::Symmetric> opentxs::factory::
         SymmetricKey(
             const api::internal::Core&,
@@ -114,7 +115,8 @@ private:
     /// The library providing the underlying crypto algorithms
     const crypto::SymmetricProvider& engine_;
     const VersionNumber version_{0};
-    const crypto::SymmetricKeyType type_{crypto::SymmetricKeyType::Error};
+    const crypto::key::symmetric::Source type_{
+        crypto::key::symmetric::Source::Error};
     /// Size of the plaintext key in bytes;
     std::size_t key_size_{0};
     std::uint64_t operations_{0};
@@ -150,7 +152,7 @@ private:
         const std::size_t inputSize,
         const std::uint8_t* iv,
         const std::size_t ivSize,
-        const opentxs::crypto::SymmetricMode mode,
+        const opentxs::crypto::key::symmetric::Algorithm mode,
         const PasswordPrompt& reason,
         proto::Ciphertext& ciphertext,
         const bool text = false) const -> bool;
@@ -158,8 +160,8 @@ private:
         const Lock& lock,
         const Secret& plaintextKey,
         const PasswordPrompt& reason,
-        const crypto::SymmetricKeyType type =
-            crypto::SymmetricKeyType::Argon2) const -> bool;
+        const crypto::key::symmetric::Source type =
+            crypto::key::symmetric::Source::Argon2) const -> bool;
     auto get_encrypted(const Lock& lock) const
         -> std::unique_ptr<proto::Ciphertext>&;
     auto get_password(
@@ -175,7 +177,7 @@ private:
         const api::internal::Core& api,
         const crypto::SymmetricProvider& engine,
         const VersionNumber version,
-        const crypto::SymmetricKeyType type,
+        const crypto::key::symmetric::Source type,
         const std::size_t keySize,
         std::string* salt,
         const std::uint64_t operations,

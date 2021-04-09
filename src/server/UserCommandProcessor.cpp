@@ -16,7 +16,7 @@
 
 #include "core/OTStorage.hpp"
 #include "internal/api/Api.hpp"
-#include "internal/core/Core.hpp"
+#include "internal/core/contract/Contract.hpp"
 #include "internal/api/server/Server.hpp"
 #include "opentxs/Exclusive.hpp"
 #include "opentxs/Pimpl.hpp"
@@ -43,7 +43,7 @@
 #include "opentxs/core/NymFile.hpp"
 #include "opentxs/core/OTTransaction.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
@@ -631,7 +631,7 @@ auto UserCommandProcessor::cmd_delete_asset_account(ReplyMessage& reply) const
     try {
         const auto contract = server_.API().Wallet().UnitDefinition(contractID);
 
-        if (contract->Type() == core::UnitType::Security) {
+        if (contract->Type() == contract::UnitType::Security) {
             if (false == contract->EraseAccountRecord(
                              server_.API().DataFolder(), accountID)) {
                 LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -1301,8 +1301,8 @@ auto UserCommandProcessor::cmd_issue_basket(ReplyMessage& reply) const -> bool
         return false;
     }
 
-    if (core::UnitType::Basket !=
-        core::internal::translate(serialized.type())) {
+    if (contract::UnitType::Basket !=
+        contract::internal::translate(serialized.type())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid contract type.").Flush();
 
         return false;
@@ -1391,8 +1391,8 @@ auto UserCommandProcessor::cmd_issue_basket(ReplyMessage& reply) const -> bool
         return false;
     }
 
-    if (core::UnitType::Basket !=
-        core::internal::translate(serialized.type())) {
+    if (contract::UnitType::Basket !=
+        contract::internal::translate(serialized.type())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid basket contract.")
             .Flush();
 
@@ -1914,7 +1914,7 @@ auto UserCommandProcessor::cmd_register_account(ReplyMessage& reply) const
         const auto contract = server_.API().Wallet().UnitDefinition(
             account.get().GetInstrumentDefinitionID());
 
-        if (contract->Type() == core::UnitType::Security) {
+        if (contract->Type() == contract::UnitType::Security) {
             // The instrument definition keeps a list of all accounts for that
             // type. (For shares, not for currencies.)
             if (false == contract->AddAccountRecord(
@@ -2084,8 +2084,8 @@ auto UserCommandProcessor::cmd_register_instrument_definition(
     const auto serialized = proto::Factory<proto::UnitDefinition>(
         Data::Factory(msgIn.m_ascPayload));
 
-    if (core::UnitType::Basket ==
-        core::internal::translate(serialized.type())) {
+    if (contract::UnitType::Basket ==
+        contract::internal::translate(serialized.type())) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect unit type.").Flush();
 
         return false;

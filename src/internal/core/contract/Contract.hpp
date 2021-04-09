@@ -10,18 +10,36 @@
 #include "opentxs/api/Core.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/core/PeerRequestType.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/Signable.hpp"
+#include "opentxs/core/contract/Types.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
+#include "opentxs/core/contract/peer/PeerRequestType.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
+
+namespace opentxs::contract::internal
+{
+using ProtocolVersionMap = std::map<ProtocolVersion, proto::ProtocolVersion>;
+using ProtocolVersionReverseMap =
+    std::map<proto::ProtocolVersion, ProtocolVersion>;
+using UnitTypeMap = std::map<UnitType, proto::UnitType>;
+using UnitTypeReverseMap = std::map<proto::UnitType, UnitType>;
+
+auto protocolversion_map() noexcept -> const ProtocolVersionMap&;
+auto unittype_map() noexcept -> const UnitTypeMap&;
+auto translate(const ProtocolVersion in) noexcept -> proto::ProtocolVersion;
+auto translate(const UnitType in) noexcept -> proto::UnitType;
+auto translate(const proto::ProtocolVersion in) noexcept -> ProtocolVersion;
+auto translate(const proto::UnitType in) noexcept -> UnitType;
+}  // namespace opentxs::contract::internal
 
 namespace opentxs::contract::blank
 {
@@ -105,7 +123,7 @@ struct Unit final : virtual public opentxs::contract::Unit, public Signable {
         return {};
     }
     auto TLA() const -> std::string final { return {}; }
-    auto Type() const -> core::UnitType final { return {}; }
+    auto Type() const -> contract::UnitType final { return {}; }
     auto UnitOfAccount() const -> proto::ContactItemType final { return {}; }
     auto VisitAccountRecords(
         const std::string&,
@@ -177,9 +195,9 @@ namespace opentxs::contract::peer::blank
 struct Reply final : virtual public opentxs::contract::peer::Reply,
                      public contract::blank::Signable {
     auto Contract() const -> SerializedType final { return {}; }
-    auto Type() const -> core::PeerRequestType final
+    auto Type() const -> PeerRequestType final
     {
-        return core::PeerRequestType::Error;
+        return PeerRequestType::Error;
     }
 
     Reply(const api::Core& api)
@@ -203,9 +221,9 @@ struct Request final : virtual public opentxs::contract::peer::Request,
     auto Contract() const -> SerializedType final { return {}; }
     auto Initiator() const -> const identifier::Nym& final { return nym_; }
     auto Recipient() const -> const identifier::Nym& final { return nym_; }
-    auto Type() const -> core::PeerRequestType final
+    auto Type() const -> PeerRequestType final
     {
-        return core::PeerRequestType::Error;
+        return PeerRequestType::Error;
     }
 
     Request(const api::Core& api)

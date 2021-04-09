@@ -17,7 +17,7 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/identity/KeyRole.hpp"
+#include "opentxs/crypto/key/asymmetric/Role.hpp"
 
 namespace opentxs
 {
@@ -45,10 +45,10 @@ namespace crypto
 class AsymmetricProvider
 {
 public:
-    OPENTXS_EXPORT static crypto::AsymmetricKeyType CurveToKeyType(
+    OPENTXS_EXPORT static crypto::key::asymmetric::Algorithm CurveToKeyType(
         const EcdsaCurve& curve);
     OPENTXS_EXPORT static EcdsaCurve KeyTypeToCurve(
-        const crypto::AsymmetricKeyType& type);
+        const crypto::key::asymmetric::Algorithm& type);
 
     OPENTXS_EXPORT virtual bool SeedToCurveKey(
         const ReadView seed,
@@ -63,7 +63,8 @@ public:
     OPENTXS_EXPORT virtual bool RandomKeypair(
         const AllocateOutput privateKey,
         const AllocateOutput publicKey,
-        const identity::KeyRole role = identity::KeyRole::Sign,
+        const opentxs::crypto::key::asymmetric::Role role =
+            opentxs::crypto::key::asymmetric::Role::Sign,
         const NymParameters& options = {},
         const AllocateOutput params = {}) const noexcept = 0;
     OPENTXS_EXPORT virtual bool Sign(

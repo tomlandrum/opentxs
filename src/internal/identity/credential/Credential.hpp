@@ -15,34 +15,23 @@
 #include "opentxs/identity/credential/Primary.hpp"
 #include "opentxs/identity/credential/Secondary.hpp"
 #include "opentxs/identity/credential/Verification.hpp"
+#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs::identity::credential::internal
 {
-using CredentialRoleMap =
-    std::map<identity::CredentialRole, proto::CredentialRole>;
+using CredentialRoleMap = std::map<CredentialRole, proto::CredentialRole>;
 using CredentialRoleReverseMap =
-    std::map<proto::CredentialRole, identity::CredentialRole>;
-using CredentialTypeMap =
-    std::map<identity::CredentialType, proto::CredentialType>;
+    std::map<proto::CredentialRole, CredentialRole>;
+using CredentialTypeMap = std::map<CredentialType, proto::CredentialType>;
 using CredentialTypeReverseMap =
-    std::map<proto::CredentialType, identity::CredentialType>;
-using KeyModeMap = std::map<identity::KeyMode, proto::KeyMode>;
-using KeyModeReverseMap = std::map<proto::KeyMode, identity::KeyMode>;
-using KeyRoleMap = std::map<identity::KeyRole, proto::KeyRole>;
-using KeyRoleReverseMap = std::map<proto::KeyRole, identity::KeyRole>;
+    std::map<proto::CredentialType, CredentialType>;
 
 auto credentialrole_map() noexcept -> const CredentialRoleMap&;
 auto credentialtype_map() noexcept -> const CredentialTypeMap&;
-auto keymode_map() noexcept -> const KeyModeMap&;
-auto keyrole_map() noexcept -> const KeyRoleMap&;
-auto translate(identity::CredentialRole in) noexcept -> proto::CredentialRole;
-auto translate(identity::CredentialType in) noexcept -> proto::CredentialType;
-auto translate(identity::KeyMode in) noexcept -> proto::KeyMode;
-auto translate(identity::KeyRole in) noexcept -> proto::KeyRole;
-auto translate(proto::CredentialRole in) noexcept -> identity::CredentialRole;
-auto translate(proto::CredentialType in) noexcept -> identity::CredentialType;
-auto translate(proto::KeyMode in) noexcept -> identity::KeyMode;
-auto translate(proto::KeyRole in) noexcept -> identity::KeyRole;
+auto translate(CredentialRole in) noexcept -> proto::CredentialRole;
+auto translate(CredentialType in) noexcept -> proto::CredentialType;
+auto translate(proto::CredentialRole in) noexcept -> CredentialRole;
+auto translate(proto::CredentialType in) noexcept -> CredentialType;
 
 struct Base : virtual public identity::credential::Base {
     virtual void ReleaseSignatures(const bool onlyPrivate) = 0;

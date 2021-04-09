@@ -3,29 +3,27 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef OPENTXS_CRYPTO_SYMMETRICKEYTYPE_HPP
-#define OPENTXS_CRYPTO_SYMMETRICKEYTYPE_HPP
+#ifndef OPENTXS_OTX_SERVER_REPLY_TYPE_HPP
+#define OPENTXS_OTX_SERVER_REPLY_TYPE_HPP
 
-#include "opentxs/crypto/Types.hpp"  // IWYU pragma: associated
+#include "opentxs/otx/Types.hpp"  // IWYU pragma: associated
 
 #include <cstdint>
 
 namespace opentxs
 {
-namespace crypto
+namespace otx
 {
-enum class SymmetricKeyType : std::uint8_t {
+enum class ServerReplyType : std::uint8_t {
     Error = 0,
-    Raw = 1,
-    ECDH = 2,
-    Argon2 = 3,
+    Activate = 1,
+    Push = 255,
 };
 
-constexpr auto value(const SymmetricKeyType in) noexcept
+constexpr auto value(const ServerReplyType in) noexcept
 {
     return static_cast<std::uint8_t>(in);
 }
-
-}  // namespace crypto
+}  // namespace otx
 }  // namespace opentxs
 #endif

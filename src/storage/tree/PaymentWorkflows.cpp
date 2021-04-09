@@ -10,13 +10,15 @@
 #include <tuple>
 #include <type_traits>
 
+#include "internal/api/client/Client.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/storage/Driver.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/InstrumentRevision.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
-#include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/protobuf/StorageItemHash.pb.h"
 #include "opentxs/protobuf/StoragePaymentWorkflows.pb.h"
 #include "opentxs/protobuf/StorageWorkflowIndex.pb.h"
@@ -57,13 +59,13 @@ PaymentWorkflows::PaymentWorkflows(
 void PaymentWorkflows::add_state_index(
     const Lock& lock,
     const std::string& workflowID,
-    proto::PaymentWorkflowType type,
-    proto::PaymentWorkflowState state)
+    api::client::PaymentWorkflowType type,
+    api::client::PaymentWorkflowState state)
 {
     OT_ASSERT(verify_write_lock(lock))
     OT_ASSERT(false == workflowID.empty())
-    OT_ASSERT(proto::PAYMENTWORKFLOWTYPE_ERROR != type)
-    OT_ASSERT(proto::PAYMENTWORKFLOWSTATE_ERROR != state)
+    OT_ASSERT(api::client::PaymentWorkflowType::Error != type)
+    OT_ASSERT(api::client::PaymentWorkflowState::Error != state)
 
     const State key{type, state};
     workflow_state_map_.emplace(workflowID, key);
@@ -97,7 +99,8 @@ auto PaymentWorkflows::GetState(const std::string& workflowID) const
     -> PaymentWorkflows::State
 {
     State output{
-        proto::PAYMENTWORKFLOWTYPE_ERROR, proto::PAYMENTWORKFLOWSTATE_ERROR};
+        api::client::PaymentWorkflowType::Error,
+        api::client::PaymentWorkflowState::Error};
     auto& [outType, outState] = output;
     Lock lock(write_lock_);
     const auto& it = workflow_state_map_.find(workflowID);
@@ -152,7 +155,11 @@ void PaymentWorkflows::init(const std::string& hash)
         const auto& workflowID = it.workflow();
         const auto& type = it.type();
         const auto& state = it.state();
-        add_state_index(lock, workflowID, type, state);
+        add_state_index(
+            lock,
+            workflowID,
+            api::client::internal::translate(type),
+            api::client::internal::translate(state));
     }
 }
 
@@ -179,8 +186,9 @@ auto PaymentWorkflows::ListByUnit(const std::string& accountID) const
 }
 
 auto PaymentWorkflows::ListByState(
-    proto::PaymentWorkflowType type,
-    proto::PaymentWorkflowState state) const -> PaymentWorkflows::Workflows
+    api::client::PaymentWorkflowType type,
+    api::client::PaymentWorkflowState state) const
+    -> PaymentWorkflows::Workflows
 {
     Lock lock(write_lock_);
     const auto it = state_workflow_map_.find(State{type, state});
@@ -214,9 +222,9 @@ auto PaymentWorkflows::LookupBySource(const std::string& sourceID) const
 void PaymentWorkflows::reindex(
     const Lock& lock,
     const std::string& workflowID,
-    const proto::PaymentWorkflowType type,
-    const proto::PaymentWorkflowState newState,
-    proto::PaymentWorkflowState& state)
+    const api::client::PaymentWorkflowType type,
+    const api::client::PaymentWorkflowState newState,
+    api::client::PaymentWorkflowState& state)
 {
     OT_ASSERT(verify_write_lock(lock))
     OT_ASSERT(false == workflowID.empty())
@@ -229,8 +237,8 @@ void PaymentWorkflows::reindex(
 
     state = newState;
 
-    OT_ASSERT(proto::PAYMENTWORKFLOWTYPE_ERROR != type)
-    OT_ASSERT(proto::PAYMENTWORKFLOWSTATE_ERROR != state)
+    OT_ASSERT(api::client::PaymentWorkflowType::Error != type)
+    OT_ASSERT(api::client::PaymentWorkflowState::Error != state)
 
     const State newKey{type, newState};
     state_workflow_map_[newKey].emplace(workflowID);
@@ -307,14 +315,14 @@ auto PaymentWorkflows::serialize() const -> proto::StoragePaymentWorkflows
 
         const auto& [type, state] = stateTuple;
 
-        OT_ASSERT(proto::PAYMENTWORKFLOWTYPE_ERROR != type)
-        OT_ASSERT(proto::PAYMENTWORKFLOWSTATE_ERROR != state)
+        OT_ASSERT(api::client::PaymentWorkflowType::Error != type)
+        OT_ASSERT(api::client::PaymentWorkflowState::Error != state)
 
         auto& newIndex = *serialized.add_types();
         newIndex.set_version(TYPE_VERSION);
         newIndex.set_workflow(workflow);
-        newIndex.set_type(type);
-        newIndex.set_state(state);
+        newIndex.set_type(api::client::internal::translate(type));
+        newIndex.set_state(api::client::internal::translate(state));
     }
 
     for (const auto& archived : archived_) {
@@ -342,10 +350,19 @@ auto PaymentWorkflows::Store(
     const auto it = workflow_state_map_.find(id);
 
     if (workflow_state_map_.end() == it) {
-        add_state_index(lock, id, data.type(), data.state());
+        add_state_index(
+            lock,
+            id,
+            api::client::internal::translate(data.type()),
+            api::client::internal::translate(data.state()));
     } else {
         auto& [type, state] = it->second;
-        reindex(lock, id, type, data.state(), state);
+        reindex(
+            lock,
+            id,
+            type,
+            api::client::internal::translate(data.state()),
+            state);
     }
 
     for (const auto& account : data.account()) {

@@ -22,7 +22,7 @@
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
 #include "internal/api/client/Client.hpp"
 #include "internal/api/server/Server.hpp"
-#include "internal/core/Core.hpp"
+#include "internal/core/contract/peer/Peer.hpp"
 #include "internal/otx/client/Client.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
@@ -39,6 +39,8 @@
 #include "opentxs/api/client/Manager.hpp"
 #include "opentxs/api/client/OTX.hpp"
 #include "opentxs/api/client/Pair.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/network/ZMQ.hpp"
 #include "opentxs/api/server/Manager.hpp"
@@ -50,37 +52,36 @@
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/Armored.hpp"
 #include "opentxs/core/Cheque.hpp"
-#include "opentxs/core/ConnectionInfoType.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Ledger.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
-#include "opentxs/core/PeerRequestType.hpp"
-#include "opentxs/core/SecretType.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/peer/BailmentNotice.hpp"
 #include "opentxs/core/contract/peer/BailmentRequest.hpp"
+#include "opentxs/core/contract/peer/ConnectionInfoType.hpp"
 #include "opentxs/core/contract/peer/ConnectionRequest.hpp"
 #include "opentxs/core/contract/peer/OutBailmentRequest.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
+#include "opentxs/core/contract/peer/PeerRequestType.hpp"
+#include "opentxs/core/contract/peer/SecretType.hpp"
 #include "opentxs/core/contract/peer/StoreSecret.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/ext/OTPayment.hpp"
 #include "opentxs/identity/Nym.hpp"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/otx/consensus/Base.hpp"
 #include "opentxs/otx/consensus/Client.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
-#include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
@@ -230,24 +231,24 @@ public:
         }
     }
 
-    static SendResult translate_result(const proto::LastReplyStatus status)
+    static SendResult translate_result(const otx::LastReplyStatus status)
     {
         switch (status) {
-            case proto::LASTREPLYSTATUS_MESSAGESUCCESS:
-            case proto::LASTREPLYSTATUS_MESSAGEFAILED: {
+            case otx::LastReplyStatus::MessageSuccess:
+            case otx::LastReplyStatus::MessageFailed: {
 
                 return SendResult::VALID_REPLY;
             }
-            case proto::LASTREPLYSTATUS_UNKNOWN: {
+            case otx::LastReplyStatus::Unknown: {
 
                 return SendResult::TIMEOUT;
             }
-            case proto::LASTREPLYSTATUS_NOTSENT: {
+            case otx::LastReplyStatus::NotSent: {
 
                 return SendResult::UNNECESSARY;
             }
-            case proto::LASTREPLYSTATUS_INVALID:
-            case proto::LASTREPLYSTATUS_NONE:
+            case otx::LastReplyStatus::Invalid:
+            case otx::LastReplyStatus::None:
             default: {
 
                 return SendResult::Error;
@@ -333,7 +334,7 @@ public:
                 UNIT_DEFINITION_FRACTIONAL_UNIT_NAME,
                 UNIT_DEFINITION_UNIT_OF_ACCOUNT,
                 reason_c1_);
-        EXPECT_EQ(core::UnitType::Currency, asset_contract_1_->Type());
+        EXPECT_EQ(contract::UnitType::Currency, asset_contract_1_->Type());
 
         if (asset_contract_1_->ID()->empty()) {
             throw std::runtime_error("Failed to create unit definition 1");
@@ -356,7 +357,7 @@ public:
                 UNIT_DEFINITION_FRACTIONAL_UNIT_NAME_2,
                 UNIT_DEFINITION_UNIT_OF_ACCOUNT_2,
                 reason_c2_);
-        EXPECT_EQ(core::UnitType::Currency, asset_contract_2_->Type());
+        EXPECT_EQ(contract::UnitType::Currency, asset_contract_2_->Type());
 
         if (asset_contract_2_->ID()->empty()) {
             throw std::runtime_error("Failed to create unit definition 2");
@@ -410,7 +411,7 @@ public:
         const OTPeerRequest& peerrequest,
         ProtoHasReply protohasreply,
         ProtoHasRequest protohasrequest,
-        core::PeerRequestType prototype)
+        contract::peer::PeerRequestType prototype)
     {
         const RequestNumber sequence = alice_counter_;
         const RequestNumber messages{4};
@@ -432,7 +433,7 @@ public:
         context.ResetThread();
         const auto& [status, message] = finished;
 
-        EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+        EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, status);
         ASSERT_TRUE(message);
 
         const RequestNumber requestNumber =
@@ -470,7 +471,9 @@ public:
             incomingreply->initiator().c_str(), alice_nym_id_->str().c_str());
         EXPECT_STREQ(
             incomingreply->recipient().c_str(), bob_nym_id_->str().c_str());
-        EXPECT_EQ(core::internal::translate(incomingreply->type()), prototype);
+        EXPECT_EQ(
+            ot::contract::peer::internal::translate(incomingreply->type()),
+            prototype);
         EXPECT_STREQ(
             incomingreply->server().c_str(), server_1_id_.str().c_str());
         EXPECT_TRUE(protohasreply(*incomingreply));
@@ -500,7 +503,8 @@ public:
         EXPECT_STREQ(
             finishedrequest->recipient().c_str(), bob_nym_id_->str().c_str());
         EXPECT_EQ(
-            core::internal::translate(finishedrequest->type()), prototype);
+            contract::peer::internal::translate(finishedrequest->type()),
+            prototype);
         EXPECT_TRUE(protohasrequest(*finishedrequest));
 
         auto complete = client_1_.Wallet().PeerRequestComplete(
@@ -529,7 +533,7 @@ public:
     void receive_request(
         const OTPeerRequest& peerrequest,
         ProtoHasRequest protohasrequest,
-        core::PeerRequestType prototype)
+        contract::peer::PeerRequestType prototype)
     {
         const RequestNumber sequence = bob_counter_;
         const RequestNumber messages{4};
@@ -551,7 +555,7 @@ public:
         context.ResetThread();
         const auto& [status, message] = finished;
 
-        EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+        EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, status);
         ASSERT_TRUE(message);
 
         const RequestNumber requestNumber =
@@ -594,7 +598,8 @@ public:
         EXPECT_STREQ(
             incomingrequest->recipient().c_str(), bob_nym_id_->str().c_str());
         EXPECT_EQ(
-            core::internal::translate(incomingrequest->type()), prototype);
+            contract::peer::internal::translate(incomingrequest->type()),
+            prototype);
         EXPECT_TRUE(protohasrequest(*incomingrequest));
     }
 
@@ -602,7 +607,7 @@ public:
         const OTPeerReply& peerreply,
         const OTPeerRequest& peerrequest,
         ProtoHasReply protohasreply,
-        core::PeerRequestType prototype)
+        contract::peer::PeerRequestType prototype)
     {
         const RequestNumber sequence = bob_counter_;
         const RequestNumber messages{1};
@@ -664,7 +669,8 @@ public:
             sentreply->initiator().c_str(), alice_nym_id_->str().c_str());
         EXPECT_STREQ(
             sentreply->recipient().c_str(), bob_nym_id_->str().c_str());
-        EXPECT_EQ(core::internal::translate(sentreply->type()), prototype);
+        EXPECT_EQ(
+            contract::peer::internal::translate(sentreply->type()), prototype);
         EXPECT_STREQ(sentreply->server().c_str(), server_1_id_.str().c_str());
         EXPECT_TRUE(protohasreply(*sentreply));
 
@@ -713,7 +719,7 @@ public:
     void send_peer_request(
         const OTPeerRequest& peerrequest,
         ProtoHasRequest protohasrequest,
-        core::PeerRequestType prototype)
+        contract::peer::PeerRequestType prototype)
     {
         const RequestNumber sequence = alice_counter_;
         const RequestNumber messages{1};
@@ -779,7 +785,9 @@ public:
             sentrequest->initiator().c_str(), alice_nym_id_->str().c_str());
         EXPECT_STREQ(
             sentrequest->recipient().c_str(), bob_nym_id_->str().c_str());
-        EXPECT_EQ(core::internal::translate(sentrequest->type()), prototype);
+        EXPECT_EQ(
+            contract::peer::internal::translate(sentrequest->type()),
+            prototype);
         EXPECT_TRUE(protohasrequest(*sentrequest));
     }
 
@@ -1804,8 +1812,8 @@ TEST_F(Test_Basic, send_cheque)
 
     const auto workflows = client_1_.Storage().PaymentWorkflowsByState(
         alice_nym_id_->str(),
-        proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+        api::client::PaymentWorkflowType::OutgoingCheque,
+        api::client::PaymentWorkflowState::Conveyed);
 
     ASSERT_EQ(1, workflows.size());
 
@@ -1834,7 +1842,7 @@ TEST_F(Test_Basic, getNymbox_receive_cheque)
     context.ResetThread();
     const auto& [status, message] = finished;
 
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, status);
     ASSERT_TRUE(message);
 
     const RequestNumber requestNumber =
@@ -1859,8 +1867,8 @@ TEST_F(Test_Basic, getNymbox_receive_cheque)
 
     const auto workflows = client_2_.Storage().PaymentWorkflowsByState(
         bob_nym_id_->str(),
-        proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+        api::client::PaymentWorkflowType::IncomingCheque,
+        api::client::PaymentWorkflowState::Conveyed);
 
     EXPECT_EQ(1, workflows.size());
 
@@ -1889,7 +1897,7 @@ TEST_F(Test_Basic, getNymbox_after_clearing_nymbox_2_Bob)
     context.ResetThread();
     const auto& [status, message] = finished;
 
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, status);
     ASSERT_TRUE(message);
 
     const RequestNumber requestNumber =
@@ -1922,7 +1930,7 @@ TEST_F(Test_Basic, depositCheque)
     auto [state, pCheque] =
         api::client::Workflow::InstantiateCheque(client_2_, *workflow);
 
-    ASSERT_EQ(proto::PAYMENTWORKFLOWSTATE_CONVEYED, state);
+    ASSERT_EQ(api::client::PaymentWorkflowState::Conveyed, state);
     ASSERT_TRUE(pCheque);
 
     std::shared_ptr<Cheque> cheque{std::move(pCheque)};
@@ -1982,8 +1990,8 @@ TEST_F(Test_Basic, depositCheque)
     const auto [wType, wState] = client_2_.Storage().PaymentWorkflowState(
         bob_nym_id_->str(), incoming_cheque_workflow_id_);
 
-    EXPECT_EQ(proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE, wType);
-    EXPECT_EQ(proto::PAYMENTWORKFLOWSTATE_COMPLETED, wState);
+    EXPECT_EQ(api::client::PaymentWorkflowType::IncomingCheque, wType);
+    EXPECT_EQ(api::client::PaymentWorkflowState::Completed, wState);
 }
 
 TEST_F(Test_Basic, getAccountData_after_cheque_deposited)
@@ -2053,9 +2061,9 @@ TEST_F(Test_Basic, getAccountData_after_cheque_deposited)
     const auto [wType, wState] = client_1_.Storage().PaymentWorkflowState(
         alice_nym_id_->str(), outgoing_cheque_workflow_id_);
 
-    EXPECT_EQ(wType, proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE);
+    EXPECT_EQ(wType, api::client::PaymentWorkflowType::OutgoingCheque);
     // TODO should be completed?
-    EXPECT_EQ(wState, proto::PAYMENTWORKFLOWSTATE_ACCEPTED);
+    EXPECT_EQ(wState, api::client::PaymentWorkflowState::Accepted);
 }
 
 TEST_F(Test_Basic, resync)
@@ -2176,8 +2184,8 @@ TEST_F(Test_Basic, sendTransfer)
 
     const auto workflows = client_1_.Storage().PaymentWorkflowsByState(
         alice_nym_id_->str(),
-        proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER,
-        proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED);
+        api::client::PaymentWorkflowType::OutgoingTransfer,
+        api::client::PaymentWorkflowState::Acknowledged);
 
     ASSERT_EQ(1, workflows.size());
 
@@ -2263,8 +2271,8 @@ TEST_F(Test_Basic, getAccountData_after_incomingTransfer)
 
     const auto workflows = client_2_.Storage().PaymentWorkflowsByState(
         bob_nym_id_->str(),
-        proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER,
-        proto::PAYMENTWORKFLOWSTATE_COMPLETED);
+        api::client::PaymentWorkflowType::IncomingTransfer,
+        api::client::PaymentWorkflowState::Completed);
 
     ASSERT_EQ(1, workflows.size());
 
@@ -2279,8 +2287,12 @@ TEST_F(Test_Basic, getAccountData_after_incomingTransfer)
 
     EXPECT_EQ(1, workflow->party_size());
     EXPECT_STREQ(alice_nym_id_->str().c_str(), workflow->party(0).c_str());
-    EXPECT_EQ(workflow->type(), proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER);
-    EXPECT_EQ(workflow->state(), proto::PAYMENTWORKFLOWSTATE_COMPLETED);
+    EXPECT_EQ(
+        api::client::internal::translate(workflow->type()),
+        api::client::PaymentWorkflowType::IncomingTransfer);
+    EXPECT_EQ(
+        api::client::internal::translate(workflow->state()),
+        api::client::PaymentWorkflowState::Completed);
 }
 
 TEST_F(Test_Basic, getAccountData_after_transfer_accepted)
@@ -2355,8 +2367,8 @@ TEST_F(Test_Basic, getAccountData_after_transfer_accepted)
     const auto [type, state] = client_1_.Storage().PaymentWorkflowState(
         alice_nym_id_->str(), outgoing_transfer_workflow_id_);
 
-    EXPECT_EQ(type, proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER);
-    EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_COMPLETED);
+    EXPECT_EQ(type, api::client::PaymentWorkflowType::OutgoingTransfer);
+    EXPECT_EQ(state, api::client::PaymentWorkflowState::Completed);
 }
 
 TEST_F(Test_Basic, register_second_account)
@@ -2495,15 +2507,15 @@ TEST_F(Test_Basic, send_internal_transfer)
         Sleep(std::chrono::milliseconds(100));
         workflows = client_2_.Storage().PaymentWorkflowsByState(
             bob_nym_id_->str(),
-            proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER,
-            proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED);
+            api::client::PaymentWorkflowType::InternalTransfer,
+            api::client::PaymentWorkflowState::Acknowledged);
         count = workflows.size();
 
         if (0 == count) {
             workflows = client_2_.Storage().PaymentWorkflowsByState(
                 bob_nym_id_->str(),
-                proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER,
-                proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+                api::client::PaymentWorkflowType::InternalTransfer,
+                api::client::PaymentWorkflowState::Conveyed);
             count = workflows.size();
         }
 
@@ -2589,8 +2601,8 @@ TEST_F(Test_Basic, getAccountData_after_incoming_internal_Transfer)
     const auto [type, state] = client_2_.Storage().PaymentWorkflowState(
         bob_nym_id_->str(), internal_transfer_workflow_id_);
 
-    EXPECT_EQ(type, proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER);
-    EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+    EXPECT_EQ(type, api::client::PaymentWorkflowType::InternalTransfer);
+    EXPECT_EQ(state, api::client::PaymentWorkflowState::Conveyed);
     EXPECT_EQ(SECOND_TRANSFER_AMOUNT, serverAccount.get().GetBalance());
 }
 
@@ -2661,8 +2673,8 @@ TEST_F(Test_Basic, getAccountData_after_internal_transfer_accepted)
     const auto [type, state] = client_2_.Storage().PaymentWorkflowState(
         bob_nym_id_->str(), internal_transfer_workflow_id_);
 
-    EXPECT_EQ(type, proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER);
-    EXPECT_EQ(state, proto::PAYMENTWORKFLOWSTATE_COMPLETED);
+    EXPECT_EQ(type, api::client::PaymentWorkflowType::InternalTransfer);
+    EXPECT_EQ(state, api::client::PaymentWorkflowState::Completed);
     EXPECT_EQ(
         CHEQUE_AMOUNT + TRANSFER_AMOUNT - SECOND_TRANSFER_AMOUNT,
         serverAccount.get().GetBalance());
@@ -2738,7 +2750,7 @@ TEST_F(Test_Basic, receive_message)
     context.ResetThread();
     const auto& [status, message] = finished;
 
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, status);
     ASSERT_TRUE(message);
 
     const RequestNumber requestNumber =
@@ -3130,11 +3142,11 @@ TEST_F(Test_Basic, initiate_and_acknowledge_bailment)
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::Bailment);
+        contract::peer::PeerRequestType::Bailment);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::Bailment);
+        contract::peer::PeerRequestType::Bailment);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3151,13 +3163,13 @@ TEST_F(Test_Basic, initiate_and_acknowledge_bailment)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        core::PeerRequestType::Bailment);
+        contract::peer::PeerRequestType::Bailment);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        core::PeerRequestType::Bailment);
+        contract::peer::PeerRequestType::Bailment);
 }
 
 TEST_F(Test_Basic, initiate_and_acknowledge_outbailment)
@@ -3179,11 +3191,11 @@ TEST_F(Test_Basic, initiate_and_acknowledge_outbailment)
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::OutBailment);
+        contract::peer::PeerRequestType::OutBailment);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::OutBailment);
+        contract::peer::PeerRequestType::OutBailment);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3200,13 +3212,13 @@ TEST_F(Test_Basic, initiate_and_acknowledge_outbailment)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        core::PeerRequestType::OutBailment);
+        contract::peer::PeerRequestType::OutBailment);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        core::PeerRequestType::OutBailment);
+        contract::peer::PeerRequestType::OutBailment);
 }
 
 TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
@@ -3228,11 +3240,11 @@ TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::PendingBailment);
+        contract::peer::PeerRequestType::PendingBailment);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::PendingBailment);
+        contract::peer::PeerRequestType::PendingBailment);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3242,7 +3254,7 @@ TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
         alice_nym_id_,
         peerrequest->ID(),
         server_1_id_,
-        core::PeerRequestType::PendingBailment,
+        contract::peer::PeerRequestType::PendingBailment,
         true,
         reason_c2_);
     ProtoHasReply protohasreply = &proto::PeerReply::has_notice;
@@ -3250,13 +3262,13 @@ TEST_F(Test_Basic, notify_bailment_and_acknowledge_notice)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        core::PeerRequestType::PendingBailment);
+        contract::peer::PeerRequestType::PendingBailment);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        core::PeerRequestType::PendingBailment);
+        contract::peer::PeerRequestType::PendingBailment);
 }
 
 TEST_F(Test_Basic, initiate_request_connection_and_acknowledge_connection)
@@ -3268,18 +3280,18 @@ TEST_F(Test_Basic, initiate_request_connection_and_acknowledge_connection)
     auto peerrequest = client_1_.Factory().ConnectionRequest(
         aliceNym,
         bob_nym_id_,
-        core::ConnectionInfoType::Bitcoin,
+        contract::peer::ConnectionInfoType::Bitcoin,
         server_1_id_,
         reason_c1_);
     ProtoHasRequest protohasrequest = &proto::PeerRequest::has_connectioninfo;
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::ConnectionInfo);
+        contract::peer::PeerRequestType::ConnectionInfo);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::ConnectionInfo);
+        contract::peer::PeerRequestType::ConnectionInfo);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3300,13 +3312,13 @@ TEST_F(Test_Basic, initiate_request_connection_and_acknowledge_connection)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        core::PeerRequestType::ConnectionInfo);
+        contract::peer::PeerRequestType::ConnectionInfo);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        core::PeerRequestType::ConnectionInfo);
+        contract::peer::PeerRequestType::ConnectionInfo);
 }
 
 TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
@@ -3318,7 +3330,7 @@ TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
     auto peerrequest = client_1_.Factory().StoreSecret(
         aliceNym,
         bob_nym_id_,
-        core::SecretType::Bip39,
+        contract::peer::SecretType::Bip39,
         TEST_SEED,
         TEST_SEED_PASSPHRASE,
         server_1_id_,
@@ -3327,11 +3339,11 @@ TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
     send_peer_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::StoreSecret);
+        contract::peer::PeerRequestType::StoreSecret);
     receive_request(
         peerrequest.as<ot::contract::peer::Request>(),
         protohasrequest,
-        core::PeerRequestType::StoreSecret);
+        contract::peer::PeerRequestType::StoreSecret);
     const auto bobNym = client_2_.Wallet().Nym(bob_nym_id_);
 
     ASSERT_TRUE(bobNym);
@@ -3341,7 +3353,7 @@ TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
         alice_nym_id_,
         peerrequest->ID(),
         server_1_id_,
-        core::PeerRequestType::StoreSecret,
+        contract::peer::PeerRequestType::StoreSecret,
         true,
         reason_c2_);
     ProtoHasReply protohasreply = &proto::PeerReply::has_notice;
@@ -3349,13 +3361,13 @@ TEST_F(Test_Basic, initiate_store_secret_and_acknowledge_notice)
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
-        core::PeerRequestType::StoreSecret);
+        contract::peer::PeerRequestType::StoreSecret);
     receive_reply(
         peerreply.as<ot::contract::peer::Reply>(),
         peerrequest.as<ot::contract::peer::Request>(),
         protohasreply,
         protohasrequest,
-        core::PeerRequestType::StoreSecret);
+        contract::peer::PeerRequestType::StoreSecret);
 }
 
 #if OT_CASH
@@ -3580,7 +3592,9 @@ TEST_F(Test_Basic, send_cash)
     auto workflow = client_2_.Workflow().LoadWorkflow(bob_nym_id_, workflowID);
 
     ASSERT_TRUE(workflow);
-    EXPECT_EQ(proto::PAYMENTWORKFLOWSTATE_CONVEYED, workflow->state());
+    EXPECT_EQ(
+        api::client::PaymentWorkflowState::Conveyed,
+        api::client::internal::translate(workflow->state()));
 }
 
 TEST_F(Test_Basic, receive_cash)
@@ -3605,7 +3619,7 @@ TEST_F(Test_Basic, receive_cash)
     context.ResetThread();
     const auto& [status, message] = finished;
 
-    EXPECT_EQ(proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+    EXPECT_EQ(otx::LastReplyStatus::MessageSuccess, status);
     ASSERT_TRUE(message);
 
     const RequestNumber requestNumber =
@@ -3629,8 +3643,8 @@ TEST_F(Test_Basic, receive_cash)
 
     const auto workflows = client_1_.Storage().PaymentWorkflowsByState(
         alice_nym_id_->str(),
-        proto::PAYMENTWORKFLOWTYPE_INCOMINGCASH,
-        proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+        api::client::PaymentWorkflowType::IncomingCash,
+        api::client::PaymentWorkflowState::Conveyed);
 
     ASSERT_EQ(1, workflows.size());
 

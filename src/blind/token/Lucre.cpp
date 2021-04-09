@@ -118,7 +118,7 @@ Lucre::Lucre(
           api,
           purse,
           in.lucre().version(),
-          opentxs::blind::internal::translate(in.state()),
+          internal::translate(in.state()),
           in.series(),
           in.denomination(),
           Clock::from_time_t(in.validfrom()),

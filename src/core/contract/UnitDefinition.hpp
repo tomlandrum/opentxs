@@ -92,7 +92,7 @@ public:
         const std::string& str_thousand,
         const std::string& str_decimal) const -> bool override;
     auto TLA() const -> std::string override { return short_name_; }
-    auto Type() const -> core::UnitType override = 0;
+    auto Type() const -> contract::UnitType override = 0;
     auto UnitOfAccount() const -> proto::ContactItemType override
     {
         return unit_of_account_;

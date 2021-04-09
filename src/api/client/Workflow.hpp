@@ -128,8 +128,8 @@ public:
         const opentxs::Cheque& cheque) const -> OTIdentifier final;
     auto List(
         const identifier::Nym& nymID,
-        const proto::PaymentWorkflowType type,
-        const proto::PaymentWorkflowState state) const
+        const api::client::PaymentWorkflowType type,
+        const api::client::PaymentWorkflowState state) const
         -> std::set<OTIdentifier> final;
     auto LoadCheque(const identifier::Nym& nymID, const Identifier& chequeID)
         const -> Cheque final;
@@ -187,7 +187,8 @@ private:
         VersionNumber workflow_;
     };
 
-    using VersionMap = std::map<proto::PaymentWorkflowType, ProtobufVersions>;
+    using VersionMap =
+        std::map<api::client::PaymentWorkflowType, ProtobufVersions>;
 
     static const VersionMap versions_;
 
@@ -240,7 +241,7 @@ private:
         const std::string& nymID,
         const std::string& eventNym,
         proto::PaymentWorkflow& workflow,
-        const proto::PaymentWorkflowState newState,
+        const api::client::PaymentWorkflowState newState,
         const proto::PaymentEventType newEventType,
         const VersionNumber version,
         const Message& request,
@@ -251,7 +252,7 @@ private:
         const std::string& nymID,
         const Identifier& accountID,
         proto::PaymentWorkflow& workflow,
-        const proto::PaymentWorkflowState newState,
+        const api::client::PaymentWorkflowState newState,
         const proto::PaymentEventType newEventType,
         const VersionNumber version,
         const identifier::Nym& recipientNymID,
@@ -262,7 +263,7 @@ private:
         const std::string& nymID,
         const std::string& eventNym,
         proto::PaymentWorkflow& workflow,
-        const proto::PaymentWorkflowState newState,
+        const api::client::PaymentWorkflowState newState,
         const proto::PaymentEventType newEventType,
         const VersionNumber version,
         const Message& message,
@@ -274,7 +275,7 @@ private:
         const std::string& notaryID,
         const std::string& eventNym,
         proto::PaymentWorkflow& workflow,
-        const proto::PaymentWorkflowState newState,
+        const api::client::PaymentWorkflowState newState,
         const proto::PaymentEventType newEventType,
         const VersionNumber version,
         const OTTransaction& receipt,
@@ -297,8 +298,8 @@ private:
         const Lock& global,
         const std::string& nymID,
         const opentxs::Cheque& cheque,
-        const proto::PaymentWorkflowType workflowType,
-        const proto::PaymentWorkflowState workflowState,
+        const api::client::PaymentWorkflowType workflowType,
+        const api::client::PaymentWorkflowState workflowState,
         const VersionNumber workflowVersion,
         const VersionNumber sourceVersion,
         const VersionNumber eventVersion,
@@ -310,8 +311,8 @@ private:
         const Lock& global,
         const std::string& nymID,
         const Item& transfer,
-        const proto::PaymentWorkflowType workflowType,
-        const proto::PaymentWorkflowState workflowState,
+        const api::client::PaymentWorkflowType workflowType,
+        const api::client::PaymentWorkflowState workflowState,
         const VersionNumber workflowVersion,
         const VersionNumber sourceVersion,
         const VersionNumber eventVersion,
@@ -328,11 +329,11 @@ private:
     template <typename T>
     auto get_workflow(
         const Lock& global,
-        const std::set<proto::PaymentWorkflowType>& types,
+        const std::set<api::client::PaymentWorkflowType>& types,
         const std::string& nymID,
         const T& source) const -> std::shared_ptr<proto::PaymentWorkflow>;
     auto get_workflow_by_id(
-        const std::set<proto::PaymentWorkflowType>& types,
+        const std::set<api::client::PaymentWorkflowType>& types,
         const std::string& nymID,
         const std::string& workflowID) const
         -> std::shared_ptr<proto::PaymentWorkflow>;
@@ -341,7 +342,7 @@ private:
         const std::string& workflowID) const
         -> std::shared_ptr<proto::PaymentWorkflow>;
     auto get_workflow_by_source(
-        const std::set<proto::PaymentWorkflowType>& types,
+        const std::set<api::client::PaymentWorkflowType>& types,
         const std::string& nymID,
         const std::string& sourceID) const
         -> std::shared_ptr<proto::PaymentWorkflow>;

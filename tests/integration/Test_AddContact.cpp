@@ -22,7 +22,7 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/ui/ContactList.hpp"
 #include "opentxs/ui/ContactListItem.hpp"
 #include "opentxs/ui/MessagableList.hpp"
@@ -197,12 +197,11 @@ TEST_F(Test_AddContact, introduction_server)
     ASSERT_NE(0, bobTask.first);
     ASSERT_NE(0, chrisTask.first);
     EXPECT_EQ(
-        ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, alexTask.second.get().first);
+        ot::otx::LastReplyStatus::MessageSuccess, alexTask.second.get().first);
     EXPECT_EQ(
-        ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, bobTask.second.get().first);
+        ot::otx::LastReplyStatus::MessageSuccess, bobTask.second.get().first);
     EXPECT_EQ(
-        ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS,
-        chrisTask.second.get().first);
+        ot::otx::LastReplyStatus::MessageSuccess, chrisTask.second.get().first);
 
     api_alex_.OTX().ContextIdle(alex_.nym_id_, server_1_.id_).get();
     api_bob_.OTX().ContextIdle(bob_.nym_id_, server_1_.id_).get();

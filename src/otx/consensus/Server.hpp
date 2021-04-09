@@ -35,6 +35,8 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/network/ServerConnection.hpp"
 #include "opentxs/network/zeromq/socket/Push.hpp"
+#include "opentxs/otx/LastReplyStatus.hpp"
+#include "opentxs/otx/Types.hpp"
 #include "opentxs/otx/consensus/Base.hpp"
 #include "opentxs/otx/consensus/ManagedNumber.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
@@ -147,7 +149,7 @@ public:
         const TransactionNumbers& without,
         const PasswordPrompt& reason) const
         -> std::unique_ptr<otx::context::TransactionStatement> final;
-    auto Type() const -> proto::ConsensusType final;
+    auto Type() const -> otx::ConsensusType final;
     auto ValidateContext(const Lock& lock) const -> bool final
     {
         return validate(lock);
@@ -298,7 +300,7 @@ private:
     std::atomic<TransactionNumber> highest_transaction_number_{0};
     TransactionNumbers tentative_transaction_numbers_{};
     std::atomic<proto::DeliveryState> state_;
-    std::atomic<proto::LastReplyStatus> last_status_;
+    std::atomic<otx::LastReplyStatus> last_status_;
     std::shared_ptr<opentxs::Message> pending_message_;
     ExtraArgs pending_args_;
     std::promise<DeliveryResult> pending_result_;
@@ -778,7 +780,7 @@ private:
         const Lock& contextLock,
         const proto::DeliveryState state,
         const PasswordPrompt& reason,
-        const proto::LastReplyStatus status = proto::LASTREPLYSTATUS_INVALID);
+        const otx::LastReplyStatus status = otx::LastReplyStatus::Invalid);
     auto verify_tentative_number(
         const Lock& lock,
         const TransactionNumber& number) const -> bool;

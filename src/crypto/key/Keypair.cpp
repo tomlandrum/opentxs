@@ -18,7 +18,7 @@
 #include "opentxs/core/crypto/Signature.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
-#include "opentxs/identity/KeyRole.hpp"
+#include "opentxs/crypto/key/asymmetric/Role.hpp"
 
 // #define OT_METHOD "opentxs::crypto::key::implementation::Keypair::"
 
@@ -35,7 +35,7 @@ auto Keypair() noexcept -> std::unique_ptr<crypto::key::Keypair>
 
 auto Keypair(
     const api::internal::Core& api,
-    const identity::KeyRole role,
+    const opentxs::crypto::key::asymmetric::Role role,
     std::unique_ptr<crypto::key::Asymmetric> publicKey,
     std::unique_ptr<crypto::key::Asymmetric> privateKey) noexcept(false)
     -> std::unique_ptr<crypto::key::Keypair>
@@ -57,7 +57,7 @@ namespace opentxs::crypto::key::implementation
 {
 Keypair::Keypair(
     const api::internal::Core& api,
-    const identity::KeyRole role,
+    const opentxs::crypto::key::asymmetric::Role role,
     std::unique_ptr<crypto::key::Asymmetric> publicKey,
     std::unique_ptr<crypto::key::Asymmetric> privateKey) noexcept
     : api_(api)

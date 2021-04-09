@@ -36,7 +36,7 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
-#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -179,8 +179,8 @@ auto Factory::Purse(
 
 namespace opentxs::blind::implementation
 {
-const opentxs::crypto::SymmetricMode Purse::mode_{
-    opentxs::crypto::SymmetricMode::ChaCha20Poly1305};
+const opentxs::crypto::key::symmetric::Algorithm Purse::mode_{
+    opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305};
 
 Purse::Purse(
     const api::internal::Core& api,
@@ -310,10 +310,10 @@ Purse::Purse(const api::internal::Core& api, const proto::Purse& in)
     : Purse(
           api,
           in.version(),
-          opentxs::blind::internal::translate(in.type()),
+          internal::translate(in.type()),
           identifier::Server::Factory(in.notary()),
           identifier::UnitDefinition::Factory(in.mint()),
-          opentxs::blind::internal::translate(in.state()),
+          internal::translate(in.state()),
           in.totalvalue(),
           Clock::from_time_t(in.latestvalidfrom()),
           Clock::from_time_t(in.earliestvalidto()),
@@ -325,7 +325,8 @@ Purse::Purse(const api::internal::Core& api, const proto::Purse& in)
           {})
 {
     auto primary = api.Symmetric().Key(
-        in.primarykey(), opentxs::crypto::SymmetricMode::ChaCha20Poly1305);
+        in.primarykey(),
+        opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305);
     primary_.reset(new OTSymmetricKey(std::move(primary)));
 
     OT_ASSERT(primary_);
@@ -403,12 +404,12 @@ auto Purse::deserialize_secondary_key(
     const proto::Purse& in) noexcept(false)
     -> std::unique_ptr<const OTSymmetricKey>
 {
-    switch (opentxs::blind::internal::translate(in.state())) {
+    switch (internal::translate(in.state())) {
         case blind::PurseType::Request:
         case blind::PurseType::Issue: {
             auto output = std::make_unique<OTSymmetricKey>(api.Symmetric().Key(
                 in.secondarykey(),
-                opentxs::crypto::SymmetricMode::ChaCha20Poly1305));
+                opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305));
 
             if (false == bool(output)) {
                 LogOutput(OT_METHOD)(__FUNCTION__)(
@@ -436,7 +437,7 @@ auto Purse::deserialize_secondary_password(
     const api::internal::Core& api,
     const proto::Purse& in) noexcept(false) -> std::unique_ptr<const OTEnvelope>
 {
-    switch (opentxs::blind::internal::translate(in.state())) {
+    switch (internal::translate(in.state())) {
         case blind::PurseType::Request:
         case blind::PurseType::Issue: {
             auto output = std::make_unique<OTEnvelope>(
@@ -691,8 +692,8 @@ auto Purse::Serialize() const -> proto::Purse
 {
     proto::Purse output{};
     output.set_version(version_);
-    output.set_type(opentxs::blind::internal::translate(type_));
-    output.set_state(opentxs::blind::internal::translate(state_));
+    output.set_type(internal::translate(type_));
+    output.set_state(internal::translate(state_));
     output.set_notary(notary_->str());
     output.set_mint(unit_->str());
     output.set_totalvalue(total_value_);

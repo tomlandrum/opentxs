@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <utility>
 
-#include "internal/crypto/Crypto.hpp"
+#include "internal/crypto/key/Key.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -30,7 +30,7 @@
 #include "opentxs/crypto/Language.hpp"
 #include "opentxs/crypto/SeedStrength.hpp"
 #include "opentxs/crypto/SeedStyle.hpp"
-#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -265,7 +265,7 @@ struct Seed::Imp {
             (3 > version_) ? encrypted_words_ : encrypted_entropy_;
         const auto key = symmetric.Key(
             session.key(),
-            opentxs::crypto::internal::translate(session.mode()));
+            opentxs::crypto::key::internal::translate(session.mode()));
 
         if (false == key.get()) {
             throw std::runtime_error{"Failed to get decryption key"};
@@ -325,10 +325,6 @@ struct Seed::Imp {
 
 private:
     using SerializeType = proto::Seed;
-    using SymmetricModeMap =
-        boost::container::flat_map<crypto::SymmetricMode, proto::SymmetricMode>;
-    using SymmetricModeReverseMap =
-        boost::container::flat_map<proto::SymmetricMode, crypto::SymmetricMode>;
     using TypeMap = boost::container::flat_map<SeedStyle, proto::SeedType>;
     using TypeReverseMap =
         boost::container::flat_map<proto::SeedType, SeedStyle>;
@@ -357,8 +353,8 @@ private:
         proto::Ciphertext& cphrase,
         const PasswordPrompt& reason) noexcept(false) -> proto::Ciphertext
     {
-        auto key =
-            symmetric.Key(reason, crypto::SymmetricMode::ChaCha20Poly1305);
+        auto key = symmetric.Key(
+            reason, crypto::key::symmetric::Algorithm::ChaCha20Poly1305);
 
         if (false == key.get()) {
             throw std::runtime_error{"Failed to get encryption key"};

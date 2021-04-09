@@ -26,6 +26,7 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
+#include "opentxs/otx/ConsensusType.hpp"
 #include "opentxs/otx/consensus/Base.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
@@ -120,7 +121,7 @@ auto Wallet::mutable_ServerContext(
     };
 
     if (base) {
-        OT_ASSERT(proto::CONSENSUSTYPE_SERVER == base->Type());
+        OT_ASSERT(otx::ConsensusType::Server == base->Type());
     } else {
         // Obtain nyms.
         const auto localNym = Nym(localNymID);

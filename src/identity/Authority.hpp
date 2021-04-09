@@ -95,11 +95,11 @@ public:
     }
     auto GetMasterCredID() const -> OTIdentifier final;
     auto GetPublicAuthKey(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Asymmetric& final;
     auto GetPublicEncrKey(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Asymmetric& final;
     auto GetPublicKeysBySignature(
@@ -107,40 +107,40 @@ public:
         const Signature& theSignature,
         char cKeyType = '0') const -> std::int32_t final;
     auto GetPublicSignKey(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Asymmetric& final;
     auto GetPrivateSignKey(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Asymmetric& final;
     auto GetPrivateEncrKey(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Asymmetric& final;
     auto GetPrivateAuthKey(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Asymmetric& final;
     auto GetAuthKeypair(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Keypair& final;
     auto GetEncrKeypair(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Keypair& final;
     auto GetSignKeypair(
-        crypto::AsymmetricKeyType keytype,
+        crypto::key::asymmetric::Algorithm keytype,
         const String::List* plistRevokedIDs = nullptr) const
         -> const crypto::key::Keypair& final;
-    auto GetTagCredential(crypto::AsymmetricKeyType keytype) const
+    auto GetTagCredential(crypto::key::asymmetric::Algorithm keytype) const
         noexcept(false) -> const credential::Key& final;
     auto GetVerificationSet(
         std::unique_ptr<proto::VerificationSet>& verificationSet) const
         -> bool final;
     auto hasCapability(const NymCapability& capability) const -> bool final;
-    auto Params(const crypto::AsymmetricKeyType type) const noexcept
+    auto Params(const crypto::key::asymmetric::Algorithm type) const noexcept
         -> ReadView final;
     auto Path(proto::HDPath& output) const -> bool final;
     auto Serialize(const CredentialIndexModeFlag mode) const
@@ -150,7 +150,7 @@ public:
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
-        identity::KeyRole key,
+        opentxs::crypto::key::asymmetric::Role key,
         const crypto::HashType hash) const -> bool final;
     auto Source() const -> const identity::Source& final
     {
@@ -163,7 +163,7 @@ public:
     auto Unlock(
         const crypto::key::Asymmetric& dhKey,
         const std::uint32_t tag,
-        const crypto::AsymmetricKeyType type,
+        const crypto::key::asymmetric::Algorithm type,
         const crypto::key::Symmetric& key,
         PasswordPrompt& reason) const noexcept -> bool final;
     auto VerificationCredentialVersion() const -> VersionNumber final
@@ -173,7 +173,7 @@ public:
     auto Verify(
         const Data& plaintext,
         const proto::Signature& sig,
-        const identity::KeyRole key) const -> bool final;
+        const opentxs::crypto::key::asymmetric::Role key) const -> bool final;
     auto Verify(const proto::Verification& item) const -> bool final;
     auto VerifyInternally() const -> bool final;
 
@@ -296,7 +296,7 @@ private:
         -> std::map<OTIdentifier, std::unique_ptr<Type>>;
 
     auto get_keypair(
-        const crypto::AsymmetricKeyType type,
+        const crypto::key::asymmetric::Algorithm type,
         const proto::KeyRole role,
         const String::List* plistRevokedIDs) const
         -> const crypto::key::Keypair&;

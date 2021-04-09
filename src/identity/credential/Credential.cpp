@@ -38,30 +38,6 @@ auto credentialtype_map() noexcept -> const CredentialTypeMap&
     return map;
 }
 
-auto keymode_map() noexcept -> const KeyModeMap&
-{
-    static const auto map = KeyModeMap{
-        {identity::KeyMode::Error, proto::KEYMODE_ERROR},
-        {identity::KeyMode::Null, proto::KEYMODE_NULL},
-        {identity::KeyMode::Private, proto::KEYMODE_PRIVATE},
-        {identity::KeyMode::Public, proto::KEYMODE_PUBLIC},
-    };
-
-    return map;
-}
-
-auto keyrole_map() noexcept -> const KeyRoleMap&
-{
-    static const auto map = KeyRoleMap{
-        {identity::KeyRole::Error, proto::KEYROLE_ERROR},
-        {identity::KeyRole::Auth, proto::KEYROLE_AUTH},
-        {identity::KeyRole::Encrypt, proto::KEYROLE_ENCRYPT},
-        {identity::KeyRole::Sign, proto::KEYROLE_SIGN},
-    };
-
-    return map;
-}
-
 auto translate(const identity::CredentialRole in) noexcept
     -> proto::CredentialRole
 {
@@ -79,24 +55,6 @@ auto translate(const identity::CredentialType in) noexcept
         return credentialtype_map().at(in);
     } catch (...) {
         return proto::CREDTYPE_ERROR;
-    }
-}
-
-auto translate(const identity::KeyMode in) noexcept -> proto::KeyMode
-{
-    try {
-        return keymode_map().at(in);
-    } catch (...) {
-        return proto::KEYMODE_ERROR;
-    }
-}
-
-auto translate(const identity::KeyRole in) noexcept -> proto::KeyRole
-{
-    try {
-        return keyrole_map().at(in);
-    } catch (...) {
-        return proto::KEYROLE_ERROR;
     }
 }
 
@@ -127,34 +85,6 @@ auto translate(const proto::CredentialType in) noexcept
         return map.at(in);
     } catch (...) {
         return identity::CredentialType::Error;
-    }
-}
-
-auto translate(const proto::KeyMode in) noexcept -> identity::KeyMode
-{
-    static const auto map = reverse_arbitrary_map<
-        identity::KeyMode,
-        proto::KeyMode,
-        KeyModeReverseMap>(keymode_map());
-
-    try {
-        return map.at(in);
-    } catch (...) {
-        return identity::KeyMode::Error;
-    }
-}
-
-auto translate(const proto::KeyRole in) noexcept -> identity::KeyRole
-{
-    static const auto map = reverse_arbitrary_map<
-        identity::KeyRole,
-        proto::KeyRole,
-        KeyRoleReverseMap>(keyrole_map());
-
-    try {
-        return map.at(in);
-    } catch (...) {
-        return identity::KeyRole::Error;
     }
 }
 

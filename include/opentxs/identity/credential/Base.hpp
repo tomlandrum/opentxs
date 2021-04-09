@@ -17,8 +17,8 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/contract/Signable.hpp"
-#include "opentxs/identity/KeyRole.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
+#include "opentxs/crypto/key/asymmetric/Role.hpp"
+#include "opentxs/identity/Types.hpp"
 
 namespace opentxs
 {
@@ -54,7 +54,7 @@ public:
     OPENTXS_EXPORT virtual bool hasCapability(
         const NymCapability& capability) const = 0;
     OPENTXS_EXPORT virtual Signature MasterSignature() const = 0;
-    OPENTXS_EXPORT virtual identity::KeyMode Mode() const = 0;
+    OPENTXS_EXPORT virtual crypto::key::asymmetric::Mode Mode() const = 0;
     OPENTXS_EXPORT virtual identity::CredentialRole Role() const = 0;
     OPENTXS_EXPORT virtual bool Private() const = 0;
     OPENTXS_EXPORT virtual bool Save() const = 0;
@@ -72,7 +72,8 @@ public:
     OPENTXS_EXPORT virtual bool Verify(
         const Data& plaintext,
         const proto::Signature& sig,
-        const identity::KeyRole key = identity::KeyRole::Sign) const = 0;
+        const opentxs::crypto::key::asymmetric::Role key =
+            opentxs::crypto::key::asymmetric::Role::Sign) const = 0;
     OPENTXS_EXPORT virtual bool Verify(
         const proto::Credential& credential,
         const identity::CredentialRole& role,

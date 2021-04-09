@@ -14,6 +14,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/otx/consensus/TransactionStatement.hpp"
+#include "opentxs/otx/ConsensusType.hpp"
 #include "opentxs/protobuf/ClientContext.pb.h"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/Context.pb.h"
@@ -201,9 +202,9 @@ auto ClientContext::server_nym_id(const Lock& lock) const
     return nym_->ID();
 }
 
-auto ClientContext::Type() const -> proto::ConsensusType
+auto ClientContext::Type() const -> otx::ConsensusType
 {
-    return proto::CONSENSUSTYPE_CLIENT;
+    return otx::ConsensusType::Client;
 }
 
 auto ClientContext::Verify(

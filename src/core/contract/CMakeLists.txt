@@ -9,6 +9,7 @@ add_subdirectory(peer)
 add_library(
   opentxs-core-contract OBJECT
   "${opentxs_SOURCE_DIR}/src/internal/core/contract/Contract.hpp"
+  "Contract.cpp"
   "CurrencyContract.cpp"
   "CurrencyContract.hpp"
   "SecurityContract.cpp"

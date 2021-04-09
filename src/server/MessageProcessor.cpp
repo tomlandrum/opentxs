@@ -45,8 +45,8 @@
 #include "opentxs/network/zeromq/socket/Socket.hpp"
 #include "opentxs/otx/Reply.hpp"
 #include "opentxs/otx/Request.hpp"
+#include "opentxs/otx/ServerReplyType.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/OTXPush.pb.h"
 #include "opentxs/protobuf/ServerReply.pb.h"
 #include "opentxs/protobuf/ServerRequest.pb.h"
@@ -432,7 +432,7 @@ void MessageProcessor::process_notification(const zmq::Message& incoming)
         nym,
         nymID,
         server_.GetServerID(),
-        proto::SERVERREPLY_PUSH,
+        otx::ServerReplyType::Push,
         true,
         0,
         reason_,

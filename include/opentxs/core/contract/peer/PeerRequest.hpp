@@ -15,6 +15,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/core/contract/Signable.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 
 namespace opentxs
 {
@@ -53,7 +54,7 @@ public:
     OPENTXS_EXPORT virtual SerializedType Contract() const = 0;
     OPENTXS_EXPORT virtual const identifier::Nym& Initiator() const = 0;
     OPENTXS_EXPORT virtual const identifier::Nym& Recipient() const = 0;
-    OPENTXS_EXPORT virtual core::PeerRequestType Type() const = 0;
+    OPENTXS_EXPORT virtual PeerRequestType Type() const = 0;
 
     OPENTXS_EXPORT ~Request() override = default;
 

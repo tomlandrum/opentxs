@@ -15,6 +15,7 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/contract/peer/StoreSecret.hpp"
+#include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 
 namespace opentxs
@@ -52,7 +53,7 @@ public:
         const api::internal::Core& api,
         const Nym_p& nym,
         const identifier::Nym& recipientID,
-        const core::SecretType type,
+        const SecretType type,
         const std::string& primary,
         const std::string& secondary,
         const identifier::Server& serverID);
@@ -66,7 +67,7 @@ public:
 private:
     friend opentxs::Factory;
 
-    const core::SecretType secret_type_;
+    const SecretType secret_type_;
     const std::string primary_;
     const std::string secondary_;
 

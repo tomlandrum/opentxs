@@ -21,6 +21,7 @@
 #include "core/StateMachine.hpp"
 #include "internal/api/Api.hpp"
 #include "internal/api/client/Client.hpp"
+#include "internal/otx/OTX.hpp"
 #include "opentxs/Exclusive.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.tpp"
@@ -33,6 +34,8 @@
 #include "opentxs/api/client/Activity.hpp"
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/OTX.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #if OT_CASH
@@ -55,12 +58,12 @@
 #include "opentxs/core/NymFile.hpp"
 #include "opentxs/core/OTTransaction.hpp"
 #include "opentxs/core/OTTransactionType.hpp"
-#include "opentxs/core/PeerObjectType.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/basket/Basket.hpp"
 #include "opentxs/core/contract/basket/BasketItem.hpp"
 #include "opentxs/core/contract/peer/PeerObject.hpp"
+#include "opentxs/core/contract/peer/PeerObjectType.hpp"
 #include "opentxs/core/cron/OTCronItem.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
@@ -79,19 +82,20 @@
 #include "opentxs/network/zeromq/socket/Push.hpp"
 #include "opentxs/network/zeromq/socket/Sender.tpp"
 #include "opentxs/network/zeromq/socket/Socket.hpp"
+#include "opentxs/otx/ConsensusType.hpp"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/otx/Reply.hpp"
+#include "opentxs/otx/Types.hpp"
 #include "opentxs/otx/consensus/ManagedNumber.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/otx/consensus/TransactionStatement.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/Context.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 #include "opentxs/protobuf/OTXEnums.pb.h"
 #include "opentxs/protobuf/OTXPush.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
-#include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/protobuf/PendingCommand.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
 #include "opentxs/protobuf/ServerContext.pb.h"
@@ -182,7 +186,7 @@ Server::Server(
     , highest_transaction_number_(0)
     , tentative_transaction_numbers_()
     , state_(proto::DELIVERTYSTATE_IDLE)
-    , last_status_(proto::LASTREPLYSTATUS_NONE)
+    , last_status_(otx::LastReplyStatus::None)
     , pending_message_()
     , pending_args_("", false)
     , pending_result_()
@@ -238,7 +242,8 @@ Server::Server(
           serialized.servercontext().highesttransactionnumber())
     , tentative_transaction_numbers_()
     , state_(serialized.servercontext().state())
-    , last_status_(serialized.servercontext().laststatus())
+    , last_status_(
+          otx::internal::translate(serialized.servercontext().laststatus()))
     , pending_message_(instantiate_message(
           api,
           serialized.servercontext().pending().serialized()))
@@ -266,7 +271,7 @@ Server::Server(
 
     if (3 > serialized.version()) {
         state_.store(proto::DELIVERTYSTATE_IDLE);
-        last_status_.store(proto::LASTREPLYSTATUS_NONE);
+        last_status_.store(otx::LastReplyStatus::None);
     }
 
     {
@@ -998,7 +1003,7 @@ auto Server::create_instrument_notice_from_peer_object(
     const TransactionNumber number,
     const PasswordPrompt& reason) const -> bool
 {
-    OT_ASSERT(core::PeerObjectType::Payment == peerObject.Type());
+    OT_ASSERT(contract::peer::PeerObjectType::Payment == peerObject.Type());
 
     if (false == peerObject.Validate()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid peer object.").Flush();
@@ -1716,7 +1721,7 @@ auto Server::harvest_unused(
     const auto& nymID = nym_->ID();
     auto available = issued_transaction_numbers_;
     const auto workflows = client.Storage().PaymentWorkflowList(nymID.str());
-    std::set<proto::PaymentWorkflowState> keepStates{};
+    std::set<api::client::PaymentWorkflowState> keepStates{};
 
     // Loop through workflows to determine which issued numbers should not be
     // harvested
@@ -1732,27 +1737,29 @@ auto Server::harvest_unused(
             continue;
         }
 
-        switch (workflow->type()) {
-            case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-            case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE: {
-                keepStates.insert(proto::PAYMENTWORKFLOWSTATE_UNSENT);
-                keepStates.insert(proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+        switch (opentxs::api::client::internal::translate(workflow->type())) {
+            case api::client::PaymentWorkflowType::OutgoingCheque:
+            case api::client::PaymentWorkflowType::OutgoingInvoice: {
+                keepStates.insert(api::client::PaymentWorkflowState::Unsent);
+                keepStates.insert(api::client::PaymentWorkflowState::Conveyed);
             } break;
-            case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER: {
-                keepStates.insert(proto::PAYMENTWORKFLOWSTATE_INITIATED);
-                keepStates.insert(proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED);
+            case api::client::PaymentWorkflowType::OutgoingTransfer: {
+                keepStates.insert(api::client::PaymentWorkflowState::Initiated);
+                keepStates.insert(
+                    api::client::PaymentWorkflowState::Acknowledged);
             } break;
-            case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
-                keepStates.insert(proto::PAYMENTWORKFLOWSTATE_INITIATED);
-                keepStates.insert(proto::PAYMENTWORKFLOWSTATE_ACKNOWLEDGED);
-                keepStates.insert(proto::PAYMENTWORKFLOWSTATE_CONVEYED);
+            case api::client::PaymentWorkflowType::InternalTransfer: {
+                keepStates.insert(api::client::PaymentWorkflowState::Initiated);
+                keepStates.insert(
+                    api::client::PaymentWorkflowState::Acknowledged);
+                keepStates.insert(api::client::PaymentWorkflowState::Conveyed);
             } break;
-            case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-            case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-            case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE: {
+            case api::client::PaymentWorkflowType::IncomingTransfer:
+            case api::client::PaymentWorkflowType::IncomingCheque:
+            case api::client::PaymentWorkflowType::IncomingInvoice: {
                 continue;
             }
-            case proto::PAYMENTWORKFLOWTYPE_ERROR:
+            case api::client::PaymentWorkflowType::Error:
             default: {
                 LogOutput(OT_METHOD)(__FUNCTION__)(
                     ": Warning: Unhandled workflow type.")
@@ -1762,14 +1769,17 @@ auto Server::harvest_unused(
             }
         }
 
-        if (0 == keepStates.count(workflow->state())) { continue; }
+        if (0 == keepStates.count(opentxs::api::client::internal::translate(
+                     workflow->state()))) {
+            continue;
+        }
 
         // At this point, this workflow contains a transaction whose
         // number(s) must not be added to the available list (recovered).
 
-        switch (workflow->type()) {
-            case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-            case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE: {
+        switch (opentxs::api::client::internal::translate(workflow->type())) {
+            case api::client::PaymentWorkflowType::OutgoingCheque:
+            case api::client::PaymentWorkflowType::OutgoingInvoice: {
                 [[maybe_unused]] auto [state, cheque] =
                     api::client::Workflow::InstantiateCheque(api_, *workflow);
 
@@ -1784,8 +1794,8 @@ auto Server::harvest_unused(
                 const auto number = cheque->GetTransactionNum();
                 available.erase(number);
             } break;
-            case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-            case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+            case api::client::PaymentWorkflowType::OutgoingTransfer:
+            case api::client::PaymentWorkflowType::InternalTransfer: {
                 [[maybe_unused]] auto [state, pTransfer] =
                     api::client::Workflow::InstantiateTransfer(api_, *workflow);
 
@@ -1801,10 +1811,10 @@ auto Server::harvest_unused(
                 const auto number = transfer.GetTransactionNum();
                 available.erase(number);
             } break;
-            case proto::PAYMENTWORKFLOWTYPE_ERROR:
-            case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-            case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-            case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
+            case api::client::PaymentWorkflowType::Error:
+            case api::client::PaymentWorkflowType::IncomingTransfer:
+            case api::client::PaymentWorkflowType::IncomingCheque:
+            case api::client::PaymentWorkflowType::IncomingInvoice:
             default: {
                 LogOutput(OT_METHOD)(__FUNCTION__)(
                     ": Warning: unhandled workflow type.")
@@ -2486,7 +2496,7 @@ void Server::need_process_nymbox(
 
         if (process_nymbox_) {
             DeliveryResult result{
-                proto::LASTREPLYSTATUS_MESSAGESUCCESS, pending_message_};
+                otx::LastReplyStatus::MessageSuccess, pending_message_};
             resolve_queue(
                 contextLock,
                 std::move(result),
@@ -2525,7 +2535,7 @@ void Server::need_process_nymbox(
         if (alreadySeen == static_cast<std::size_t>(count)) {
             if (process_nymbox_) {
                 DeliveryResult result{
-                    proto::LASTREPLYSTATUS_MESSAGESUCCESS, pending_message_};
+                    otx::LastReplyStatus::MessageSuccess, pending_message_};
                 resolve_queue(
                     contextLock,
                     std::move(result),
@@ -2585,8 +2595,7 @@ void Server::need_process_nymbox(
 
                 if (process_nymbox_) {
                     DeliveryResult resultProcessNymbox{
-                        proto::LASTREPLYSTATUS_MESSAGESUCCESS,
-                        pending_message_};
+                        otx::LastReplyStatus::MessageSuccess, pending_message_};
                     resolve_queue(
                         contextLock,
                         std::move(resultProcessNymbox),
@@ -2694,9 +2703,9 @@ void Server::pending_send(
             const auto& reply = *message;
 
             if (reply.m_bSuccess) {
-                status = proto::LASTREPLYSTATUS_MESSAGESUCCESS;
+                status = otx::LastReplyStatus::MessageSuccess;
             } else {
-                status = proto::LASTREPLYSTATUS_MESSAGEFAILED;
+                status = otx::LastReplyStatus::MessageFailed;
             }
 
             resolve_queue(
@@ -2713,7 +2722,7 @@ void Server::pending_send(
                     contextLock,
                     proto::DELIVERTYSTATE_NEEDNYMBOX,
                     reason,
-                    proto::LASTREPLYSTATUS_UNKNOWN);
+                    otx::LastReplyStatus::Unknown);
             }
         } break;
         default: {
@@ -4218,12 +4227,12 @@ void Server::process_incoming_message(
         auto& peerObject = *pPeerObject;
 
         switch (peerObject.Type()) {
-            case (core::PeerObjectType::Message): {
+            case (contract::peer::PeerObjectType::Message): {
                 client.Activity().Mail(
                     recipientNymId, *message, StorageBox::MAILINBOX, reason);
             } break;
 #if OT_CASH
-            case (core::PeerObjectType::Cash): {
+            case (contract::peer::PeerObjectType::Cash): {
                 process_incoming_cash(
                     lock,
                     client,
@@ -4232,7 +4241,7 @@ void Server::process_incoming_message(
                     *message);
             } break;
 #endif
-            case (core::PeerObjectType::Payment): {
+            case (contract::peer::PeerObjectType::Payment): {
                 const bool created = create_instrument_notice_from_peer_object(
                     lock,
                     client,
@@ -4247,10 +4256,10 @@ void Server::process_incoming_message(
                         .Flush();
                 }
             } break;
-            case (core::PeerObjectType::Request): {
+            case (contract::peer::PeerObjectType::Request): {
                 api_.Wallet().PeerRequestReceive(recipientNymId, peerObject);
             } break;
-            case (core::PeerObjectType::Response): {
+            case (contract::peer::PeerObjectType::Response): {
                 api_.Wallet().PeerReplyReceive(recipientNymId, peerObject);
             } break;
             default: {
@@ -6171,7 +6180,7 @@ auto Server::process_incoming_cash(
     const Message& message) const -> bool
 {
     OT_ASSERT(nym_);
-    OT_ASSERT(core::PeerObjectType::Cash == incoming.Type());
+    OT_ASSERT(contract::peer::PeerObjectType::Cash == incoming.Type());
 
     if (false == incoming.Validate()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid peer object.").Flush();
@@ -6421,8 +6430,8 @@ void Server::process_unseen_reply(
     auto& [number, result] = outcome;
     auto& [status, reply] = result;
     number = String::StringToUlong(message->m_strRequestNum->Get());
-    status = (message->m_bSuccess) ? proto::LASTREPLYSTATUS_MESSAGESUCCESS
-                                   : proto::LASTREPLYSTATUS_MESSAGEFAILED;
+    status = (message->m_bSuccess) ? otx::LastReplyStatus::MessageSuccess
+                                   : otx::LastReplyStatus::MessageFailed;
     reply = message;
     notices.emplace_back(outcome);
     process_reply(lock, client, {}, *reply, reason);
@@ -7123,13 +7132,11 @@ void Server::update_state(
     const Lock& contextLock,
     const proto::DeliveryState state,
     const PasswordPrompt& reason,
-    const proto::LastReplyStatus status)
+    const otx::LastReplyStatus status)
 {
     state_.store(state);
 
-    if (proto::LASTREPLYSTATUS_INVALID != status) {
-        last_status_.store(status);
-    }
+    if (otx::LastReplyStatus::Invalid != status) { last_status_.store(status); }
 
     const auto saved = save(contextLock, reason);
 
@@ -7195,7 +7202,7 @@ auto Server::serialize(const Lock& lock) const -> proto::Context
 
     if (output.version() >= 3) {
         server.set_state(state_.load());
-        server.set_laststatus(last_status_.load());
+        server.set_laststatus(otx::internal::translate(last_status_.load()));
 
         if (pending_message_) {
             auto& pending = *server.mutable_pending();
@@ -7451,7 +7458,7 @@ auto Server::state_machine() noexcept -> bool
         Lock lock(lock_);
         resolve_queue(
             lock,
-            DeliveryResult{proto::LASTREPLYSTATUS_NOTSENT, nullptr},
+            DeliveryResult{otx::LastReplyStatus::NotSent, nullptr},
             reason,
             proto::DELIVERTYSTATE_IDLE);
     } else if (shutdown().load()) {
@@ -7459,7 +7466,7 @@ auto Server::state_machine() noexcept -> bool
         Lock lock(lock_);
         resolve_queue(
             lock,
-            DeliveryResult{proto::LASTREPLYSTATUS_NOTSENT, nullptr},
+            DeliveryResult{otx::LastReplyStatus::NotSent, nullptr},
             reason,
             proto::DELIVERTYSTATE_IDLE);
     } else {
@@ -7471,9 +7478,9 @@ auto Server::state_machine() noexcept -> bool
     return false;
 }
 
-auto Server::Type() const -> proto::ConsensusType
+auto Server::Type() const -> otx::ConsensusType
 {
-    return proto::CONSENSUSTYPE_SERVER;
+    return otx::ConsensusType::Server;
 }
 
 auto Server::update_highest(
@@ -7811,7 +7818,7 @@ Server::~Server()
         Lock lock(lock_);
         resolve_queue(
             lock,
-            DeliveryResult{proto::LASTREPLYSTATUS_UNKNOWN, nullptr},
+            DeliveryResult{otx::LastReplyStatus::Unknown, nullptr},
             reason,
             proto::DELIVERTYSTATE_IDLE);
     }

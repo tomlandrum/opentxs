@@ -48,8 +48,8 @@
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/ext/OTPayment.hpp"
 #include "opentxs/identity/Nym.hpp"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 #include "otx/client/StateMachine.hpp"
@@ -97,7 +97,7 @@
                                                                                \
     Result result = op_.GetFuture().get();                                     \
     const auto success =                                                       \
-        proto::LASTREPLYSTATUS_MESSAGESUCCESS == std::get<0>(result);
+        otx::LastReplyStatus::MessageSuccess == std::get<0>(result);
 
 #define DO_OPERATION_TASK_DONE(a, ...)                                         \
     auto started = op_.a(__VA_ARGS__);                                         \
@@ -129,7 +129,7 @@
                                                                                \
     Result result = op_.GetFuture().get();                                     \
     const auto success =                                                       \
-        proto::LASTREPLYSTATUS_MESSAGESUCCESS == std::get<0>(result);
+        otx::LastReplyStatus::MessageSuccess == std::get<0>(result);
 
 #define SHUTDOWN()                                                             \
     {                                                                          \
@@ -501,14 +501,14 @@ auto StateMachine::download_nymbox(const TaskID taskID) const -> bool
 
     Result result{future->get()};
     const auto success =
-        proto::LASTREPLYSTATUS_MESSAGESUCCESS == std::get<0>(result);
+        otx::LastReplyStatus::MessageSuccess == std::get<0>(result);
 
     return finish_task(taskID, success, std::move(result));
 }
 
 auto StateMachine::error_result() const -> StateMachine::Result
 {
-    Result output{proto::LASTREPLYSTATUS_NOTSENT, nullptr};
+    Result output{otx::LastReplyStatus::NotSent, nullptr};
 
     return output;
 }

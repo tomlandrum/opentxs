@@ -34,14 +34,14 @@
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/contact/ContactSection.hpp"
-#include "opentxs/core/ConnectionInfoType.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/UnitType.hpp"
+#include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
+#include "opentxs/core/contract/peer/ConnectionInfoType.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
@@ -52,11 +52,11 @@
 #include "opentxs/network/zeromq/ListenCallback.hpp"
 #include "opentxs/network/zeromq/Message.hpp"
 #include "opentxs/network/zeromq/socket/Subscribe.hpp"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "opentxs/protobuf/Bailment.pb.h"
 #include "opentxs/protobuf/BailmentReply.pb.h"  // IWYU pragma: keep
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ConnectionInfoReply.pb.h"  // IWYU pragma: keep
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PairEvent.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
@@ -253,7 +253,7 @@ TEST_F(Test_Pair, issue_dollars)
         issuer_.Reason());
 
     EXPECT_EQ(UNIT_DEFINITION_CONTRACT_VERSION, contract->Version());
-    EXPECT_EQ(ot::core::UnitType::Currency, contract->Type());
+    EXPECT_EQ(ot::contract::UnitType::Currency, contract->Type());
     EXPECT_EQ(UNIT_DEFINITION_UNIT_OF_ACCOUNT, contract->UnitOfAccount());
     EXPECT_TRUE(unit_id_->empty());
 
@@ -274,7 +274,7 @@ TEST_F(Test_Pair, issue_dollars)
     const auto result = future.get();
 
     EXPECT_NE(0, taskID);
-    EXPECT_EQ(ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, result.first);
+    EXPECT_EQ(ot::otx::LastReplyStatus::MessageSuccess, result.first);
     ASSERT_TRUE(result.second);
 
     EXPECT_TRUE(issuer_.SetAccount(
@@ -335,38 +335,49 @@ TEST_F(Test_Pair, pair_untrusted)
         EXPECT_FALSE(issuer.BailmentInitiated(unit_id_));
         EXPECT_EQ(3, issuer.BailmentInstructions(unit_id_).size());
         EXPECT_EQ(
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::Bitcoin).size(),
+            issuer
+                .ConnectionInfo(ot::contract::peer::ConnectionInfoType::Bitcoin)
+                .size(),
             0);
         EXPECT_EQ(
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::BtcRpc).size(),
-            0);
-        EXPECT_EQ(
-
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::BitMessage)
+            issuer
+                .ConnectionInfo(ot::contract::peer::ConnectionInfoType::BtcRpc)
                 .size(),
             0);
         EXPECT_EQ(
 
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::BitMessageRPC)
+            issuer
+                .ConnectionInfo(
+                    ot::contract::peer::ConnectionInfoType::BitMessage)
                 .size(),
             0);
         EXPECT_EQ(
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::SSH).size(), 0);
+
+            issuer
+                .ConnectionInfo(
+                    ot::contract::peer::ConnectionInfoType::BitMessageRPC)
+                .size(),
+            0);
         EXPECT_EQ(
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::CJDNS).size(),
+            issuer.ConnectionInfo(ot::contract::peer::ConnectionInfoType::SSH)
+                .size(),
+            0);
+        EXPECT_EQ(
+            issuer.ConnectionInfo(ot::contract::peer::ConnectionInfoType::CJDNS)
+                .size(),
             0);
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::Bitcoin));
+            ot::contract::peer::ConnectionInfoType::Bitcoin));
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::BtcRpc));
+            ot::contract::peer::ConnectionInfoType::BtcRpc));
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::BitMessage));
+            ot::contract::peer::ConnectionInfoType::BitMessage));
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::BitMessageRPC));
-        EXPECT_FALSE(
-            issuer.ConnectionInfoInitiated(ot::core::ConnectionInfoType::SSH));
+            ot::contract::peer::ConnectionInfoType::BitMessageRPC));
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::CJDNS));
+            ot::contract::peer::ConnectionInfoType::SSH));
+        EXPECT_FALSE(issuer.ConnectionInfoInitiated(
+            ot::contract::peer::ConnectionInfoType::CJDNS));
         EXPECT_EQ(issuer_.nym_id_, issuer.IssuerID());
         EXPECT_EQ(chris_.nym_id_, issuer.LocalNymID());
         EXPECT_FALSE(issuer.Paired());
@@ -428,38 +439,49 @@ TEST_F(Test_Pair, pair_trusted)
         EXPECT_FALSE(issuer.BailmentInitiated(unit_id_));
         EXPECT_EQ(3, issuer.BailmentInstructions(unit_id_).size());
         EXPECT_EQ(
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::Bitcoin).size(),
+            issuer
+                .ConnectionInfo(ot::contract::peer::ConnectionInfoType::Bitcoin)
+                .size(),
             0);
         EXPECT_EQ(
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::BtcRpc).size(),
-            0);
-        EXPECT_EQ(
-
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::BitMessage)
+            issuer
+                .ConnectionInfo(ot::contract::peer::ConnectionInfoType::BtcRpc)
                 .size(),
             0);
         EXPECT_EQ(
 
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::BitMessageRPC)
+            issuer
+                .ConnectionInfo(
+                    ot::contract::peer::ConnectionInfoType::BitMessage)
                 .size(),
             0);
         EXPECT_EQ(
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::SSH).size(), 0);
+
+            issuer
+                .ConnectionInfo(
+                    ot::contract::peer::ConnectionInfoType::BitMessageRPC)
+                .size(),
+            0);
         EXPECT_EQ(
-            issuer.ConnectionInfo(ot::core::ConnectionInfoType::CJDNS).size(),
+            issuer.ConnectionInfo(ot::contract::peer::ConnectionInfoType::SSH)
+                .size(),
+            0);
+        EXPECT_EQ(
+            issuer.ConnectionInfo(ot::contract::peer::ConnectionInfoType::CJDNS)
+                .size(),
             0);
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::Bitcoin));
+            ot::contract::peer::ConnectionInfoType::Bitcoin));
         EXPECT_TRUE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::BtcRpc));
+            ot::contract::peer::ConnectionInfoType::BtcRpc));
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::BitMessage));
+            ot::contract::peer::ConnectionInfoType::BitMessage));
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::BitMessageRPC));
-        EXPECT_FALSE(
-            issuer.ConnectionInfoInitiated(ot::core::ConnectionInfoType::SSH));
+            ot::contract::peer::ConnectionInfoType::BitMessageRPC));
         EXPECT_FALSE(issuer.ConnectionInfoInitiated(
-            ot::core::ConnectionInfoType::CJDNS));
+            ot::contract::peer::ConnectionInfoType::SSH));
+        EXPECT_FALSE(issuer.ConnectionInfoInitiated(
+            ot::contract::peer::ConnectionInfoType::CJDNS));
         EXPECT_EQ(issuer_.nym_id_, issuer.IssuerID());
         EXPECT_EQ(chris_.nym_id_, issuer.LocalNymID());
         EXPECT_TRUE(issuer.Paired());

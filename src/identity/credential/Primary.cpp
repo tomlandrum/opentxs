@@ -14,6 +14,7 @@
 #include "core/contract/Signable.hpp"
 #include "identity/credential/Key.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/crypto/key/Key.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -23,7 +24,6 @@
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/identity/CredentialRole.hpp"
-#include "opentxs/identity/KeyMode.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/SourceProofType.hpp"
 #include "opentxs/identity/SourceType.hpp"
@@ -264,8 +264,8 @@ auto Primary::Verify(
     if (!proto::Validate<proto::Credential>(
             credential,
             VERBOSE,
-            opentxs::identity::credential::internal::translate(
-                identity::KeyMode::Public),
+            opentxs::crypto::key::internal::translate(
+                crypto::key::asymmetric::Mode::Public),
             opentxs::identity::credential::internal::translate(role),
             false)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid credential syntax.")

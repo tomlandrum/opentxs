@@ -29,7 +29,7 @@
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
 #include "opentxs/identity/credential/Primary.hpp"
 #include "opentxs/identity/CredentialType.hpp"
-#include "opentxs/identity/KeyRole.hpp"
+#include "opentxs/crypto/key/asymmetric/Role.hpp"
 #include "opentxs/identity/SourceType.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
@@ -75,7 +75,7 @@ auto Factory::NymIDSource(
                     params.Keypair() = api.Factory().Keypair(
                         params,
                         crypto::key::Asymmetric::DefaultVersion,
-                        identity::KeyRole::Sign,
+                        opentxs::crypto::key::asymmetric::Role::Sign,
                         reason);
                 } break;
                 case identity::CredentialType::HD:
@@ -83,7 +83,7 @@ auto Factory::NymIDSource(
                 {
                     const auto curve =
                         crypto::AsymmetricProvider::KeyTypeToCurve(
-                            params.AsymmetricKeyType());
+                            params.Algorithm());
 
                     if (EcdsaCurve::invalid == curve) {
                         throw std::runtime_error("Invalid curve type");
@@ -95,7 +95,7 @@ auto Factory::NymIDSource(
                         params.Credset(),
                         params.CredIndex(),
                         curve,
-                        identity::KeyRole::Sign,
+                        opentxs::crypto::key::asymmetric::Role::Sign,
                         reason);
                 } break;
 #endif  // OT_CRYPTO_WITH_BIP32

@@ -15,8 +15,6 @@ namespace identity
 {
 enum class CredentialType : std::uint8_t;
 enum class CredentialRole : std::uint8_t;
-enum class KeyMode : std::uint8_t;
-enum class KeyRole : std::uint8_t;
 enum class SourceProofType : std::uint8_t;
 enum class SourceType : std::uint8_t;
 }  // namespace identity

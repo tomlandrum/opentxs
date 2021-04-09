@@ -17,7 +17,7 @@
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
-#include "opentxs/core/PeerRequestType.hpp"
+#include "opentxs/core/contract/peer/PeerRequestType.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ConnectionInfoReply.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
@@ -135,7 +135,7 @@ Connection::Connection(
           CURRENT_VERSION,
           initiator,
           server,
-          core::PeerRequestType::ConnectionInfo,
+          contract::peer::PeerRequestType::ConnectionInfo,
           request)
     , success_(ack)
     , url_(url)

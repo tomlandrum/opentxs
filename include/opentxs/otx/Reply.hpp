@@ -16,7 +16,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/contract/Signable.hpp"
-#include "opentxs/protobuf/OTXEnums.pb.h"
+#include "opentxs/otx/Types.hpp"
 
 namespace opentxs
 {
@@ -57,7 +57,7 @@ public:
         const Nym_p signer,
         const identifier::Nym& recipient,
         const identifier::Server& server,
-        const proto::ServerReplyType type,
+        const otx::ServerReplyType type,
         const RequestNumber number,
         const bool success,
         const PasswordPrompt& reason,
@@ -73,7 +73,7 @@ public:
     OPENTXS_EXPORT virtual const identifier::Nym& Recipient() const = 0;
     OPENTXS_EXPORT virtual const identifier::Server& Server() const = 0;
     OPENTXS_EXPORT virtual bool Success() const = 0;
-    OPENTXS_EXPORT virtual proto::ServerReplyType Type() const = 0;
+    OPENTXS_EXPORT virtual otx::ServerReplyType Type() const = 0;
 
     OPENTXS_EXPORT ~Reply() override = default;
 

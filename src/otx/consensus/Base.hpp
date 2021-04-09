@@ -22,8 +22,8 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/Context.pb.h"
+#include "opentxs/otx/Types.hpp"
 
 namespace opentxs
 {
@@ -122,7 +122,7 @@ protected:
 
     auto contract(const Lock& lock) const -> proto::Context;
     auto GetID(const Lock& lock) const -> OTIdentifier final;
-    auto serialize(const Lock& lock, const proto::ConsensusType type) const
+    auto serialize(const Lock& lock, const otx::ConsensusType type) const
         -> proto::Context;
     virtual auto serialize(const Lock& lock) const -> proto::Context = 0;
     virtual auto type() const -> std::string = 0;

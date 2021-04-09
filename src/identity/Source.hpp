@@ -17,6 +17,7 @@
 #include "opentxs/crypto/key/Asymmetric.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/identity/SourceType.hpp"
+#include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
 {

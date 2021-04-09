@@ -60,7 +60,7 @@ public:
 
     Keypair(
         const api::internal::Core& api,
-        const identity::KeyRole role,
+        const opentxs::crypto::key::asymmetric::Role role,
         std::unique_ptr<crypto::key::Asymmetric> publicKey,
         std::unique_ptr<crypto::key::Asymmetric> privateKey) noexcept;
 
@@ -72,7 +72,7 @@ private:
     const api::internal::Core& api_;
     OTAsymmetricKey m_pkeyPrivate;
     OTAsymmetricKey m_pkeyPublic;
-    const identity::KeyRole role_;
+    const opentxs::crypto::key::asymmetric::Role role_;
 
     auto clone() const -> Keypair* final { return new Keypair(*this); }
 

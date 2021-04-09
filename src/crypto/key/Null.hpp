@@ -13,7 +13,7 @@
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #include "opentxs/crypto/key/Secp256k1.hpp"
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 
 namespace opentxs::crypto::key::implementation
 {
@@ -70,7 +70,7 @@ public:
     auto CalculateID(Identifier&) const noexcept -> bool final { return false; }
     auto CalculateTag(
         const identity::Authority&,
-        const crypto::AsymmetricKeyType,
+        const crypto::key::asymmetric::Algorithm,
         const PasswordPrompt&,
         std::uint32_t&,
         Secret&) const noexcept -> bool final
@@ -107,9 +107,9 @@ public:
     }
     auto HasPrivate() const noexcept -> bool final { return false; }
     auto HasPublic() const noexcept -> bool final { return false; }
-    auto keyType() const noexcept -> crypto::AsymmetricKeyType final
+    auto keyType() const noexcept -> crypto::key::asymmetric::Algorithm final
     {
-        return crypto::AsymmetricKeyType::Null;
+        return crypto::key::asymmetric::Algorithm::Null;
     }
     auto Params() const noexcept -> ReadView final { return {}; }
     auto Path() const noexcept -> const std::string final { return {}; }
@@ -119,7 +119,10 @@ public:
         return {};
     }
     auto PublicKey() const noexcept -> ReadView final { return {}; }
-    auto Role() const noexcept -> identity::KeyRole final { return {}; }
+    auto Role() const noexcept -> opentxs::crypto::key::asymmetric::Role final
+    {
+        return {};
+    }
     auto Serialize() const noexcept
         -> std::shared_ptr<proto::AsymmetricKey> final
     {

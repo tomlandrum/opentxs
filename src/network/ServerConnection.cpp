@@ -48,6 +48,7 @@
 #include "opentxs/network/zeromq/socket/Socket.hpp"
 #include "opentxs/otx/Reply.hpp"
 #include "opentxs/otx/Request.hpp"
+#include "opentxs/otx/ServerRequestType.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/OTXEnums.pb.h"
@@ -354,7 +355,7 @@ void ServerConnection::register_for_push(
         api_,
         context.Nym(),
         context.Notary(),
-        proto::SERVERREQUEST_ACTIVATE,
+        otx::ServerRequestType::Activate,
         0,
         reason);
     request->SetIncludeNym(true, reason);

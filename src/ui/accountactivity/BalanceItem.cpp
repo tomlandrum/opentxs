@@ -21,6 +21,7 @@
 #include "internal/api/client/Client.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/client/Contacts.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #if OT_BLOCKCHAIN
 #include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
@@ -89,21 +90,21 @@ auto BalanceItem(
     const auto type =
         ui::implementation::BalanceItem::recover_workflow(custom).type();
 
-    switch (type) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE: {
+    switch (opentxs::api::client::internal::translate(type)) {
+        case api::client::PaymentWorkflowType::OutgoingCheque:
+        case api::client::PaymentWorkflowType::IncomingCheque:
+        case api::client::PaymentWorkflowType::OutgoingInvoice:
+        case api::client::PaymentWorkflowType::IncomingInvoice: {
             return std::make_shared<ui::implementation::ChequeBalanceItem>(
                 parent, api, rowID, sortKey, custom, nymID, accountID);
         }
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER:
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+        case api::client::PaymentWorkflowType::OutgoingTransfer:
+        case api::client::PaymentWorkflowType::IncomingTransfer:
+        case api::client::PaymentWorkflowType::InternalTransfer: {
             return std::make_shared<ui::implementation::TransferBalanceItem>(
                 parent, api, rowID, sortKey, custom, nymID, accountID);
         }
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
+        case api::client::PaymentWorkflowType::Error:
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Unhandled workflow type (")(
                 type)(")")
@@ -168,30 +169,30 @@ auto BalanceItem::extract_contacts(
 auto BalanceItem::extract_type(const proto::PaymentWorkflow& workflow) noexcept
     -> StorageBox
 {
-    switch (workflow.type()) {
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGCHEQUE: {
+    switch (opentxs::api::client::internal::translate(workflow.type())) {
+        case api::client::PaymentWorkflowType::OutgoingCheque: {
 
             return StorageBox::OUTGOINGCHEQUE;
         }
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGCHEQUE: {
+        case api::client::PaymentWorkflowType::IncomingCheque: {
 
             return StorageBox::INCOMINGCHEQUE;
         }
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGTRANSFER: {
+        case api::client::PaymentWorkflowType::OutgoingTransfer: {
 
             return StorageBox::OUTGOINGTRANSFER;
         }
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGTRANSFER: {
+        case api::client::PaymentWorkflowType::IncomingTransfer: {
 
             return StorageBox::INCOMINGTRANSFER;
         }
-        case proto::PAYMENTWORKFLOWTYPE_INTERNALTRANSFER: {
+        case api::client::PaymentWorkflowType::InternalTransfer: {
 
             return StorageBox::INTERNALTRANSFER;
         }
-        case proto::PAYMENTWORKFLOWTYPE_ERROR:
-        case proto::PAYMENTWORKFLOWTYPE_OUTGOINGINVOICE:
-        case proto::PAYMENTWORKFLOWTYPE_INCOMINGINVOICE:
+        case api::client::PaymentWorkflowType::Error:
+        case api::client::PaymentWorkflowType::OutgoingInvoice:
+        case api::client::PaymentWorkflowType::IncomingInvoice:
         default: {
 
             return StorageBox::UNKNOWN;

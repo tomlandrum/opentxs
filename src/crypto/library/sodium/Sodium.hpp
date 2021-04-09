@@ -20,7 +20,7 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/crypto/SymmetricMode.hpp"
+#include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 #include "opentxs/identity/Types.hpp"
 
 namespace opentxs
@@ -94,7 +94,7 @@ public:
     auto RandomKeypair(
         const AllocateOutput privateKey,
         const AllocateOutput publicKey,
-        const identity::KeyRole role,
+        const opentxs::crypto::key::asymmetric::Role role,
         const NymParameters& options,
         const AllocateOutput params) const noexcept -> bool final;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
@@ -132,15 +132,15 @@ public:
     ~Sodium() final = default;
 
 private:
-    static const opentxs::crypto::SymmetricMode DEFAULT_MODE{
-        opentxs::crypto::SymmetricMode::ChaCha20Poly1305};
+    static const opentxs::crypto::key::symmetric::Algorithm DEFAULT_MODE{
+        opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305};
 
     auto Decrypt(
         const proto::Ciphertext& ciphertext,
         const std::uint8_t* key,
         const std::size_t keySize,
         std::uint8_t* plaintext) const -> bool final;
-    auto DefaultMode() const -> opentxs::crypto::SymmetricMode final
+    auto DefaultMode() const -> opentxs::crypto::key::symmetric::Algorithm final
     {
         return DEFAULT_MODE;
     }
@@ -151,7 +151,7 @@ private:
         const std::size_t saltSize,
         const std::uint64_t operations,
         const std::uint64_t difficulty,
-        const crypto::SymmetricKeyType type,
+        const crypto::key::symmetric::Source type,
         std::uint8_t* output,
         std::size_t outputSize) const -> bool final;
     auto Encrypt(
@@ -160,17 +160,17 @@ private:
         const std::uint8_t* key,
         const std::size_t keySize,
         proto::Ciphertext& ciphertext) const -> bool final;
-    auto IvSize(const opentxs::crypto::SymmetricMode mode) const
+    auto IvSize(const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> std::size_t final;
-    auto KeySize(const opentxs::crypto::SymmetricMode mode) const
+    auto KeySize(const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> std::size_t final;
-    auto SaltSize(const crypto::SymmetricKeyType type) const
+    auto SaltSize(const crypto::key::symmetric::Source type) const
         -> std::size_t final;
     auto sha1(
         const std::uint8_t* input,
         const std::size_t inputSize,
         std::uint8_t* output) const -> bool;
-    auto TagSize(const opentxs::crypto::SymmetricMode mode) const
+    auto TagSize(const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> std::size_t final;
 
     Sodium() = delete;

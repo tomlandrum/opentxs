@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "internal/api/Api.hpp"
+#include "internal/otx/OTX.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Core.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -25,10 +26,10 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/SignatureRole.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/Context.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
+#include "opentxs/otx/Types.hpp"
 
 #ifndef OT_MAX_ACK_NUMS
 #define OT_MAX_ACK_NUMS 100
@@ -261,7 +262,7 @@ auto Base::IDVersion(const Lock& lock) const -> proto::Context
     output.set_version(version_);
 
     switch (Type()) {
-        case proto::CONSENSUSTYPE_SERVER: {
+        case otx::ConsensusType::Server: {
             if (nym_) { output.set_localnym(nym_->ID().str()); }
 
             if (remote_nym_) { output.set_remotenym(remote_nym_->ID().str()); }
@@ -271,7 +272,7 @@ auto Base::IDVersion(const Lock& lock) const -> proto::Context
             output.set_remotenymboxhash(
                 String::Factory(remote_nymbox_hash_)->Get());
         } break;
-        case proto::CONSENSUSTYPE_CLIENT: {
+        case otx::ConsensusType::Client: {
             if (nym_) { output.set_remotenym(nym_->ID().str()); }
 
             if (remote_nym_) { output.set_localnym(remote_nym_->ID().str()); }
@@ -535,14 +536,14 @@ auto Base::save(const Lock& lock, const PasswordPrompt& reason) -> bool
     return api_.Storage().Store(GetContract(lock));
 }
 
-auto Base::serialize(const Lock& lock, const proto::ConsensusType type) const
+auto Base::serialize(const Lock& lock, const otx::ConsensusType type) const
     -> proto::Context
 {
     OT_ASSERT(verify_write_lock(lock));
 
     proto::Context output;
     output.set_version(version_);
-    output.set_type(type);
+    output.set_type(otx::internal::translate(type));
 
     if (nym_) { output.set_localnym(nym_->ID().str()); }
 

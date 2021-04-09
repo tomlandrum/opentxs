@@ -38,7 +38,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/OTTransaction.hpp"
-#include "opentxs/core/ProtocolVersion.hpp"
+#include "opentxs/core/contract/ProtocolVersion.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
@@ -346,7 +346,7 @@ void Server::CreateMainFile(bool& mainFileExists)
             .Flush();
         contract::Server::Endpoint inproc{
             core::AddressType::Inproc,
-            core::ProtocolVersion::Legacy,
+            contract::ProtocolVersion::Legacy,
             manager_.GetInproc(),
             commandPort,
             2};
@@ -355,7 +355,7 @@ void Server::CreateMainFile(bool& mainFileExists)
         LogNormal("Creating standard contract.").Flush();
         contract::Server::Endpoint ipv4{
             core::AddressType::IPV4,
-            core::ProtocolVersion::Legacy,
+            contract::ProtocolVersion::Legacy,
             hostname,
             commandPort,
             1};
@@ -365,7 +365,7 @@ void Server::CreateMainFile(bool& mainFileExists)
         if (0 < onion.size()) {
             contract::Server::Endpoint tor{
                 core::AddressType::Onion,
-                core::ProtocolVersion::Legacy,
+                contract::ProtocolVersion::Legacy,
                 onion,
                 commandPort,
                 1};
@@ -377,7 +377,7 @@ void Server::CreateMainFile(bool& mainFileExists)
         if (0 < eep.size()) {
             contract::Server::Endpoint i2p{
                 core::AddressType::EEP,
-                core::ProtocolVersion::Legacy,
+                contract::ProtocolVersion::Legacy,
                 eep,
                 commandPort,
                 1};

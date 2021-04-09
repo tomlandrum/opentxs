@@ -8,6 +8,7 @@ add_subdirectory(consensus)
 
 add_library(
   opentxs-otx OBJECT
+  "OTX.cpp"
   "Reply.cpp"
   "Reply.hpp"
   "Request.cpp"

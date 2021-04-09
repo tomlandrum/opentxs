@@ -84,7 +84,7 @@ auto Ed25519Key(
 auto Keypair() noexcept -> std::unique_ptr<crypto::key::Keypair>;
 auto Keypair(
     const api::internal::Core& api,
-    const identity::KeyRole role,
+    const opentxs::crypto::key::asymmetric::Role role,
     std::unique_ptr<crypto::key::Asymmetric> publicKey,
     std::unique_ptr<crypto::key::Asymmetric> privateKey) noexcept(false)
     -> std::unique_ptr<crypto::key::Keypair>;
@@ -154,7 +154,7 @@ auto SymmetricKey(
     const api::internal::Core& api,
     const crypto::SymmetricProvider& engine,
     const opentxs::PasswordPrompt& reason,
-    const opentxs::crypto::SymmetricMode mode) noexcept
+    const opentxs::crypto::key::symmetric::Algorithm mode) noexcept
     -> std::unique_ptr<crypto::key::Symmetric>;
 auto SymmetricKey(
     const api::internal::Core& api,
@@ -168,7 +168,7 @@ auto SymmetricKey(
     const std::uint64_t operations,
     const std::uint64_t difficulty,
     const std::size_t size,
-    const crypto::SymmetricKeyType type) noexcept
+    const crypto::key::symmetric::Source type) noexcept
     -> std::unique_ptr<crypto::key::Symmetric>;
 auto SymmetricKey(
     const api::internal::Core& api,

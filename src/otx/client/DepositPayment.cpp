@@ -25,7 +25,7 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
+#include "opentxs/otx/LastReplyStatus.hpp"
 #include "otx/client/PaymentTasks.hpp"
 
 #define OT_METHOD "opentxs::otx::client::implementation::DepositPayment::"
@@ -98,7 +98,7 @@ auto DepositPayment::deposit() -> bool
             auto value = future.get();
             const auto [result, pMessage] = value;
 
-            if (proto::LASTREPLYSTATUS_MESSAGESUCCESS == result) {
+            if (otx::LastReplyStatus::MessageSuccess == result) {
                 LogVerbose(OT_METHOD)(__FUNCTION__)(": Deposit success")
                     .Flush();
                 result_ = std::move(value);
@@ -176,7 +176,7 @@ auto DepositPayment::get_account_id(const identifier::UnitDefinition& unit)
     result_ = future.get();
     const auto [result, pMessage] = result_;
 
-    if (proto::LASTREPLYSTATUS_MESSAGESUCCESS != result) {
+    if (otx::LastReplyStatus::MessageSuccess != result) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Failed to send register account message")
             .Flush();

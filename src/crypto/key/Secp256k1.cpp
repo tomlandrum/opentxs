@@ -15,7 +15,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/crypto/key/Secp256k1.hpp"
-#include "opentxs/crypto/AsymmetricKeyType.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 
 namespace opentxs::factory
 {
@@ -189,7 +189,7 @@ Secp256k1::Secp256k1(
     : ot_super(
           api,
           ecdsa,
-          crypto::AsymmetricKeyType::Secp256k1,
+          crypto::key::asymmetric::Algorithm::Secp256k1,
           role,
           version,
           reason)
@@ -208,7 +208,7 @@ Secp256k1::Secp256k1(
     : ot_super(
           api,
           ecdsa,
-          crypto::AsymmetricKeyType::Secp256k1,
+          crypto::key::asymmetric::Algorithm::Secp256k1,
           privateKey,
           publicKey,
           role,
@@ -234,7 +234,7 @@ Secp256k1::Secp256k1(
     : ot_super(
           api,
           ecdsa,
-          crypto::AsymmetricKeyType::Secp256k1,
+          crypto::key::asymmetric::Algorithm::Secp256k1,
           privateKey,
           chainCode,
           publicKey,
@@ -260,7 +260,7 @@ Secp256k1::Secp256k1(
     : ot_super(
           api,
           ecdsa,
-          proto::AKEYTYPE_SECP256K1,
+          crypto::key::asymmetric::Algorithm::Secp256k1,
           privateKey,
           chainCode,
           publicKey,

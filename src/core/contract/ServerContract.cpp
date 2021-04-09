@@ -72,7 +72,7 @@ auto Factory::ServerContract(
         [](const auto& in) -> contract::Server::Endpoint {
             return {
                 static_cast<core::AddressType>(std::get<0>(in)),
-                static_cast<core::ProtocolVersion>(std::get<1>(in)),
+                static_cast<contract::ProtocolVersion>(std::get<1>(in)),
                 std::get<2>(in),
                 std::get<3>(in),
                 std::get<4>(in)};
@@ -221,7 +221,7 @@ auto Server::extract_endpoints(const proto::ServerContract& serialized) noexcept
         // will fail!
         output.emplace_back(contract::Server::Endpoint{
             core::internal::translate(listen.type()),
-            core::internal::translate(listen.protocol()),
+            contract::internal::translate(listen.protocol()),
             listen.host(),
             listen.port(),
             listen.version()});
@@ -315,7 +315,7 @@ auto Server::IDVersion(const Lock& lock) const -> proto::ServerContract
         const auto& port = std::get<3>(endpoint);
         addr.set_version(version);
         addr.set_type(core::internal::translate(type));
-        addr.set_protocol(core::internal::translate(protocol));
+        addr.set_protocol(contract::internal::translate(protocol));
         addr.set_host(url);
         addr.set_port(port);
     }

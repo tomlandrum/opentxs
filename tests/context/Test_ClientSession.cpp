@@ -23,7 +23,7 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ConsensusEnums.pb.h"
+#include "opentxs/otx/LastReplyStatus.hpp"
 
 std::string nym_id_{};
 std::string server_id_{};
@@ -88,7 +88,7 @@ TEST(ClientSession, introduction_server)
 
         const auto [status, reply] = future.get();
 
-        EXPECT_EQ(ot::proto::LASTREPLYSTATUS_MESSAGESUCCESS, status);
+        EXPECT_EQ(ot::otx::LastReplyStatus::MessageSuccess, status);
         EXPECT_TRUE(reply);
     }
 
