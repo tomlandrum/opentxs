@@ -24,6 +24,149 @@
 
 namespace opentxs
 {
+static auto extract_attributes(const proto::ContactItem& serialized)
+    -> std::set<proto::ContactItemAttribute>
+{
+    std::set<proto::ContactItemAttribute> output{};
+
+    for (const auto& attribute : serialized.attribute()) {
+        output.emplace(static_cast<proto::ContactItemAttribute>(attribute));
+    }
+
+    return output;
+}
+
+static auto extract_attributes(const Claim& claim)
+    -> std::set<proto::ContactItemAttribute>
+{
+    std::set<proto::ContactItemAttribute> output{};
+
+    for (const auto& attribute : std::get<6>(claim)) {
+        output.emplace(static_cast<proto::ContactItemAttribute>(attribute));
+    }
+
+    return output;
+}
+
+struct ContactItem::Imp {
+    const api::internal::Core& api_;
+    const VersionNumber version_;
+    const std::string nym_;
+    const proto::ContactSectionName section_;
+    const proto::ContactItemType type_;
+    const std::string value_;
+    const std::time_t start_;
+    const std::time_t end_;
+    const std::set<proto::ContactItemAttribute> attributes_;
+    const OTIdentifier id_;
+    const std::string subtype_;
+
+    static auto check_version(
+        const VersionNumber in,
+        const VersionNumber targetVersion) -> VersionNumber
+    {
+        // Upgrade version
+        if (targetVersion > in) { return targetVersion; }
+
+        return in;
+    }
+
+    Imp(const api::internal::Core& api,
+        const std::string& nym,
+        const VersionNumber version,
+        const VersionNumber parentVersion,
+        const proto::ContactSectionName section,
+        const proto::ContactItemType& type,
+        const std::string& value,
+        const std::set<proto::ContactItemAttribute>& attributes,
+        const std::time_t start,
+        const std::time_t end,
+        const std::string subtype)
+        : api_(api)
+        , version_(check_version(version, parentVersion))
+        , nym_(nym)
+        , section_(section)
+        , type_(type)
+        , value_(value)
+        , start_(start)
+        , end_(end)
+        , attributes_(attributes)
+        , id_(Identifier::Factory(
+              identity::credential::Contact::
+                  ClaimID(api, nym, section, type, start, end, value, subtype)))
+        , subtype_(subtype)
+    {
+        if (0 == version) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Warning: malformed version. "
+                "Setting to ")(parentVersion)(".")
+                .Flush();
+        }
+    }
+
+    Imp(const Imp& rhs)
+        : api_(rhs.api_)
+        , version_(rhs.version_)
+        , nym_(rhs.nym_)
+        , section_(rhs.section_)
+        , type_(rhs.type_)
+        , value_(rhs.value_)
+        , start_(rhs.start_)
+        , end_(rhs.end_)
+        , attributes_(rhs.attributes_)
+        , id_(rhs.id_)
+        , subtype_(rhs.subtype_)
+    {
+    }
+
+    Imp(Imp&& rhs)
+        : api_(rhs.api_)
+        , version_(rhs.version_)
+        , nym_(std::move(const_cast<std::string&>(rhs.nym_)))
+        , section_(rhs.section_)
+        , type_(rhs.type_)
+        , value_(std::move(const_cast<std::string&>(rhs.value_)))
+        , start_(rhs.start_)
+        , end_(rhs.end_)
+        , attributes_(
+              std::move(const_cast<std::set<proto::ContactItemAttribute>&>(
+                  rhs.attributes_)))
+        , id_(std::move(const_cast<OTIdentifier&>(rhs.id_)))
+        , subtype_(std::move(const_cast<std::string&>(rhs.subtype_)))
+    {
+    }
+
+    auto set_attribute(
+        const proto::ContactItemAttribute& attribute,
+        const bool value) const -> ContactItem
+    {
+        auto attributes = attributes_;
+
+        if (value) {
+            attributes.emplace(attribute);
+
+            if (proto::CITEMATTR_PRIMARY == attribute) {
+                attributes.emplace(proto::CITEMATTR_ACTIVE);
+            }
+        } else {
+            attributes.erase(attribute);
+        }
+
+        return ContactItem(
+            api_,
+            nym_,
+            version_,
+            version_,
+            section_,
+            type_,
+            value_,
+            attributes,
+            start_,
+            end_,
+            subtype_);
+    }
+};
+
 ContactItem::ContactItem(
     const api::internal::Core& api,
     const std::string& nym,
@@ -36,56 +179,32 @@ ContactItem::ContactItem(
     const std::time_t start,
     const std::time_t end,
     const std::string subtype)
-    : api_(api)
-    , version_(check_version(version, parentVersion))
-    , nym_(nym)
-    , section_(section)
-    , type_(type)
-    , value_(value)
-    , start_(start)
-    , end_(end)
-    , attributes_(attributes)
-    , id_(Identifier::Factory(
-          identity::credential::Contact::
-              ClaimID(api, nym, section, type, start, end, value, subtype)))
-    , subtype_(subtype)
+    : imp_(std::make_unique<Imp>(
+          api,
+          nym,
+          version,
+          parentVersion,
+          section,
+          type,
+          value,
+          attributes,
+          start,
+          end,
+          subtype))
 {
-    if (0 == version) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Warning: malformed version. "
-                                           "Setting to ")(parentVersion)(".")
-            .Flush();
-    }
+    OT_ASSERT(imp_);
 }
 
 ContactItem::ContactItem(const ContactItem& rhs) noexcept
-    : api_(rhs.api_)
-    , version_(rhs.version_)
-    , nym_(rhs.nym_)
-    , section_(rhs.section_)
-    , type_(rhs.type_)
-    , value_(rhs.value_)
-    , start_(rhs.start_)
-    , end_(rhs.end_)
-    , attributes_(rhs.attributes_)
-    , id_(rhs.id_)
-    , subtype_(rhs.subtype_)
+    : imp_(std::make_unique<Imp>(*rhs.imp_))
 {
+    OT_ASSERT(imp_);
 }
 
 ContactItem::ContactItem(ContactItem&& rhs) noexcept
-    : api_(rhs.api_)
-    , version_(rhs.version_)
-    , nym_(std::move(const_cast<std::string&>(rhs.nym_)))
-    , section_(rhs.section_)
-    , type_(rhs.type_)
-    , value_(std::move(const_cast<std::string&>(rhs.value_)))
-    , start_(rhs.start_)
-    , end_(rhs.end_)
-    , attributes_(std::move(
-          const_cast<std::set<proto::ContactItemAttribute>&>(rhs.attributes_)))
-    , id_(std::move(const_cast<OTIdentifier&>(rhs.id_)))
-    , subtype_(std::move(const_cast<std::string&>(rhs.subtype_)))
+    : imp_(std::move(rhs.imp_))
 {
+    OT_ASSERT(imp_);
 }
 
 ContactItem::ContactItem(
@@ -132,219 +251,171 @@ ContactItem::ContactItem(
 
 auto ContactItem::operator==(const ContactItem& rhs) const -> bool
 {
-    if (false == (version_ == rhs.version_)) { return false; }
+    if (false == (imp_->version_ == rhs.imp_->version_)) { return false; }
 
-    if (false == (nym_ == rhs.nym_)) { return false; }
+    if (false == (imp_->nym_ == rhs.imp_->nym_)) { return false; }
 
-    if (false == (section_ == rhs.section_)) { return false; }
+    if (false == (imp_->section_ == rhs.imp_->section_)) { return false; }
 
-    if (false == (type_ == rhs.type_)) { return false; }
+    if (false == (imp_->type_ == rhs.imp_->type_)) { return false; }
 
-    if (false == (value_ == rhs.value_)) { return false; }
+    if (false == (imp_->value_ == rhs.imp_->value_)) { return false; }
 
-    if (false == (start_ == rhs.start_)) { return false; }
+    if (false == (imp_->start_ == rhs.imp_->start_)) { return false; }
 
-    if (false == (end_ == rhs.end_)) { return false; }
+    if (false == (imp_->end_ == rhs.imp_->end_)) { return false; }
 
-    if (false == (attributes_ == rhs.attributes_)) { return false; }
+    if (false == (imp_->attributes_ == rhs.imp_->attributes_)) { return false; }
 
-    if (false == (id_ == rhs.id_)) { return false; }
+    if (false == (imp_->id_ == rhs.imp_->id_)) { return false; }
 
     return true;
 }
 
 ContactItem::operator proto::ContactItem() const { return Serialize(true); }
 
-auto ContactItem::check_version(
-    const VersionNumber in,
-    const VersionNumber targetVersion) -> VersionNumber
-{
-    // Upgrade version
-    if (targetVersion > in) { return targetVersion; }
+auto ContactItem::End() const -> const std::time_t& { return imp_->end_; }
 
-    return in;
-}
-
-auto ContactItem::End() const -> const std::time_t& { return end_; }
-
-auto ContactItem::extract_attributes(const proto::ContactItem& serialized)
-    -> std::set<proto::ContactItemAttribute>
-{
-    std::set<proto::ContactItemAttribute> output{};
-
-    for (const auto& attribute : serialized.attribute()) {
-        output.emplace(static_cast<proto::ContactItemAttribute>(attribute));
-    }
-
-    return output;
-}
-
-auto ContactItem::extract_attributes(const Claim& claim)
-    -> std::set<proto::ContactItemAttribute>
-{
-    std::set<proto::ContactItemAttribute> output{};
-
-    for (const auto& attribute : std::get<6>(claim)) {
-        output.emplace(static_cast<proto::ContactItemAttribute>(attribute));
-    }
-
-    return output;
-}
-
-auto ContactItem::ID() const -> const Identifier& { return id_; }
+auto ContactItem::ID() const -> const Identifier& { return imp_->id_; }
 
 auto ContactItem::isActive() const -> bool
 {
-    return 1 == attributes_.count(proto::CITEMATTR_ACTIVE);
+    return 1 == imp_->attributes_.count(proto::CITEMATTR_ACTIVE);
 }
 
 auto ContactItem::isLocal() const -> bool
 {
-    return 1 == attributes_.count(proto::CITEMATTR_LOCAL);
+    return 1 == imp_->attributes_.count(proto::CITEMATTR_LOCAL);
 }
 
 auto ContactItem::isPrimary() const -> bool
 {
-    return 1 == attributes_.count(proto::CITEMATTR_PRIMARY);
+    return 1 == imp_->attributes_.count(proto::CITEMATTR_PRIMARY);
 }
 
 auto ContactItem::Section() const -> const proto::ContactSectionName&
 {
-    return section_;
+    return imp_->section_;
 }
 
 auto ContactItem::Serialize(const bool withID) const -> proto::ContactItem
 {
     proto::ContactItem output{};
-    output.set_version(version_);
+    output.set_version(imp_->version_);
 
-    if (withID) { output.set_id(String::Factory(id_)->Get()); }
+    if (withID) { output.set_id(String::Factory(imp_->id_)->Get()); }
 
-    output.set_type(type_);
-    output.set_value(value_);
-    output.set_start(start_);
-    output.set_end(end_);
+    output.set_type(imp_->type_);
+    output.set_value(imp_->value_);
+    output.set_start(imp_->start_);
+    output.set_end(imp_->end_);
 
-    for (const auto& attribute : attributes_) {
+    for (const auto& attribute : imp_->attributes_) {
         output.add_attribute(attribute);
     }
 
     return output;
 }
 
-auto ContactItem::set_attribute(
-    const proto::ContactItemAttribute& attribute,
-    const bool value) const -> ContactItem
-{
-    const bool existingValue = 1 == attributes_.count(attribute);
-
-    if (existingValue == value) { return *this; }
-
-    auto attributes = attributes_;
-
-    if (value) {
-        attributes.emplace(attribute);
-
-        if (proto::CITEMATTR_PRIMARY == attribute) {
-            attributes.emplace(proto::CITEMATTR_ACTIVE);
-        }
-    } else {
-        attributes.erase(attribute);
-    }
-
-    return ContactItem(
-        api_,
-        nym_,
-        version_,
-        version_,
-        section_,
-        type_,
-        value_,
-        attributes,
-        start_,
-        end_,
-        subtype_);
-}
-
 auto ContactItem::SetActive(const bool active) const -> ContactItem
 {
-    return set_attribute(proto::CITEMATTR_ACTIVE, active);
+    const bool existingValue =
+        1 == imp_->attributes_.count(proto::CITEMATTR_ACTIVE);
+
+    if (existingValue == active) { return *this; }
+
+    return imp_->set_attribute(proto::CITEMATTR_ACTIVE, active);
 }
 
 auto ContactItem::SetEnd(const std::time_t end) const -> ContactItem
 {
-    if (end_ == end) { return *this; }
+    if (imp_->end_ == end) { return *this; }
 
     return ContactItem(
-        api_,
-        nym_,
-        version_,
-        version_,
-        section_,
-        type_,
-        value_,
-        attributes_,
-        start_,
+        imp_->api_,
+        imp_->nym_,
+        imp_->version_,
+        imp_->version_,
+        imp_->section_,
+        imp_->type_,
+        imp_->value_,
+        imp_->attributes_,
+        imp_->start_,
         end,
-        subtype_);
+        imp_->subtype_);
 }
 
 auto ContactItem::SetLocal(const bool local) const -> ContactItem
 {
-    return set_attribute(proto::CITEMATTR_LOCAL, local);
+    const bool existingValue =
+        1 == imp_->attributes_.count(proto::CITEMATTR_LOCAL);
+
+    if (existingValue == local) { return *this; }
+
+    return imp_->set_attribute(proto::CITEMATTR_LOCAL, local);
 }
 
 auto ContactItem::SetPrimary(const bool primary) const -> ContactItem
 {
-    return set_attribute(proto::CITEMATTR_PRIMARY, primary);
+    const bool existingValue =
+        1 == imp_->attributes_.count(proto::CITEMATTR_PRIMARY);
+
+    if (existingValue == primary) { return *this; }
+
+    return imp_->set_attribute(proto::CITEMATTR_PRIMARY, primary);
 }
 
 auto ContactItem::SetStart(const std::time_t start) const -> ContactItem
 {
-    if (start_ == start) { return *this; }
+    if (imp_->start_ == start) { return *this; }
 
     return ContactItem(
-        api_,
-        nym_,
-        version_,
-        version_,
-        section_,
-        type_,
-        value_,
-        attributes_,
+        imp_->api_,
+        imp_->nym_,
+        imp_->version_,
+        imp_->version_,
+        imp_->section_,
+        imp_->type_,
+        imp_->value_,
+        imp_->attributes_,
         start,
-        end_,
-        subtype_);
+        imp_->end_,
+        imp_->subtype_);
 }
 
 auto ContactItem::SetValue(const std::string& value) const -> ContactItem
 {
-    if (value_ == value) { return *this; }
+    if (imp_->value_ == value) { return *this; }
 
     return ContactItem(
-        api_,
-        nym_,
-        version_,
-        version_,
-        section_,
-        type_,
+        imp_->api_,
+        imp_->nym_,
+        imp_->version_,
+        imp_->version_,
+        imp_->section_,
+        imp_->type_,
         value,
-        attributes_,
-        start_,
-        end_,
-        subtype_);
+        imp_->attributes_,
+        imp_->start_,
+        imp_->end_,
+        imp_->subtype_);
 }
 
-auto ContactItem::Start() const -> const std::time_t& { return start_; }
+auto ContactItem::Start() const -> const std::time_t& { return imp_->start_; }
 
-auto ContactItem::Subtype() const -> const std::string& { return subtype_; }
+auto ContactItem::Subtype() const -> const std::string&
+{
+    return imp_->subtype_;
+}
 
 auto ContactItem::Type() const -> const proto::ContactItemType&
 {
-    return type_;
+    return imp_->type_;
 }
 
-auto ContactItem::Value() const -> const std::string& { return value_; }
+auto ContactItem::Value() const -> const std::string& { return imp_->value_; }
 
-auto ContactItem::Version() const -> VersionNumber { return version_; }
+auto ContactItem::Version() const -> VersionNumber { return imp_->version_; }
+
+ContactItem::~ContactItem() = default;
 }  // namespace opentxs

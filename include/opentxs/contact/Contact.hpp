@@ -144,51 +144,12 @@ public:
     OPENTXS_EXPORT void SetLabel(const std::string& label);
     OPENTXS_EXPORT void Update(const identity::Nym::Serialized& nym);
 
-    OPENTXS_EXPORT ~Contact() = default;
+    OPENTXS_EXPORT ~Contact();
 
 private:
-    const api::client::internal::Manager& api_;
-    VersionNumber version_{0};
-    std::string label_{""};
-    mutable std::mutex lock_{};
-    const OTIdentifier id_;
-    OTIdentifier parent_;
-    OTNymID primary_nym_;
-    std::map<OTNymID, Nym_p> nyms_;
-    std::set<OTIdentifier> merged_children_;
-    std::unique_ptr<ContactData> contact_data_{};
-    mutable std::shared_ptr<ContactData> cached_contact_data_{};
-    std::atomic<std::uint64_t> revision_{0};
+    struct Imp;
 
-    static VersionNumber check_version(
-        const VersionNumber in,
-        const VersionNumber targetVersion);
-    static OTIdentifier generate_id(const api::internal::Core& api);
-    static BlockchainAddress translate(
-        const api::client::internal::Manager& api,
-        const proto::ContactItemType chain,
-        const std::string& value,
-        const std::string& subtype) noexcept(false);
-
-    std::shared_ptr<ContactGroup> payment_codes(
-        const Lock& lock,
-        const proto::ContactItemType currency) const;
-    std::shared_ptr<ContactData> merged_data(const Lock& lock) const;
-    proto::ContactItemType type(const Lock& lock) const;
-    bool verify_write_lock(const Lock& lock) const;
-
-    bool add_nym(const Lock& lock, const Nym_p& nym, const bool primary);
-    bool add_claim(const std::shared_ptr<ContactItem>& item);
-    bool add_claim(const Lock& lock, const std::shared_ptr<ContactItem>& item);
-    void add_nym_claim(
-        const Lock& lock,
-        const identifier::Nym& nymID,
-        const bool primary);
-    void add_verified_claim(
-        const Lock& lock,
-        const std::shared_ptr<ContactItem>& item);
-    void init_nyms();
-    void update_label(const Lock& lock, const identity::Nym& nym);
+    std::unique_ptr<Imp> imp_;
 
     Contact() = delete;
     Contact(const Contact&) = delete;

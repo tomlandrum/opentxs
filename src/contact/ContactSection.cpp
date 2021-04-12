@@ -3,15 +3,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"                        // IWYU pragma: associated
-#include "1_Internal.hpp"                      // IWYU pragma: associated
-#include "opentxs/contact/ContactSection.hpp"  // IWYU pragma: associated
-
 #include <algorithm>
 #include <utility>
 
+#include "0_stdafx.hpp"    // IWYU pragma: associated
+#include "1_Internal.hpp"  // IWYU pragma: associated
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactSection.hpp"  // IWYU pragma: associated
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/protobuf/ContactData.pb.h"
@@ -24,6 +23,137 @@
 
 namespace opentxs
 {
+static auto check_version(
+    const VersionNumber in,
+    const VersionNumber targetVersion) -> VersionNumber
+{
+    // Upgrade version
+    if (targetVersion > in) { return targetVersion; }
+
+    return in;
+}
+
+static auto create_group(
+    const std::string& nym,
+    const proto::ContactSectionName section,
+    const std::shared_ptr<ContactItem>& item) -> ContactSection::GroupMap
+{
+    OT_ASSERT(item);
+
+    ContactSection::GroupMap output{};
+    const auto& itemType = item->Type();
+
+    output[itemType].reset(new ContactGroup(nym, section, item));
+
+    return output;
+}
+
+static auto extract_groups(
+    const api::internal::Core& api,
+    const std::string& nym,
+    const VersionNumber parentVersion,
+    const proto::ContactSection& serialized) -> ContactSection::GroupMap
+{
+    ContactSection::GroupMap groupMap{};
+    std::map<proto::ContactItemType, ContactGroup::ItemMap> itemMaps{};
+    const auto& section = serialized.name();
+
+    for (const auto& item : serialized.item()) {
+        const auto& itemType = item.type();
+        auto instantiated = std::make_shared<ContactItem>(
+            api,
+            nym,
+            check_version(serialized.version(), parentVersion),
+            section,
+            item);
+
+        OT_ASSERT(instantiated);
+
+        const auto& itemID = instantiated->ID();
+        auto& itemMap = itemMaps[itemType];
+        itemMap.emplace(itemID, instantiated);
+    }
+
+    for (const auto& itemMap : itemMaps) {
+        const auto& type = itemMap.first;
+        const auto& map = itemMap.second;
+        auto& group = groupMap[type];
+        group.reset(new ContactGroup(nym, section, type, map));
+    }
+
+    return groupMap;
+}
+
+struct ContactSection::Imp {
+    const api::internal::Core& api_;
+    const VersionNumber version_;
+    const std::string nym_;
+    const proto::ContactSectionName section_;
+    const GroupMap groups_;
+
+    auto add_scope(const std::shared_ptr<ContactItem>& item) const
+        -> ContactSection
+    {
+        OT_ASSERT(item);
+
+        auto scope = item;
+
+        bool needsPrimary{true};
+
+        const auto& groupID = scope->Type();
+        GroupMap groups = groups_;
+        const auto& group = groups[groupID];
+
+        if (group) { needsPrimary = (1 > group->Size()); }
+
+        if (needsPrimary && false == scope->isPrimary()) {
+            scope.reset(new ContactItem(scope->SetPrimary(true)));
+        }
+
+        if (false == scope->isActive()) {
+            scope.reset(new ContactItem(scope->SetActive(true)));
+        }
+
+        groups[groupID].reset(new ContactGroup(nym_, section_, scope));
+
+        auto version = proto::RequiredVersion(section_, item->Type(), version_);
+
+        return ContactSection(api_, nym_, version, version, section_, groups);
+    }
+
+    Imp(const api::internal::Core& api,
+        const std::string& nym,
+        const VersionNumber version,
+        const VersionNumber parentVersion,
+        const proto::ContactSectionName section,
+        const GroupMap& groups)
+        : api_(api)
+        , version_(check_version(version, parentVersion))
+        , nym_(nym)
+        , section_(section)
+        , groups_(groups)
+    {
+    }
+
+    Imp(const Imp& rhs) noexcept
+        : api_(rhs.api_)
+        , version_(rhs.version_)
+        , nym_(rhs.nym_)
+        , section_(rhs.section_)
+        , groups_(rhs.groups_)
+    {
+    }
+
+    Imp(Imp&& rhs) noexcept
+        : api_(rhs.api_)
+        , version_(rhs.version_)
+        , nym_(std::move(const_cast<std::string&>(rhs.nym_)))
+        , section_(rhs.section_)
+        , groups_(std::move(const_cast<GroupMap&>(rhs.groups_)))
+    {
+    }
+};
+
 ContactSection::ContactSection(
     const api::internal::Core& api,
     const std::string& nym,
@@ -31,30 +161,21 @@ ContactSection::ContactSection(
     const VersionNumber parentVersion,
     const proto::ContactSectionName section,
     const GroupMap& groups)
-    : api_(api)
-    , version_(check_version(version, parentVersion))
-    , nym_(nym)
-    , section_(section)
-    , groups_(groups)
+    : imp_(std::make_unique<
+           Imp>(api, nym, version, parentVersion, section, groups))
 {
 }
 
 ContactSection::ContactSection(const ContactSection& rhs) noexcept
-    : api_(rhs.api_)
-    , version_(rhs.version_)
-    , nym_(rhs.nym_)
-    , section_(rhs.section_)
-    , groups_(rhs.groups_)
+    : imp_(std::make_unique<Imp>(*rhs.imp_))
 {
+    OT_ASSERT(imp_);
 }
 
 ContactSection::ContactSection(ContactSection&& rhs) noexcept
-    : api_(rhs.api_)
-    , version_(rhs.version_)
-    , nym_(std::move(const_cast<std::string&>(rhs.nym_)))
-    , section_(rhs.section_)
-    , groups_(std::move(const_cast<GroupMap&>(rhs.groups_)))
+    : imp_(std::move(rhs.imp_))
 {
+    OT_ASSERT(imp_);
 }
 
 ContactSection::ContactSection(
@@ -97,9 +218,9 @@ ContactSection::ContactSection(
 auto ContactSection::operator+(const ContactSection& rhs) const
     -> ContactSection
 {
-    auto map{groups_};
+    auto map{imp_->groups_};
 
-    for (auto& it : rhs.groups_) {
+    for (auto& it : rhs.imp_->groups_) {
         auto& rhsID = it.first;
         auto& rhsGroup = it.second;
 
@@ -124,39 +245,10 @@ auto ContactSection::operator+(const ContactSection& rhs) const
         }
     }
 
-    const auto version = std::max(version_, rhs.Version());
+    const auto version = std::max(imp_->version_, rhs.Version());
 
-    return ContactSection(api_, nym_, version, version, section_, map);
-}
-
-auto ContactSection::add_scope(const std::shared_ptr<ContactItem>& item) const
-    -> ContactSection
-{
-    OT_ASSERT(item);
-
-    auto scope = item;
-
-    bool needsPrimary{true};
-
-    const auto& groupID = scope->Type();
-    GroupMap groups = groups_;
-    const auto& group = groups[groupID];
-
-    if (group) { needsPrimary = (1 > group->Size()); }
-
-    if (needsPrimary && false == scope->isPrimary()) {
-        scope.reset(new ContactItem(scope->SetPrimary(true)));
-    }
-
-    if (false == scope->isActive()) {
-        scope.reset(new ContactItem(scope->SetActive(true)));
-    }
-
-    groups[groupID].reset(new ContactGroup(nym_, section_, scope));
-
-    auto version = proto::RequiredVersion(section_, item->Type(), version_);
-
-    return ContactSection(api_, nym_, version, version, section_, groups);
+    return ContactSection(
+        imp_->api_, imp_->nym_, version, version, imp_->section_, map);
 }
 
 auto ContactSection::AddItem(const std::shared_ptr<ContactItem>& item) const
@@ -164,13 +256,14 @@ auto ContactSection::AddItem(const std::shared_ptr<ContactItem>& item) const
 {
     OT_ASSERT(item);
 
-    const bool specialCaseScope = (proto::CONTACTSECTION_SCOPE == section_);
+    const bool specialCaseScope =
+        (proto::CONTACTSECTION_SCOPE == imp_->section_);
 
-    if (specialCaseScope) { return add_scope(item); }
+    if (specialCaseScope) { return imp_->add_scope(item); }
 
     const auto& groupID = item->Type();
-    const bool groupExists = groups_.count(groupID);
-    auto map = groups_;
+    const bool groupExists = imp_->groups_.count(groupID);
+    auto map = imp_->groups_;
 
     if (groupExists) {
         auto& existing = map.at(groupID);
@@ -179,33 +272,25 @@ auto ContactSection::AddItem(const std::shared_ptr<ContactItem>& item) const
 
         existing.reset(new ContactGroup(existing->AddItem(item)));
     } else {
-        map[groupID].reset(new ContactGroup(nym_, section_, item));
+        map[groupID].reset(new ContactGroup(imp_->nym_, imp_->section_, item));
     }
 
-    auto version = proto::RequiredVersion(section_, item->Type(), version_);
+    auto version =
+        proto::RequiredVersion(imp_->section_, item->Type(), imp_->version_);
 
-    return ContactSection(api_, nym_, version, version, section_, map);
+    return ContactSection(
+        imp_->api_, imp_->nym_, version, version, imp_->section_, map);
 }
 
 auto ContactSection::begin() const -> ContactSection::GroupMap::const_iterator
 {
-    return groups_.cbegin();
-}
-
-auto ContactSection::check_version(
-    const VersionNumber in,
-    const VersionNumber targetVersion) -> VersionNumber
-{
-    // Upgrade version
-    if (targetVersion > in) { return targetVersion; }
-
-    return in;
+    return imp_->groups_.cbegin();
 }
 
 auto ContactSection::Claim(const Identifier& item) const
     -> std::shared_ptr<ContactItem>
 {
-    for (const auto& group : groups_) {
+    for (const auto& group : imp_->groups_) {
         OT_ASSERT(group.second);
 
         auto claim = group.second->Claim(item);
@@ -216,25 +301,10 @@ auto ContactSection::Claim(const Identifier& item) const
     return {};
 }
 
-auto ContactSection::create_group(
-    const std::string& nym,
-    const proto::ContactSectionName section,
-    const std::shared_ptr<ContactItem>& item) -> ContactSection::GroupMap
-{
-    OT_ASSERT(item);
-
-    GroupMap output{};
-    const auto& itemType = item->Type();
-
-    output[itemType].reset(new ContactGroup(nym, section, item));
-
-    return output;
-}
-
 auto ContactSection::Delete(const Identifier& id) const -> ContactSection
 {
     bool deleted{false};
-    auto map = groups_;
+    auto map = imp_->groups_;
 
     for (auto& it : map) {
         auto& group = it.second;
@@ -253,63 +323,33 @@ auto ContactSection::Delete(const Identifier& id) const -> ContactSection
 
     if (false == deleted) { return *this; }
 
-    return ContactSection(api_, nym_, version_, version_, section_, map);
+    return ContactSection(
+        imp_->api_,
+        imp_->nym_,
+        imp_->version_,
+        imp_->version_,
+        imp_->section_,
+        map);
 }
 
 auto ContactSection::end() const -> ContactSection::GroupMap::const_iterator
 {
-    return groups_.cend();
-}
-
-auto ContactSection::extract_groups(
-    const api::internal::Core& api,
-    const std::string& nym,
-    const VersionNumber parentVersion,
-    const proto::ContactSection& serialized) -> ContactSection::GroupMap
-{
-    GroupMap groupMap{};
-    std::map<proto::ContactItemType, ContactGroup::ItemMap> itemMaps{};
-    const auto& section = serialized.name();
-
-    for (const auto& item : serialized.item()) {
-        const auto& itemType = item.type();
-        auto instantiated = std::make_shared<ContactItem>(
-            api,
-            nym,
-            check_version(serialized.version(), parentVersion),
-            section,
-            item);
-
-        OT_ASSERT(instantiated);
-
-        const auto& itemID = instantiated->ID();
-        auto& itemMap = itemMaps[itemType];
-        itemMap.emplace(itemID, instantiated);
-    }
-
-    for (const auto& itemMap : itemMaps) {
-        const auto& type = itemMap.first;
-        const auto& map = itemMap.second;
-        auto& group = groupMap[type];
-        group.reset(new ContactGroup(nym, section, type, map));
-    }
-
-    return groupMap;
+    return imp_->groups_.cend();
 }
 
 auto ContactSection::Group(const proto::ContactItemType& type) const
     -> std::shared_ptr<ContactGroup>
 {
-    const auto it = groups_.find(type);
+    const auto it = imp_->groups_.find(type);
 
-    if (groups_.end() == it) { return {}; }
+    if (imp_->groups_.end() == it) { return {}; }
 
     return it->second;
 }
 
 auto ContactSection::HaveClaim(const Identifier& item) const -> bool
 {
-    for (const auto& group : groups_) {
+    for (const auto& group : imp_->groups_) {
         OT_ASSERT(group.second);
 
         if (group.second->HaveClaim(item)) { return true; }
@@ -324,10 +364,10 @@ auto ContactSection::SerializeTo(
 {
     bool output = true;
     auto& serialized = *section.add_section();
-    serialized.set_version(version_);
-    serialized.set_name(section_);
+    serialized.set_version(imp_->version_);
+    serialized.set_name(imp_->section_);
 
-    for (const auto& it : groups_) {
+    for (const auto& it : imp_->groups_) {
         const auto& group = it.second;
 
         OT_ASSERT(group);
@@ -338,12 +378,17 @@ auto ContactSection::SerializeTo(
     return output;
 }
 
-auto ContactSection::Size() const -> std::size_t { return groups_.size(); }
+auto ContactSection::Size() const -> std::size_t
+{
+    return imp_->groups_.size();
+}
 
 auto ContactSection::Type() const -> const proto::ContactSectionName&
 {
-    return section_;
+    return imp_->section_;
 }
 
-auto ContactSection::Version() const -> VersionNumber { return version_; }
+auto ContactSection::Version() const -> VersionNumber { return imp_->version_; }
+
+ContactSection::~ContactSection() = default;
 }  // namespace opentxs

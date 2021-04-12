@@ -3,13 +3,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"                      // IWYU pragma: associated
-#include "1_Internal.hpp"                    // IWYU pragma: associated
-#include "opentxs/contact/ContactGroup.hpp"  // IWYU pragma: associated
-
 #include <utility>
 
+#include "0_stdafx.hpp"    // IWYU pragma: associated
+#include "1_Internal.hpp"  // IWYU pragma: associated
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/contact/ContactGroup.hpp"  // IWYU pragma: associated
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
@@ -22,18 +21,107 @@
 
 namespace opentxs
 {
+struct ContactGroup::Imp {
+    const std::string nym_{};
+    const proto::ContactSectionName section_{proto::CONTACTSECTION_ERROR};
+    const proto::ContactItemType type_{proto::CITEMTYPE_ERROR};
+    const OTIdentifier primary_;
+    const ItemMap items_{};
+
+    static auto get_primary_item(const ItemMap& items) -> OTIdentifier
+    {
+        auto primary = Identifier::Factory();
+
+        for (const auto& it : items) {
+            const auto& item = it.second;
+
+            OT_ASSERT(item);
+
+            if (item->isPrimary()) {
+                primary = item->ID();
+
+                break;
+            }
+        }
+
+        return primary;
+    }
+
+    Imp(const std::string& nym,
+        const proto::ContactSectionName section,
+        const proto::ContactItemType type,
+        const ItemMap& items)
+        : nym_(nym)
+        , section_(section)
+        , type_(type)
+        , primary_(Identifier::Factory(get_primary_item(items)))
+        , items_(normalize_items(items))
+    {
+        for (const auto& it : items_) { OT_ASSERT(it.second); }
+    }
+
+    Imp(const Imp& rhs)
+        : nym_(rhs.nym_)
+        , section_(rhs.section_)
+        , type_(rhs.type_)
+        , primary_(rhs.primary_)
+        , items_(rhs.items_)
+    {
+    }
+
+    Imp(Imp&& rhs)
+        : nym_(std::move(const_cast<std::string&>(rhs.nym_)))
+        , section_(rhs.section_)
+        , type_(rhs.type_)
+        , primary_(std::move(const_cast<OTIdentifier&>(rhs.primary_)))
+        , items_(std::move(const_cast<ItemMap&>(rhs.items_)))
+    {
+    }
+
+    static auto normalize_items(const ItemMap& items) -> ContactGroup::ItemMap
+    {
+        auto primary = Identifier::Factory();
+
+        auto map = items;
+
+        for (const auto& it : map) {
+            const auto& item = it.second;
+
+            OT_ASSERT(item);
+
+            if (item->isPrimary()) {
+                if (primary->empty()) {
+                    primary = item->ID();
+                } else {
+                    const auto& id = item->ID();
+                    map[id].reset(new ContactItem(item->SetPrimary(false)));
+                }
+            }
+        }
+
+        return map;
+    }
+};
+
+static auto create_item(const std::shared_ptr<ContactItem>& item)
+    -> ContactGroup::ItemMap
+{
+    OT_ASSERT(item);
+
+    ContactGroup::ItemMap output{};
+    output[item->ID()] = item;
+
+    return output;
+}
+
 ContactGroup::ContactGroup(
     const std::string& nym,
     const proto::ContactSectionName section,
     const proto::ContactItemType type,
     const ItemMap& items)
-    : nym_(nym)
-    , section_(section)
-    , type_(type)
-    , primary_(Identifier::Factory(get_primary_item(items)))
-    , items_(normalize_items(items))
+    : imp_(std::make_unique<Imp>(nym, section, type, items))
 {
-    for (const auto& it : items_) { OT_ASSERT(it.second); }
+    OT_ASSERT(imp_);
 }
 
 ContactGroup::ContactGroup(
@@ -45,17 +133,31 @@ ContactGroup::ContactGroup(
     OT_ASSERT(item);
 }
 
+ContactGroup::ContactGroup(const ContactGroup& rhs) noexcept
+    : imp_(std::make_unique<Imp>(*rhs.imp_))
+{
+    OT_ASSERT(imp_);
+}
+
+ContactGroup::ContactGroup(ContactGroup&& rhs) noexcept
+    : imp_(std::move(rhs.imp_))
+{
+    OT_ASSERT(imp_);
+}
+
 auto ContactGroup::operator+(const ContactGroup& rhs) const -> ContactGroup
 {
-    OT_ASSERT(section_ == rhs.section_);
+    OT_ASSERT(imp_->section_ == rhs.imp_->section_);
 
     auto primary = Identifier::Factory();
 
-    if (primary_->empty()) { primary = Identifier::Factory(rhs.primary_); }
+    if (imp_->primary_->empty()) {
+        primary = Identifier::Factory(rhs.imp_->primary_);
+    }
 
-    auto map{items_};
+    auto map{imp_->items_};
 
-    for (const auto& it : rhs.items_) {
+    for (const auto& it : rhs.imp_->items_) {
         const auto& item = it.second;
 
         OT_ASSERT(item);
@@ -76,7 +178,7 @@ auto ContactGroup::operator+(const ContactGroup& rhs) const -> ContactGroup
         OT_ASSERT(map[id])
     }
 
-    return ContactGroup(nym_, section_, type_, map);
+    return ContactGroup(imp_->nym_, imp_->section_, imp_->type_, map);
 }
 
 auto ContactGroup::AddItem(const std::shared_ptr<ContactItem>& item) const
@@ -88,14 +190,14 @@ auto ContactGroup::AddItem(const std::shared_ptr<ContactItem>& item) const
 
     const auto& id = item->ID();
     const bool alreadyExists =
-        (1 == items_.count(id)) && (*item == *items_.at(id));
+        (1 == imp_->items_.count(id)) && (*item == *imp_->items_.at(id));
 
     if (alreadyExists) { return *this; }
 
-    auto map = items_;
+    auto map = imp_->items_;
     map[id] = item;
 
-    return ContactGroup(nym_, section_, type_, map);
+    return ContactGroup(imp_->nym_, imp_->section_, imp_->type_, map);
 }
 
 auto ContactGroup::AddPrimary(const std::shared_ptr<ContactItem>& item) const
@@ -104,17 +206,17 @@ auto ContactGroup::AddPrimary(const std::shared_ptr<ContactItem>& item) const
     if (false == bool(item)) { return *this; }
 
     const auto& incomingID = item->ID();
-    const bool isExistingPrimary = (primary_ == incomingID);
+    const bool isExistingPrimary = (imp_->primary_ == incomingID);
     const bool haveExistingPrimary =
-        ((false == primary_->empty()) && (false == isExistingPrimary));
-    auto map = items_;
+        ((false == imp_->primary_->empty()) && (false == isExistingPrimary));
+    auto map = imp_->items_;
     auto& newPrimary = map[incomingID];
     newPrimary.reset(new ContactItem(item->SetPrimary(true)));
 
     OT_ASSERT(newPrimary);
 
     if (haveExistingPrimary) {
-        auto& oldPrimary = map.at(primary_);
+        auto& oldPrimary = map.at(imp_->primary_);
 
         OT_ASSERT(oldPrimary);
 
@@ -123,21 +225,23 @@ auto ContactGroup::AddPrimary(const std::shared_ptr<ContactItem>& item) const
         OT_ASSERT(oldPrimary);
     }
 
-    return ContactGroup(nym_, section_, type_, map);
+    return ContactGroup(imp_->nym_, imp_->section_, imp_->type_, map);
 }
 
 auto ContactGroup::begin() const -> ContactGroup::ItemMap::const_iterator
 {
-    return items_.cbegin();
+    return imp_->items_.cbegin();
 }
 
 auto ContactGroup::Best() const -> std::shared_ptr<ContactItem>
 {
-    if (0 == items_.size()) { return {}; }
+    if (0 == imp_->items_.size()) { return {}; }
 
-    if (false == primary_->empty()) { return items_.at(primary_); }
+    if (false == imp_->primary_->empty()) {
+        return imp_->items_.at(imp_->primary_);
+    }
 
-    for (const auto& it : items_) {
+    for (const auto& it : imp_->items_) {
         const auto& claim = it.second;
 
         OT_ASSERT(claim);
@@ -145,104 +249,51 @@ auto ContactGroup::Best() const -> std::shared_ptr<ContactItem>
         if (claim->isActive()) { return claim; }
     }
 
-    return items_.begin()->second;
+    return imp_->items_.begin()->second;
 }
 
 auto ContactGroup::Claim(const Identifier& item) const
     -> std::shared_ptr<ContactItem>
 {
-    auto it = items_.find(item);
+    auto it = imp_->items_.find(item);
 
-    if (items_.end() == it) { return {}; }
+    if (imp_->items_.end() == it) { return {}; }
 
     return it->second;
 }
 
-auto ContactGroup::create_item(const std::shared_ptr<ContactItem>& item)
-    -> ContactGroup::ItemMap
-{
-    OT_ASSERT(item);
-
-    ItemMap output{};
-    output[item->ID()] = item;
-
-    return output;
-}
-
 auto ContactGroup::Delete(const Identifier& id) const -> ContactGroup
 {
-    const bool exists = (1 == items_.count(id));
+    const bool exists = (1 == imp_->items_.count(id));
 
     if (false == exists) { return *this; }
 
-    auto map = items_;
+    auto map = imp_->items_;
     map.erase(id);
 
-    return ContactGroup(nym_, section_, type_, map);
+    return ContactGroup(imp_->nym_, imp_->section_, imp_->type_, map);
 }
 
 auto ContactGroup::end() const -> ContactGroup::ItemMap::const_iterator
 {
-    return items_.cend();
-}
-
-auto ContactGroup::get_primary_item(const ItemMap& items) -> OTIdentifier
-{
-    auto primary = Identifier::Factory();
-
-    for (const auto& it : items) {
-        const auto& item = it.second;
-
-        OT_ASSERT(item);
-
-        if (item->isPrimary()) {
-            primary = item->ID();
-
-            break;
-        }
-    }
-
-    return primary;
-}
-
-auto ContactGroup::normalize_items(const ItemMap& items)
-    -> ContactGroup::ItemMap
-{
-    auto primary = Identifier::Factory();
-
-    auto map = items;
-
-    for (const auto& it : map) {
-        const auto& item = it.second;
-
-        OT_ASSERT(item);
-
-        if (item->isPrimary()) {
-            if (primary->empty()) {
-                primary = item->ID();
-            } else {
-                const auto& id = item->ID();
-                map[id].reset(new ContactItem(item->SetPrimary(false)));
-            }
-        }
-    }
-
-    return map;
+    return imp_->items_.cend();
 }
 
 auto ContactGroup::HaveClaim(const Identifier& item) const -> bool
 {
-    return (1 == items_.count(item));
+    return (1 == imp_->items_.count(item));
 }
 
-auto ContactGroup::Primary() const -> const Identifier& { return primary_; }
+auto ContactGroup::Primary() const -> const Identifier&
+{
+    return imp_->primary_;
+}
 
 auto ContactGroup::SerializeTo(
     proto::ContactSection& section,
     const bool withIDs) const -> bool
 {
-    if (section.name() != section_) {
-
+    if (section.name() != imp_->section_) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Trying to serialize to incorrect section.")
             .Flush();
@@ -250,7 +301,7 @@ auto ContactGroup::SerializeTo(
         return false;
     }
 
-    for (const auto& it : items_) {
+    for (const auto& it : imp_->items_) {
         const auto& item = it.second;
 
         OT_ASSERT(item);
@@ -263,15 +314,17 @@ auto ContactGroup::SerializeTo(
 
 auto ContactGroup::PrimaryClaim() const -> std::shared_ptr<ContactItem>
 {
-    if (primary_->empty()) { return {}; }
+    if (imp_->primary_->empty()) { return {}; }
 
-    return items_.at(primary_);
+    return imp_->items_.at(imp_->primary_);
 }
 
-auto ContactGroup::Size() const -> std::size_t { return items_.size(); }
+auto ContactGroup::Size() const -> std::size_t { return imp_->items_.size(); }
 
 auto ContactGroup::Type() const -> const proto::ContactItemType&
 {
-    return type_;
+    return imp_->type_;
 }
+
+ContactGroup::~ContactGroup() = default;
 }  // namespace opentxs

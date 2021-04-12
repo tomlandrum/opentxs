@@ -22,7 +22,6 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/protobuf/ContactData.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -92,10 +91,7 @@ public:
         const proto::ContactItemType type,
         const bool primary,
         const bool active) const;
-    OPENTXS_EXPORT SectionMap::const_iterator begin() const
-    {
-        return sections_.begin();
-    }
+    OPENTXS_EXPORT SectionMap::const_iterator begin() const;
     OPENTXS_EXPORT std::string BestEmail() const;
     OPENTXS_EXPORT std::string BestPhoneNumber() const;
     OPENTXS_EXPORT std::string BestSocialMediaProfile(
@@ -107,10 +103,7 @@ public:
         const bool onlyActive) const;
     OPENTXS_EXPORT ContactData Delete(const Identifier& id) const;
     OPENTXS_EXPORT std::string EmailAddresses(bool active = true) const;
-    OPENTXS_EXPORT SectionMap::const_iterator end() const
-    {
-        return sections_.end();
-    }
+    OPENTXS_EXPORT SectionMap::const_iterator end() const;
     OPENTXS_EXPORT std::shared_ptr<ContactGroup> Group(
         const proto::ContactSectionName& section,
         const proto::ContactItemType& type) const;
@@ -139,27 +132,12 @@ public:
     OPENTXS_EXPORT proto::ContactItemType Type() const;
     OPENTXS_EXPORT VersionNumber Version() const;
 
-    OPENTXS_EXPORT ~ContactData() = default;
+    OPENTXS_EXPORT ~ContactData();
 
 private:
-    using Scope =
-        std::pair<proto::ContactItemType, std::shared_ptr<const ContactGroup>>;
+    struct Imp;
 
-    const api::internal::Core& api_;
-    const VersionNumber version_{0};
-    const std::string nym_{};
-    const SectionMap sections_{};
-
-    static VersionNumber check_version(
-        const VersionNumber in,
-        const VersionNumber targetVersion);
-    static SectionMap extract_sections(
-        const api::internal::Core& api,
-        const std::string& nym,
-        const VersionNumber targetVersion,
-        const proto::ContactData& serialized);
-
-    Scope scope() const;
+    std::unique_ptr<Imp> imp_;
 
     ContactData() = delete;
     ContactData(ContactData&&) = delete;

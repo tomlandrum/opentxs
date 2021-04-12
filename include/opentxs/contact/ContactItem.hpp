@@ -22,7 +22,6 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 
 namespace opentxs
@@ -93,32 +92,12 @@ public:
     OPENTXS_EXPORT const std::string& Value() const;
     OPENTXS_EXPORT VersionNumber Version() const;
 
-    OPENTXS_EXPORT ~ContactItem() = default;
+    OPENTXS_EXPORT ~ContactItem();
 
 private:
-    const api::internal::Core& api_;
-    const VersionNumber version_;
-    const std::string nym_;
-    const proto::ContactSectionName section_;
-    const proto::ContactItemType type_;
-    const std::string value_;
-    const std::time_t start_;
-    const std::time_t end_;
-    const std::set<proto::ContactItemAttribute> attributes_;
-    const OTIdentifier id_;
-    const std::string subtype_;
+    struct Imp;
 
-    static VersionNumber check_version(
-        const VersionNumber in,
-        const VersionNumber targetVersion);
-    static std::set<proto::ContactItemAttribute> extract_attributes(
-        const proto::ContactItem& serialized);
-    static std::set<proto::ContactItemAttribute> extract_attributes(
-        const Claim& claim);
-
-    ContactItem set_attribute(
-        const proto::ContactItemAttribute& attribute,
-        const bool value) const;
+    std::unique_ptr<Imp> imp_;
 
     ContactItem() = delete;
     ContactItem& operator=(const ContactItem&) = delete;

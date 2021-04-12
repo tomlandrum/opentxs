@@ -17,7 +17,6 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -89,29 +88,12 @@ public:
     OPENTXS_EXPORT const proto::ContactSectionName& Type() const;
     OPENTXS_EXPORT VersionNumber Version() const;
 
-    OPENTXS_EXPORT ~ContactSection() = default;
+    OPENTXS_EXPORT ~ContactSection();
 
 private:
-    const api::internal::Core& api_;
-    const VersionNumber version_;
-    const std::string nym_;
-    const proto::ContactSectionName section_;
-    const GroupMap groups_;
+    struct Imp;
 
-    static VersionNumber check_version(
-        const VersionNumber in,
-        const VersionNumber targetVersion);
-    static GroupMap create_group(
-        const std::string& nym,
-        const proto::ContactSectionName section,
-        const std::shared_ptr<ContactItem>& item);
-    static GroupMap extract_groups(
-        const api::internal::Core& api,
-        const std::string& nym,
-        const VersionNumber parentVersion,
-        const proto::ContactSection& serialized);
-
-    ContactSection add_scope(const std::shared_ptr<ContactItem>& item) const;
+    std::unique_ptr<Imp> imp_;
 
     ContactSection() = delete;
     ContactSection& operator=(const ContactSection&) = delete;

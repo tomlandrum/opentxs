@@ -92,87 +92,376 @@ auto translate_style(const AddressStyle& in) noexcept -> std::string
 
 namespace opentxs
 {
+struct Contact::Imp {
+    const api::client::internal::Manager& api_;
+    VersionNumber version_{0};
+    std::string label_{""};
+    mutable std::mutex lock_{};
+    const OTIdentifier id_;
+    OTIdentifier parent_;
+    OTNymID primary_nym_;
+    std::map<OTNymID, Nym_p> nyms_;
+    std::set<OTIdentifier> merged_children_;
+    std::unique_ptr<ContactData> contact_data_{};
+    mutable std::shared_ptr<ContactData> cached_contact_data_{};
+    std::atomic<std::uint64_t> revision_{0};
+
+    static auto check_version(
+        const VersionNumber in,
+        const VersionNumber targetVersion) -> VersionNumber
+    {
+        // Upgrade version
+        if (targetVersion > in) { return targetVersion; }
+
+        return in;
+    }
+
+    static auto generate_id(const api::internal::Core& api) -> OTIdentifier
+    {
+        auto& encode = api.Crypto().Encode();
+        auto random = Data::Factory();
+        encode.Nonce(ID_BYTES, random);
+
+        return api.Factory().Identifier(random->Bytes());
+    }
+
+    static auto translate(
+        const api::client::internal::Manager& api,
+        const proto::ContactItemType chain,
+        const std::string& value,
+        const std::string& subtype) noexcept(false)
+        -> Contact::BlockchainAddress
+    {
+        auto output = BlockchainAddress{
+            api.Factory().Data(value, StringStyle::Hex),
+            translate_style(subtype),
+            Translate(chain)};
+        auto& [outBytes, outStyle, outChain] = output;
+        const auto bad = outBytes->empty() ||
+                         (AddressStyle::Unknown == outStyle) ||
+                         (BlockchainType::Unknown == outChain);
+
+        if (bad) { throw std::runtime_error("Invalid address"); }
+
+        return output;
+    }
+
+    Imp(const api::client::internal::Manager& api,
+        const proto::Contact& serialized)
+        : api_(api)
+        , version_(check_version(serialized.version(), OT_CONTACT_VERSION))
+        , label_(serialized.label())
+        , lock_()
+        , id_(api_.Factory().Identifier(serialized.id()))
+        , parent_(api_.Factory().Identifier(serialized.mergedto()))
+        , primary_nym_(api_.Factory().NymID())
+        , nyms_()
+        , merged_children_()
+        , contact_data_(new ContactData(
+              api_,
+              serialized.id(),
+              CONTACT_CONTACT_DATA_VERSION,
+              CONTACT_CONTACT_DATA_VERSION,
+              ContactData::SectionMap{}))
+        , cached_contact_data_()
+        , revision_(serialized.revision())
+    {
+        if (serialized.has_contactdata()) {
+            contact_data_.reset(new ContactData(
+                api_,
+                serialized.id(),
+                CONTACT_CONTACT_DATA_VERSION,
+                serialized.contactdata()));
+        }
+
+        OT_ASSERT(contact_data_);
+
+        for (const auto& child : serialized.merged()) {
+            merged_children_.emplace(api_.Factory().Identifier(child));
+        }
+
+        init_nyms();
+    }
+
+    Imp(const api::client::internal::Manager& api, const std::string& label)
+        : api_(api)
+        , version_(OT_CONTACT_VERSION)
+        , label_(label)
+        , lock_()
+        , id_(generate_id(api_))
+        , parent_(api_.Factory().Identifier())
+        , primary_nym_(api_.Factory().NymID())
+        , nyms_()
+        , merged_children_()
+        , contact_data_(nullptr)
+        , cached_contact_data_()
+        , revision_(1)
+    {
+        contact_data_.reset(new ContactData(
+            api_,
+            String::Factory(id_)->Get(),
+            CONTACT_CONTACT_DATA_VERSION,
+            CONTACT_CONTACT_DATA_VERSION,
+            ContactData::SectionMap{}));
+
+        OT_ASSERT(contact_data_);
+    }
+
+    auto add_claim(const std::shared_ptr<ContactItem>& item) -> bool
+    {
+        Lock lock(lock_);
+
+        return add_claim(lock, item);
+    }
+
+    auto add_claim(const Lock& lock, const std::shared_ptr<ContactItem>& item)
+        -> bool
+    {
+        OT_ASSERT(verify_write_lock(lock));
+
+        if (false == bool(item)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Null claim.").Flush();
+
+            return false;
+        }
+
+        const auto version = std::make_pair(item->Version(), item->Section());
+        const proto::ContactItem serialized(*item);
+
+        if (false ==
+            proto::Validate<proto::ContactItem>(
+                serialized, VERBOSE, proto::ClaimType::Indexed, version)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid claim.").Flush();
+
+            return false;
+        }
+
+        add_verified_claim(lock, item);
+
+        return true;
+    }
+
+    auto add_nym(const Lock& lock, const Nym_p& nym, const bool primary) -> bool
+    {
+        OT_ASSERT(verify_write_lock(lock));
+
+        if (false == bool(nym)) { return false; }
+
+        const auto contactType = type(lock);
+        const auto nymType = ExtractType(*nym);
+        const bool haveType = (proto::CITEMTYPE_ERROR != contactType) &&
+                              (proto::CITEMTYPE_UNKNOWN != contactType);
+        const bool typeMismatch = (contactType != nymType);
+
+        if (haveType && typeMismatch) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Wrong nym type.").Flush();
+
+            return false;
+        }
+
+        const auto& id = nym->ID();
+        const bool needPrimary = (0 == nyms_.size());
+        const bool isPrimary = needPrimary || primary;
+        nyms_[id] = nym;
+
+        if (isPrimary) { primary_nym_ = id; }
+
+        add_nym_claim(lock, id, isPrimary);
+
+        return true;
+    }
+
+    void add_nym_claim(
+        const Lock& lock,
+        const identifier::Nym& nymID,
+        const bool primary)
+    {
+        OT_ASSERT(verify_write_lock(lock));
+
+        std::set<proto::ContactItemAttribute> attr{
+            proto::CITEMATTR_LOCAL, proto::CITEMATTR_ACTIVE};
+
+        if (primary) { attr.emplace(proto::CITEMATTR_PRIMARY); }
+
+        std::shared_ptr<ContactItem> claim{nullptr};
+        claim.reset(new ContactItem(
+            api_,
+            String::Factory(id_)->Get(),
+            CONTACT_CONTACT_DATA_VERSION,
+            CONTACT_CONTACT_DATA_VERSION,
+            proto::CONTACTSECTION_RELATIONSHIP,
+            proto::CITEMTYPE_CONTACT,
+            String::Factory(nymID)->Get(),
+            attr,
+            NULL_START,
+            NULL_END,
+            ""));
+
+        add_claim(lock, claim);
+    }
+
+    void add_verified_claim(
+        const Lock& lock,
+        const std::shared_ptr<ContactItem>& item)
+    {
+        OT_ASSERT(verify_write_lock(lock));
+        OT_ASSERT(contact_data_);
+
+        contact_data_.reset(new ContactData(contact_data_->AddItem(item)));
+
+        OT_ASSERT(contact_data_);
+
+        revision_++;
+        cached_contact_data_.reset();
+    }
+
+    void init_nyms()
+    {
+        OT_ASSERT(contact_data_);
+
+        const auto nyms = contact_data_->Group(
+            proto::CONTACTSECTION_RELATIONSHIP, proto::CITEMTYPE_CONTACT);
+
+        if (false == bool(nyms)) { return; }
+
+        // TODO conversion
+        primary_nym_ = api_.Factory().NymID(nyms->Primary().str());
+
+        for (const auto& it : *nyms) {
+            const auto& item = it.second;
+
+            OT_ASSERT(item);
+
+            const auto nymID = api_.Factory().NymID(item->Value());
+            auto& nym = nyms_[nymID];
+            nym = api_.Wallet().Nym(nymID);
+
+            if (false == bool(nym)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load nym ")(
+                    nymID)(".")
+                    .Flush();
+            }
+        }
+    }
+
+    auto merged_data(const Lock& lock) const -> std::shared_ptr<ContactData>
+    {
+        OT_ASSERT(contact_data_);
+        OT_ASSERT(verify_write_lock(lock));
+
+        if (cached_contact_data_) { return cached_contact_data_; }
+
+        cached_contact_data_.reset(new ContactData(*contact_data_));
+        auto& output = cached_contact_data_;
+
+        OT_ASSERT(output);
+
+        if (false == primary_nym_->empty()) {
+            try {
+                auto& primary = nyms_.at(primary_nym_);
+
+                if (primary) {
+                    output.reset(new ContactData(*output + primary->Claims()));
+                }
+            } catch (const std::out_of_range&) {
+            }
+        }
+
+        for (const auto& it : nyms_) {
+            const auto& nymID = it.first;
+            const auto& nym = it.second;
+
+            if (false == bool(nym)) { continue; }
+
+            if (nymID == primary_nym_) { continue; }
+
+            output.reset(new ContactData(*output + nym->Claims()));
+        }
+
+        return output;
+    }
+
+    auto payment_codes(const Lock& lock, const proto::ContactItemType currency)
+        const -> std::shared_ptr<ContactGroup>
+    {
+        const auto data = merged_data(lock);
+
+        if (false == bool(data)) { return {}; }
+
+        return data->Group(proto::CONTACTSECTION_PROCEDURE, currency);
+    }
+
+    auto type(const Lock& lock) const -> proto::ContactItemType
+    {
+        OT_ASSERT(verify_write_lock(lock));
+
+        const auto data = merged_data(lock);
+
+        if (false == bool(data)) { return proto::CITEMTYPE_ERROR; }
+
+        return data->Type();
+    }
+
+    void update_label(const Lock& lock, const identity::Nym& nym)
+    {
+        OT_ASSERT(verify_write_lock(lock));
+
+        if (false == label_.empty()) { return; }
+
+        label_ = ExtractLabel(nym);
+    }
+
+    auto verify_write_lock(const Lock& lock) const -> bool
+    {
+        if (lock.mutex() != &lock_) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect mutex.").Flush();
+
+            return false;
+        }
+
+        if (false == lock.owns_lock()) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Lock not owned.").Flush();
+
+            return false;
+        }
+
+        return true;
+    }
+};
+
 Contact::Contact(
     const api::client::internal::Manager& api,
     const proto::Contact& serialized)
-    : api_(api)
-    , version_(check_version(serialized.version(), OT_CONTACT_VERSION))
-    , label_(serialized.label())
-    , lock_()
-    , id_(api_.Factory().Identifier(serialized.id()))
-    , parent_(api_.Factory().Identifier(serialized.mergedto()))
-    , primary_nym_(api_.Factory().NymID())
-    , nyms_()
-    , merged_children_()
-    , contact_data_(new ContactData(
-          api_,
-          serialized.id(),
-          CONTACT_CONTACT_DATA_VERSION,
-          CONTACT_CONTACT_DATA_VERSION,
-          ContactData::SectionMap{}))
-    , cached_contact_data_()
-    , revision_(serialized.revision())
+    : imp_(std::make_unique<Imp>(api, serialized))
 {
-    if (serialized.has_contactdata()) {
-        contact_data_.reset(new ContactData(
-            api_,
-            serialized.id(),
-            CONTACT_CONTACT_DATA_VERSION,
-            serialized.contactdata()));
-    }
-
-    OT_ASSERT(contact_data_);
-
-    for (const auto& child : serialized.merged()) {
-        merged_children_.emplace(api_.Factory().Identifier(child));
-    }
-
-    init_nyms();
+    OT_ASSERT(imp_);
 }
 
 Contact::Contact(
     const api::client::internal::Manager& api,
     const std::string& label)
-    : api_(api)
-    , version_(OT_CONTACT_VERSION)
-    , label_(label)
-    , lock_()
-    , id_(generate_id(api_))
-    , parent_(api_.Factory().Identifier())
-    , primary_nym_(api_.Factory().NymID())
-    , nyms_()
-    , merged_children_()
-    , contact_data_(nullptr)
-    , cached_contact_data_()
-    , revision_(1)
+    : imp_(std::make_unique<Imp>(api, label))
 {
-    contact_data_.reset(new ContactData(
-        api_,
-        String::Factory(id_)->Get(),
-        CONTACT_CONTACT_DATA_VERSION,
-        CONTACT_CONTACT_DATA_VERSION,
-        ContactData::SectionMap{}));
-
-    OT_ASSERT(contact_data_);
+    OT_ASSERT(imp_);
 }
 
 Contact::operator proto::Contact() const
 {
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
     proto::Contact output{};
-    output.set_version(version_);
-    output.set_id(String::Factory(id_)->Get());
-    output.set_revision(revision_);
-    output.set_label(label_);
+    output.set_version(imp_->version_);
+    output.set_id(String::Factory(imp_->id_)->Get());
+    output.set_revision(imp_->revision_);
+    output.set_label(imp_->label_);
 
-    if (contact_data_) {
+    if (imp_->contact_data_) {
         auto& data = *output.mutable_contactdata();
-        data = contact_data_->Serialize();
+        data = imp_->contact_data_->Serialize();
     }
 
-    output.set_mergedto(String::Factory(parent_)->Get());
+    output.set_mergedto(String::Factory(imp_->parent_)->Get());
 
-    for (const auto& child : merged_children_) {
+    for (const auto& child : imp_->merged_children_) {
         output.add_merged(String::Factory(child)->Get());
     }
 
@@ -181,162 +470,58 @@ Contact::operator proto::Contact() const
 
 auto Contact::operator+=(Contact& rhs) -> Contact&
 {
-    Lock rLock(rhs.lock_, std::defer_lock);
-    Lock lock(lock_, std::defer_lock);
+    Lock rLock(rhs.imp_->lock_, std::defer_lock);
+    Lock lock(imp_->lock_, std::defer_lock);
     std::lock(rLock, lock);
 
-    if (label_.empty()) { label_ = rhs.label_; }
+    if (imp_->label_.empty()) { imp_->label_ = rhs.imp_->label_; }
 
-    rhs.parent_ = id_;
+    rhs.imp_->parent_ = imp_->id_;
 
-    if (primary_nym_->empty()) { primary_nym_ = rhs.primary_nym_; }
+    if (imp_->primary_nym_->empty()) {
+        imp_->primary_nym_ = rhs.imp_->primary_nym_;
+    }
 
-    for (const auto& it : rhs.nyms_) {
+    for (const auto& it : rhs.imp_->nyms_) {
         const auto& id = it.first;
         const auto& nym = it.second;
 
-        if (0 == nyms_.count(id)) { nyms_.emplace(id, nym); }
+        if (0 == imp_->nyms_.count(id)) { imp_->nyms_.emplace(id, nym); }
     }
 
-    rhs.nyms_.clear();
+    rhs.imp_->nyms_.clear();
 
-    for (const auto& it : rhs.merged_children_) { merged_children_.insert(it); }
+    for (const auto& it : rhs.imp_->merged_children_) {
+        imp_->merged_children_.insert(it);
+    }
 
-    merged_children_.insert(rhs.id_);
-    rhs.merged_children_.clear();
+    imp_->merged_children_.insert(rhs.imp_->id_);
+    rhs.imp_->merged_children_.clear();
 
-    if (contact_data_) {
-        if (rhs.contact_data_) {
-            contact_data_.reset(
-                new ContactData(*contact_data_ + *rhs.contact_data_));
+    if (imp_->contact_data_) {
+        if (rhs.imp_->contact_data_) {
+            imp_->contact_data_.reset(new ContactData(
+                *imp_->contact_data_ + *rhs.imp_->contact_data_));
         }
     } else {
-        if (rhs.contact_data_) {
-            contact_data_.reset(new ContactData(*rhs.contact_data_));
+        if (rhs.imp_->contact_data_) {
+            imp_->contact_data_.reset(
+                new ContactData(*rhs.imp_->contact_data_));
         }
     }
 
-    rhs.contact_data_.reset();
-    cached_contact_data_.reset();
-    rhs.cached_contact_data_.reset();
+    rhs.imp_->contact_data_.reset();
+    imp_->cached_contact_data_.reset();
+    rhs.imp_->cached_contact_data_.reset();
 
     return *this;
-}
-
-auto Contact::add_claim(const std::shared_ptr<ContactItem>& item) -> bool
-{
-    Lock lock(lock_);
-
-    return add_claim(lock, item);
-}
-
-auto Contact::add_claim(
-    const Lock& lock,
-    const std::shared_ptr<ContactItem>& item) -> bool
-{
-    OT_ASSERT(verify_write_lock(lock));
-
-    if (false == bool(item)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Null claim.").Flush();
-
-        return false;
-    }
-
-    const auto version = std::make_pair(item->Version(), item->Section());
-    const proto::ContactItem serialized(*item);
-
-    if (false == proto::Validate<proto::ContactItem>(
-                     serialized, VERBOSE, proto::ClaimType::Indexed, version)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid claim.").Flush();
-
-        return false;
-    }
-
-    add_verified_claim(lock, item);
-
-    return true;
-}
-
-auto Contact::add_nym(const Lock& lock, const Nym_p& nym, const bool primary)
-    -> bool
-{
-    OT_ASSERT(verify_write_lock(lock));
-
-    if (false == bool(nym)) { return false; }
-
-    const auto contactType = type(lock);
-    const auto nymType = ExtractType(*nym);
-    const bool haveType = (proto::CITEMTYPE_ERROR != contactType) &&
-                          (proto::CITEMTYPE_UNKNOWN != contactType);
-    const bool typeMismatch = (contactType != nymType);
-
-    if (haveType && typeMismatch) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Wrong nym type.").Flush();
-
-        return false;
-    }
-
-    const auto& id = nym->ID();
-    const bool needPrimary = (0 == nyms_.size());
-    const bool isPrimary = needPrimary || primary;
-    nyms_[id] = nym;
-
-    if (isPrimary) { primary_nym_ = id; }
-
-    add_nym_claim(lock, id, isPrimary);
-
-    return true;
-}
-
-void Contact::add_nym_claim(
-    const Lock& lock,
-    const identifier::Nym& nymID,
-    const bool primary)
-{
-    OT_ASSERT(verify_write_lock(lock));
-
-    std::set<proto::ContactItemAttribute> attr{
-        proto::CITEMATTR_LOCAL, proto::CITEMATTR_ACTIVE};
-
-    if (primary) { attr.emplace(proto::CITEMATTR_PRIMARY); }
-
-    std::shared_ptr<ContactItem> claim{nullptr};
-    claim.reset(new ContactItem(
-        api_,
-        String::Factory(id_)->Get(),
-        CONTACT_CONTACT_DATA_VERSION,
-        CONTACT_CONTACT_DATA_VERSION,
-        proto::CONTACTSECTION_RELATIONSHIP,
-        proto::CITEMTYPE_CONTACT,
-        String::Factory(nymID)->Get(),
-        attr,
-        NULL_START,
-        NULL_END,
-        ""));
-
-    add_claim(lock, claim);
-}
-
-void Contact::add_verified_claim(
-    const Lock& lock,
-    const std::shared_ptr<ContactItem>& item)
-{
-    OT_ASSERT(verify_write_lock(lock));
-    OT_ASSERT(contact_data_);
-
-    contact_data_.reset(new ContactData(contact_data_->AddItem(item)));
-
-    OT_ASSERT(contact_data_);
-
-    revision_++;
-    cached_contact_data_.reset();
 }
 
 auto Contact::AddBlockchainAddress(
     const std::string& address,
     const proto::ContactItemType currency) -> bool
 {
-    const auto& api = api_;
+    const auto& api = imp_->api_;
     auto [bytes, style, chains, supported] =
         api.Blockchain().DecodeAddress(address);
     const auto bad =
@@ -367,12 +552,12 @@ auto Contact::AddBlockchainAddress(
     const blockchain::Type chain,
     const opentxs::Data& bytes) -> bool
 {
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
     std::shared_ptr<ContactItem> claim{nullptr};
     claim.reset(new ContactItem(
-        api_,
-        String::Factory(id_)->Get(),
+        imp_->api_,
+        String::Factory(imp_->id_)->Get(),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
         proto::CONTACTSECTION_ADDRESS,
@@ -383,7 +568,7 @@ auto Contact::AddBlockchainAddress(
         NULL_END,
         translate_style(style)));
 
-    return add_claim(lock, claim);
+    return imp_->add_claim(lock, claim);
 }
 
 auto Contact::AddEmail(
@@ -393,38 +578,38 @@ auto Contact::AddEmail(
 {
     if (value.empty()) { return false; }
 
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
-    contact_data_.reset(
-        new ContactData(contact_data_->AddEmail(value, primary, active)));
+    imp_->contact_data_.reset(
+        new ContactData(imp_->contact_data_->AddEmail(value, primary, active)));
 
-    OT_ASSERT(contact_data_);
+    OT_ASSERT(imp_->contact_data_);
 
-    revision_++;
-    cached_contact_data_.reset();
+    imp_->revision_++;
+    imp_->cached_contact_data_.reset();
 
     return true;
 }
 
 auto Contact::AddNym(const Nym_p& nym, const bool primary) -> bool
 {
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
-    return add_nym(lock, nym, primary);
+    return imp_->add_nym(lock, nym, primary);
 }
 
 auto Contact::AddNym(const identifier::Nym& nymID, const bool primary) -> bool
 {
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
-    const bool needPrimary = (0 == nyms_.size());
+    const bool needPrimary = (0 == imp_->nyms_.size());
     const bool isPrimary = needPrimary || primary;
 
-    if (isPrimary) { primary_nym_ = nymID; }
+    if (isPrimary) { imp_->primary_nym_ = nymID; }
 
-    add_nym_claim(lock, nymID, isPrimary);
+    imp_->add_nym_claim(lock, nymID, isPrimary);
 
-    revision_++;
+    imp_->revision_++;
 
     return true;
 }
@@ -444,8 +629,8 @@ auto Contact::AddPaymentCode(
     const std::string value = code.asBase58();
     std::shared_ptr<ContactItem> claim{nullptr};
     claim.reset(new ContactItem(
-        api_,
-        String::Factory(id_)->Get(),
+        imp_->api_,
+        String::Factory(imp_->id_)->Get(),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
         proto::CONTACTSECTION_PROCEDURE,
@@ -456,7 +641,7 @@ auto Contact::AddPaymentCode(
         NULL_END,
         ""));
 
-    if (false == add_claim(claim)) {
+    if (false == imp_->add_claim(claim)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Unable to add claim.").Flush();
 
         return false;
@@ -472,15 +657,15 @@ auto Contact::AddPhoneNumber(
 {
     if (value.empty()) { return false; }
 
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
-    contact_data_.reset(
-        new ContactData(contact_data_->AddPhoneNumber(value, primary, active)));
+    imp_->contact_data_.reset(new ContactData(
+        imp_->contact_data_->AddPhoneNumber(value, primary, active)));
 
-    OT_ASSERT(contact_data_);
+    OT_ASSERT(imp_->contact_data_);
 
-    revision_++;
-    cached_contact_data_.reset();
+    imp_->revision_++;
+    imp_->cached_contact_data_.reset();
 
     return true;
 }
@@ -493,15 +678,16 @@ auto Contact::AddSocialMediaProfile(
 {
     if (value.empty()) { return false; }
 
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
-    contact_data_.reset(new ContactData(
-        contact_data_->AddSocialMediaProfile(value, type, primary, active)));
+    imp_->contact_data_.reset(
+        new ContactData(imp_->contact_data_->AddSocialMediaProfile(
+            value, type, primary, active)));
 
-    OT_ASSERT(contact_data_);
+    OT_ASSERT(imp_->contact_data_);
 
-    revision_++;
-    cached_contact_data_.reset();
+    imp_->revision_++;
+    imp_->cached_contact_data_.reset();
 
     return true;
 }
@@ -525,8 +711,8 @@ auto Contact::Best(const ContactGroup& group) -> std::shared_ptr<ContactItem>
 
 auto Contact::BestEmail() const -> std::string
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -536,8 +722,8 @@ auto Contact::BestEmail() const -> std::string
 
 auto Contact::BestPhoneNumber() const -> std::string
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -548,8 +734,8 @@ auto Contact::BestPhoneNumber() const -> std::string
 auto Contact::BestSocialMediaProfile(const proto::ContactItemType type) const
     -> std::string
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -561,8 +747,8 @@ auto Contact::BlockchainAddresses() const
     -> std::vector<Contact::BlockchainAddress>
 {
     auto output = std::vector<BlockchainAddress>{};
-    Lock lock(lock_);
-    auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -589,8 +775,8 @@ auto Contact::BlockchainAddresses() const
             OT_ASSERT(item);
 
             try {
-                output.push_back(
-                    translate(api_, type, item->Value(), item->Subtype()));
+                output.push_back(Imp::translate(
+                    imp_->api_, type, item->Value(), item->Subtype()));
             } catch (...) {
                 continue;
             }
@@ -600,36 +786,17 @@ auto Contact::BlockchainAddresses() const
     return output;
 }
 
-auto Contact::check_version(
-    const VersionNumber in,
-    const VersionNumber targetVersion) -> VersionNumber
-{
-    // Upgrade version
-    if (targetVersion > in) { return targetVersion; }
-
-    return in;
-}
-
 auto Contact::Data() const -> std::shared_ptr<ContactData>
 {
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
-    return merged_data(lock);
-}
-
-auto Contact::generate_id(const api::internal::Core& api) -> OTIdentifier
-{
-    auto& encode = api.Crypto().Encode();
-    auto random = Data::Factory();
-    encode.Nonce(ID_BYTES, random);
-
-    return api.Factory().Identifier(random->Bytes());
+    return imp_->merged_data(lock);
 }
 
 auto Contact::EmailAddresses(bool active) const -> std::string
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -647,44 +814,15 @@ auto Contact::ExtractType(const identity::Nym& nym) -> proto::ContactItemType
     return nym.Claims().Type();
 }
 
-auto Contact::ID() const -> const Identifier& { return id_; }
+auto Contact::ID() const -> const Identifier& { return imp_->id_; }
 
-void Contact::init_nyms()
-{
-    OT_ASSERT(contact_data_);
-
-    const auto nyms = contact_data_->Group(
-        proto::CONTACTSECTION_RELATIONSHIP, proto::CITEMTYPE_CONTACT);
-
-    if (false == bool(nyms)) { return; }
-
-    // TODO conversion
-    primary_nym_ = api_.Factory().NymID(nyms->Primary().str());
-
-    for (const auto& it : *nyms) {
-        const auto& item = it.second;
-
-        OT_ASSERT(item);
-
-        const auto nymID = api_.Factory().NymID(item->Value());
-        auto& nym = nyms_[nymID];
-        nym = api_.Wallet().Nym(nymID);
-
-        if (false == bool(nym)) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load nym ")(nymID)(
-                ".")
-                .Flush();
-        }
-    }
-}
-
-auto Contact::Label() const -> const std::string& { return label_; }
+auto Contact::Label() const -> const std::string& { return imp_->label_; }
 
 auto Contact::LastUpdated() const -> std::time_t
 {
-    OT_ASSERT(contact_data_);
+    OT_ASSERT(imp_->contact_data_);
 
-    const auto group = contact_data_->Group(
+    const auto group = imp_->contact_data_->Group(
         proto::CONTACTSECTION_EVENT, proto::CITEMTYPE_REFRESHED);
 
     if (false == bool(group)) { return {}; }
@@ -716,49 +854,11 @@ auto Contact::LastUpdated() const -> std::time_t
     }
 }
 
-auto Contact::merged_data(const Lock& lock) const
-    -> std::shared_ptr<ContactData>
-{
-    OT_ASSERT(contact_data_);
-    OT_ASSERT(verify_write_lock(lock));
-
-    if (cached_contact_data_) { return cached_contact_data_; }
-
-    cached_contact_data_.reset(new ContactData(*contact_data_));
-    auto& output = cached_contact_data_;
-
-    OT_ASSERT(output);
-
-    if (false == primary_nym_->empty()) {
-        try {
-            auto& primary = nyms_.at(primary_nym_);
-
-            if (primary) {
-                output.reset(new ContactData(*output + primary->Claims()));
-            }
-        } catch (const std::out_of_range&) {
-        }
-    }
-
-    for (const auto& it : nyms_) {
-        const auto& nymID = it.first;
-        const auto& nym = it.second;
-
-        if (false == bool(nym)) { continue; }
-
-        if (nymID == primary_nym_) { continue; }
-
-        output.reset(new ContactData(*output + nym->Claims()));
-    }
-
-    return output;
-}
-
 auto opentxs::Contact::Nyms(const bool includeInactive) const
     -> std::vector<opentxs::OTNymID>
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -781,25 +881,15 @@ auto opentxs::Contact::Nyms(const bool includeInactive) const
         if (false == (includeInactive || item->isActive())) { continue; }
 
         if (primaryID == itemID) {
-            output.emplace(output.begin(), api_.Factory().NymID(item->Value()));
+            output.emplace(
+                output.begin(), imp_->api_.Factory().NymID(item->Value()));
         } else {
-            output.emplace(output.end(), api_.Factory().NymID(item->Value()));
+            output.emplace(
+                output.end(), imp_->api_.Factory().NymID(item->Value()));
         }
     }
 
     return output;
-}
-
-auto Contact::payment_codes(
-    const Lock& lock,
-    const proto::ContactItemType currency) const
-    -> std::shared_ptr<ContactGroup>
-{
-    const auto data = merged_data(lock);
-
-    if (false == bool(data)) { return {}; }
-
-    return data->Group(proto::CONTACTSECTION_PROCEDURE, currency);
 }
 
 auto Contact::PaymentCode(
@@ -820,8 +910,8 @@ auto Contact::PaymentCode(
 auto Contact::PaymentCode(const proto::ContactItemType currency) const
     -> std::string
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -832,8 +922,8 @@ auto Contact::PaymentCode(const proto::ContactItemType currency) const
 auto Contact::PaymentCodes(const proto::ContactItemType currency) const
     -> std::vector<std::string>
 {
-    Lock lock(lock_);
-    const auto group = payment_codes(lock, currency);
+    Lock lock(imp_->lock_);
+    const auto group = imp_->payment_codes(lock, currency);
     lock.unlock();
 
     if (false == bool(group)) { return {}; }
@@ -852,8 +942,8 @@ auto Contact::PaymentCodes(const proto::ContactItemType currency) const
 
 auto Contact::PhoneNumbers(bool active) const -> std::string
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -863,38 +953,38 @@ auto Contact::PhoneNumbers(bool active) const -> std::string
 
 auto Contact::Print() const -> std::string
 {
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
     std::stringstream out{};
-    out << "Contact: " << String::Factory(id_)->Get() << ", version "
-        << version_ << "revision " << revision_ << "\n"
-        << "Label: " << label_ << "\n";
+    out << "Contact: " << String::Factory(imp_->id_)->Get() << ", version "
+        << imp_->version_ << "revision " << imp_->revision_ << "\n"
+        << "Label: " << imp_->label_ << "\n";
 
-    if (false == parent_->empty()) {
-        out << "Merged to: " << String::Factory(parent_)->Get() << "\n";
+    if (false == imp_->parent_->empty()) {
+        out << "Merged to: " << String::Factory(imp_->parent_)->Get() << "\n";
     }
 
-    if (false == merged_children_.empty()) {
+    if (false == imp_->merged_children_.empty()) {
         out << "Merged contacts:\n";
 
-        for (const auto& id : merged_children_) {
+        for (const auto& id : imp_->merged_children_) {
             out << " * " << String::Factory(id)->Get() << "\n";
         }
     }
 
-    if (0 < nyms_.size()) {
+    if (0 < imp_->nyms_.size()) {
         out << "Contains nyms:\n";
 
-        for (const auto& it : nyms_) {
+        for (const auto& it : imp_->nyms_) {
             const auto& id = it.first;
             out << " * " << String::Factory(id)->Get();
 
-            if (id == primary_nym_) { out << " (primary)"; }
+            if (id == imp_->primary_nym_) { out << " (primary)"; }
 
             out << "\n";
         }
     }
 
-    auto data = merged_data(lock);
+    auto data = imp_->merged_data(lock);
 
     if (data) { out << std::string(*data); }
 
@@ -905,24 +995,26 @@ auto Contact::Print() const -> std::string
 
 auto Contact::RemoveNym(const identifier::Nym& nymID) -> bool
 {
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
-    auto result = nyms_.erase(nymID);
+    auto result = imp_->nyms_.erase(nymID);
 
-    if (primary_nym_ == nymID) { primary_nym_ = api_.Factory().NymID(); }
+    if (imp_->primary_nym_ == nymID) {
+        imp_->primary_nym_ = imp_->api_.Factory().NymID();
+    }
 
     return (0 < result);
 }
 
 void Contact::SetLabel(const std::string& label)
 {
-    Lock lock(lock_);
-    label_ = label;
-    revision_++;
+    Lock lock(imp_->lock_);
+    imp_->label_ = label;
+    imp_->revision_++;
 
-    for (const auto& it : nyms_) {
+    for (const auto& it : imp_->nyms_) {
         const auto& nymID = it.first;
-        api_.Wallet().SetNymAlias(nymID, label);
+        imp_->api_.Wallet().SetNymAlias(nymID, label);
     }
 }
 
@@ -930,8 +1022,8 @@ auto Contact::SocialMediaProfiles(
     const proto::ContactItemType type,
     bool active) const -> std::string
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     if (false == bool(data)) { return {}; }
@@ -942,53 +1034,23 @@ auto Contact::SocialMediaProfiles(
 auto Contact::SocialMediaProfileTypes() const
     -> const std::set<proto::ContactItemType>
 {
-    Lock lock(lock_);
-    const auto data = merged_data(lock);
+    Lock lock(imp_->lock_);
+    const auto data = imp_->merged_data(lock);
     lock.unlock();
 
     return data->SocialMediaProfileTypes();
 }
 
-auto Contact::translate(
-    const api::client::internal::Manager& api,
-    const proto::ContactItemType chain,
-    const std::string& value,
-    const std::string& subtype) noexcept(false) -> Contact::BlockchainAddress
-{
-    auto output = BlockchainAddress{
-        api.Factory().Data(value, StringStyle::Hex),
-        translate_style(subtype),
-        Translate(chain)};
-    auto& [outBytes, outStyle, outChain] = output;
-    const auto bad = outBytes->empty() || (AddressStyle::Unknown == outStyle) ||
-                     (BlockchainType::Unknown == outChain);
-
-    if (bad) { throw std::runtime_error("Invalid address"); }
-
-    return output;
-}
-
-auto Contact::type(const Lock& lock) const -> proto::ContactItemType
-{
-    OT_ASSERT(verify_write_lock(lock));
-
-    const auto data = merged_data(lock);
-
-    if (false == bool(data)) { return proto::CITEMTYPE_ERROR; }
-
-    return data->Type();
-}
-
 auto Contact::Type() const -> proto::ContactItemType
 {
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
 
-    return type(lock);
+    return imp_->type(lock);
 }
 
 void Contact::Update(const proto::Nym& serialized)
 {
-    auto nym = api_.Wallet().Nym(serialized);
+    auto nym = imp_->api_.Wallet().Nym(serialized);
 
     if (false == bool(nym)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid serialized nym.").Flush();
@@ -996,20 +1058,20 @@ void Contact::Update(const proto::Nym& serialized)
         return;
     }
 
-    Lock lock(lock_);
+    Lock lock(imp_->lock_);
     const auto& nymID = nym->ID();
-    auto it = nyms_.find(nymID);
+    auto it = imp_->nyms_.find(nymID);
 
-    if (nyms_.end() == it) {
-        add_nym(lock, nym, false);
+    if (imp_->nyms_.end() == it) {
+        imp_->add_nym(lock, nym, false);
     } else {
         it->second = nym;
     }
 
-    update_label(lock, *nym);
+    imp_->update_label(lock, *nym);
     std::shared_ptr<ContactItem> claim(new ContactItem(
-        api_,
-        String::Factory(id_)->Get(),
+        imp_->api_,
+        String::Factory(imp_->id_)->Get(),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
         proto::CONTACTSECTION_EVENT,
@@ -1021,32 +1083,9 @@ void Contact::Update(const proto::Nym& serialized)
         NULL_START,
         NULL_END,
         ""));
-    add_claim(lock, claim);
+    imp_->add_claim(lock, claim);
 }
 
-void Contact::update_label(const Lock& lock, const identity::Nym& nym)
-{
-    OT_ASSERT(verify_write_lock(lock));
+Contact::~Contact() = default;
 
-    if (false == label_.empty()) { return; }
-
-    label_ = ExtractLabel(nym);
-}
-
-auto Contact::verify_write_lock(const Lock& lock) const -> bool
-{
-    if (lock.mutex() != &lock_) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Incorrect mutex.").Flush();
-
-        return false;
-    }
-
-    if (false == lock.owns_lock()) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Lock not owned.").Flush();
-
-        return false;
-    }
-
-    return true;
-}
 }  // namespace opentxs
