@@ -15,8 +15,8 @@
 #if OT_BLOCKCHAIN
 #include "opentxs/blockchain/Types.hpp"
 #endif  // OT_BLOCKCHAIN
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/Types.hpp"
 
 #ifdef SWIG
@@ -28,7 +28,7 @@
     {
         return $self->AccountSummary(
             nymID,
-            static_cast<opentxs::proto::ContactItemType>(currency));
+            static_cast<opentxs::contact::ContactItemType>(currency));
     }
     const opentxs::ui::PayableList& PayableList(
         const identifier::Nym& nymID,
@@ -36,7 +36,7 @@
     {
         return $self->PayableList(
             nymID,
-            static_cast<opentxs::proto::ContactItemType>(currency));
+            static_cast<opentxs::contact::ContactItemType>(currency));
     }
 }
 %ignore opentxs::api::client::UI::AccountSummary;
@@ -114,7 +114,7 @@ public:
         const SimpleCallback updateCB = {}) const noexcept = 0;
     OPENTXS_EXPORT virtual const ui::AccountSummary& AccountSummary(
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback updateCB = {}) const noexcept = 0;
     OPENTXS_EXPORT virtual const ui::ActivitySummary& ActivitySummary(
         const identifier::Nym& nymID,
@@ -147,7 +147,7 @@ public:
         const SimpleCallback updateCB = {}) const noexcept = 0;
     OPENTXS_EXPORT virtual const ui::PayableList& PayableList(
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback updateCB = {}) const noexcept = 0;
     OPENTXS_EXPORT virtual const ui::Profile& Profile(
         const identifier::Nym& nymID,
@@ -169,7 +169,7 @@ public:
     /// Caller does not own this pointer
     OPENTXS_EXPORT virtual ui::AccountSummaryQt* AccountSummaryQt(
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback updateCB = {}) const noexcept = 0;
     /// Caller does not own this pointer
     OPENTXS_EXPORT virtual ui::ActivitySummaryQt* ActivitySummaryQt(
@@ -203,7 +203,7 @@ public:
     /// Caller does not own this pointer
     OPENTXS_EXPORT virtual ui::PayableListQt* PayableListQt(
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback updateCB = {}) const noexcept = 0;
     /// Caller does not own this pointer
     OPENTXS_EXPORT virtual ui::ProfileQt* ProfileQt(

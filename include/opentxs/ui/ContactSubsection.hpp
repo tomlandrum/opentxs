@@ -55,7 +55,7 @@ public:
     First() const noexcept = 0;
     OPENTXS_EXPORT virtual opentxs::SharedPimpl<opentxs::ui::ContactItem> Next()
         const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::ContactItemType Type() const noexcept = 0;
+    OPENTXS_EXPORT virtual contact::ContactItemType Type() const noexcept = 0;
 
     OPENTXS_EXPORT ~ContactSubsection() override = default;
 

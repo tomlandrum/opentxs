@@ -35,7 +35,6 @@
 #include "opentxs/network/zeromq/ListenCallback.hpp"
 #include "opentxs/network/zeromq/ListenCallback.hpp"
 #include "opentxs/network/zeromq/socket/Dealer.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/ui/AccountActivity.hpp"
 #include "opentxs/util/WorkType.hpp"
@@ -139,7 +138,7 @@ public:
     {
         return progress_.get_progress();
     }
-    auto Unit() const noexcept -> proto::ContactItemType final
+    auto Unit() const noexcept -> contact::ContactItemType final
     {
         return Translate(chain_);
     }

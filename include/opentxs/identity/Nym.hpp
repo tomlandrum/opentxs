@@ -18,6 +18,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -25,7 +26,6 @@
 #include "opentxs/crypto/HashType.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/iterator/Bidirectional.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -93,7 +93,7 @@ public:
     OPENTXS_EXPORT virtual std::string BestEmail() const = 0;
     OPENTXS_EXPORT virtual std::string BestPhoneNumber() const = 0;
     OPENTXS_EXPORT virtual std::string BestSocialMediaProfile(
-        const proto::ContactItemType type) const = 0;
+        const contact::ContactItemType type) const = 0;
     OPENTXS_EXPORT virtual const_iterator cbegin() const noexcept = 0;
     OPENTXS_EXPORT virtual const_iterator cend() const noexcept = 0;
     OPENTXS_EXPORT virtual const opentxs::ContactData& Claims() const = 0;
@@ -102,7 +102,7 @@ public:
     OPENTXS_EXPORT virtual VersionNumber ContactCredentialVersion() const = 0;
     OPENTXS_EXPORT virtual VersionNumber ContactDataVersion() const = 0;
     OPENTXS_EXPORT virtual std::set<OTIdentifier> Contracts(
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const bool onlyActive) const = 0;
     OPENTXS_EXPORT virtual std::string EmailAddresses(
         bool active = true) const = 0;
@@ -162,9 +162,9 @@ public:
         const crypto::HashType hash = crypto::HashType::Error) const = 0;
     OPENTXS_EXPORT virtual std::size_t size() const noexcept = 0;
     OPENTXS_EXPORT virtual std::string SocialMediaProfiles(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         bool active = true) const = 0;
-    OPENTXS_EXPORT virtual const std::set<proto::ContactItemType>
+    OPENTXS_EXPORT virtual const std::set<contact::ContactItemType>
     SocialMediaProfileTypes() const = 0;
     OPENTXS_EXPORT virtual const identity::Source& Source() const = 0;
     OPENTXS_EXPORT virtual OTSecret TransportKey(
@@ -191,7 +191,7 @@ public:
         const PasswordPrompt& reason) = 0;
     OPENTXS_EXPORT virtual bool AddContract(
         const identifier::UnitDefinition& instrumentDefinitionID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const PasswordPrompt& reason,
         const bool primary,
         const bool active = true) = 0;
@@ -202,7 +202,7 @@ public:
         const bool active) = 0;
     OPENTXS_EXPORT virtual bool AddPaymentCode(
         const opentxs::PaymentCode& code,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const PasswordPrompt& reason,
         const bool primary,
         const bool active = true) = 0;
@@ -217,7 +217,7 @@ public:
         const bool primary) = 0;
     OPENTXS_EXPORT virtual bool AddSocialMediaProfile(
         const std::string& value,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const PasswordPrompt& reason,
         const bool primary,
         const bool active) = 0;
@@ -231,7 +231,7 @@ public:
         const proto::ContactData& data,
         const PasswordPrompt& reason) = 0;
     OPENTXS_EXPORT virtual bool SetScope(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const std::string& name,
         const PasswordPrompt& reason,
         const bool primary) = 0;

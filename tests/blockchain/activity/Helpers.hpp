@@ -147,7 +147,7 @@ struct Test_BlockchainActivity : public ::testing::Test {
         static const auto output = api_.Contacts().NewContactFromAddress(
             "1ANeKBrinuG86jw3rEvhFG6SYP1DCCzd4q",
             contact_3_name_,
-            ot::proto::CITEMTYPE_BTC);
+            ot::contact::ContactItemType::BTC);
 
         return output->ID();
     }
@@ -156,7 +156,7 @@ struct Test_BlockchainActivity : public ::testing::Test {
         static const auto output = api_.Contacts().NewContactFromAddress(
             "16C1f7wLAh44YgZ8oWJXaY9WoTPJzvfdqj",
             contact_4_name_,
-            ot::proto::CITEMTYPE_BTC);
+            ot::contact::ContactItemType::BTC);
 
         return output->ID();
     }
@@ -177,7 +177,7 @@ struct Test_BlockchainActivity : public ::testing::Test {
         static const auto output = api_.Contacts().NewContactFromAddress(
             "17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem",
             contact_7_name_,
-            ot::proto::CITEMTYPE_BTC);
+            ot::contact::ContactItemType::BTC);
 
         return output->ID();
     }

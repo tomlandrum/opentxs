@@ -20,7 +20,7 @@
     std::string PaymentCode(const int currency) const
     {
         return $self->PaymentCode(
-            static_cast<opentxs::proto::ContactItemType>(currency));
+            static_cast<opentxs::contact::ContactItemType>(currency));
     }
 }
 %ignore opentxs::ui::ActivityThread::PaymentCode;
@@ -62,7 +62,7 @@ public:
         const std::string& memo = "",
         const PaymentType type = PaymentType::Cheque) const noexcept = 0;
     OPENTXS_EXPORT virtual std::string PaymentCode(
-        const proto::ContactItemType currency) const noexcept = 0;
+        const contact::ContactItemType currency) const noexcept = 0;
     OPENTXS_EXPORT virtual bool SendDraft() const noexcept = 0;
     OPENTXS_EXPORT virtual bool SetDraft(
         const std::string& draft) const noexcept = 0;

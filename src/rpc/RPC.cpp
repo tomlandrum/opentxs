@@ -561,7 +561,7 @@ auto RPC::create_issuer_account(const proto::RPCCommand& command) const
         ownerID,
         notaryID,
         unitID,
-        proto::CITEMTYPE_ERROR,
+        contact::ContactItemType::Error,
         label);
 
     if (false == ready) {

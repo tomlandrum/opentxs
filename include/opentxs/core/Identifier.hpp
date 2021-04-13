@@ -16,8 +16,8 @@
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Data.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 #ifdef SWIG
 // clang-format off
@@ -98,7 +98,7 @@ public:
     OPENTXS_EXPORT static opentxs::Pimpl<opentxs::Identifier> Factory(
         const Contract& contract);
     OPENTXS_EXPORT static opentxs::Pimpl<opentxs::Identifier> Factory(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const proto::HDPath& path);
 #endif
     OPENTXS_EXPORT static bool Validate(const std::string& id);

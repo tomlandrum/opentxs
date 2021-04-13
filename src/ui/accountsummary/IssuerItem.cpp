@@ -36,7 +36,6 @@
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #if OT_QT
 #include "opentxs/ui/qt/AccountSummary.hpp"
 #endif  // OT_QT
@@ -52,7 +51,7 @@ auto IssuerItem(
     const ui::implementation::AccountSummaryRowID& rowID,
     const ui::implementation::AccountSummarySortKey& sortKey,
     ui::implementation::CustomData& custom,
-    const proto::ContactItemType currency) noexcept
+    const contact::ContactItemType currency) noexcept
     -> std::shared_ptr<ui::implementation::AccountSummaryRowInternal>
 {
     using ReturnType = ui::implementation::IssuerItem;
@@ -70,7 +69,7 @@ IssuerItem::IssuerItem(
     const AccountSummaryRowID& rowID,
     const AccountSummarySortKey& key,
     [[maybe_unused]] CustomData& custom,
-    const proto::ContactItemType currency) noexcept
+    const contact::ContactItemType currency) noexcept
     : Combined(
           api,
           parent.NymID(),

@@ -18,6 +18,7 @@
 #include "opentxs/blockchain/Blockchain.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/FilterType.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/crypto/Bip44Type.hpp"
 #include "opentxs/crypto/HashType.hpp"
@@ -337,7 +338,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              true,
              false,
-             opentxs::proto::CITEMTYPE_BTC,
+             opentxs::contact::ContactItemType::BTC,
              Bip44Type::BITCOIN,
              "Bitcoin",
              "BTC",
@@ -400,7 +401,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              true,
              true,
-             opentxs::proto::CITEMTYPE_TNBTC,
+             opentxs::contact::ContactItemType::TNBTC,
              Bip44Type::TESTNET,
              "Bitcoin (testnet3)",
              "tnBTC",
@@ -460,7 +461,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              true,
              false,
-             opentxs::proto::CITEMTYPE_BCH,
+             opentxs::contact::ContactItemType::BCH,
              Bip44Type::BITCOINCASH,
              "Bitcoin Cash",
              "BCH",
@@ -521,7 +522,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              true,
              true,
-             opentxs::proto::CITEMTYPE_TNBCH,
+             opentxs::contact::ContactItemType::TNBCH,
              Bip44Type::TESTNET,
              "Bitcoin Cash (testnet3)",
              "tnBCH",
@@ -581,7 +582,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              false,
              false,
-             opentxs::proto::CITEMTYPE_ETH,
+             opentxs::contact::ContactItemType::ETH,
              Bip44Type::ETHER,
              "Ethereum (frontier)",
              "",
@@ -611,7 +612,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              false,
              true,
-             opentxs::proto::CITEMTYPE_ETHEREUM_ROPSTEN,
+             opentxs::contact::ContactItemType::Ethereum_Ropsten,
              Bip44Type::TESTNET,
              "Ethereum (ropsten testnet)",
              "",
@@ -641,7 +642,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              true,
              false,
-             opentxs::proto::CITEMTYPE_LTC,
+             opentxs::contact::ContactItemType::LTC,
              Bip44Type::LITECOIN,
              "Litecoin",
              "LTC",
@@ -700,7 +701,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              true,
              true,
-             opentxs::proto::CITEMTYPE_TNLTC,
+             opentxs::contact::ContactItemType::TNLTX,
              Bip44Type::TESTNET,
              "Litecoin (testnet4)",
              "tnLTC",
@@ -757,7 +758,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              true,
              false,
-             opentxs::proto::CITEMTYPE_PKT,
+             opentxs::contact::ContactItemType::PKT,
              Bip44Type::PKT,
              "PKT",
              "PKT",
@@ -987,7 +988,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              false,
              true,
-             opentxs::proto::CITEMTYPE_TNPKT,
+             opentxs::contact::ContactItemType::TNPKT,
              Bip44Type::TESTNET,
              "PKT (testnet)",
              "tnPKT",
@@ -1036,7 +1037,7 @@ auto Data::Chains() noexcept -> const ChainData&
          {
              false,
              true,
-             opentxs::proto::CITEMTYPE_REGTEST,
+             opentxs::contact::ContactItemType::Regtest,
              Bip44Type::TESTNET,
              "Unit Test Simulation",
              "UNITTEST",

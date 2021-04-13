@@ -15,7 +15,6 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/SecurityContract.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 
 namespace opentxs
@@ -51,7 +50,7 @@ public:
         const std::string& name,
         const std::string& symbol,
         const std::string& terms,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version);
     Security(
         const api::internal::Core& api,

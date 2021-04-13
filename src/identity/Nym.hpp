@@ -28,7 +28,6 @@
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/identity/Source.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 
 namespace opentxs
@@ -88,7 +87,7 @@ public:
     auto begin() const noexcept -> const_iterator final { return cbegin(); }
     auto BestEmail() const -> std::string final;
     auto BestPhoneNumber() const -> std::string final;
-    auto BestSocialMediaProfile(const proto::ContactItemType type) const
+    auto BestSocialMediaProfile(const contact::ContactItemType type) const
         -> std::string final;
     auto cbegin() const noexcept -> const_iterator final
     {
@@ -107,8 +106,9 @@ public:
         return contact_credential_to_contact_data_version_.at(
             ContactCredentialVersion());
     }
-    auto Contracts(const proto::ContactItemType currency, const bool onlyActive)
-        const -> std::set<OTIdentifier> final;
+    auto Contracts(
+        const contact::ContactItemType currency,
+        const bool onlyActive) const -> std::set<OTIdentifier> final;
     auto EmailAddresses(bool active) const -> std::string final;
     auto EncryptionTargets() const noexcept -> NymKeys final;
     auto end() const noexcept -> const_iterator final { return cend(); }
@@ -151,10 +151,10 @@ public:
     auto SerializeCredentialIndex(const Mode mode) const -> Serialized final;
     void SerializeNymIDSource(Tag& parent) const final;
     auto size() const noexcept -> std::size_t final { return active_.size(); }
-    auto SocialMediaProfiles(const proto::ContactItemType type, bool active)
+    auto SocialMediaProfiles(const contact::ContactItemType type, bool active)
         const -> std::string final;
     auto SocialMediaProfileTypes() const
-        -> const std::set<proto::ContactItemType> final;
+        -> const std::set<contact::ContactItemType> final;
     auto Source() const -> const identity::Source& final { return source_; }
     auto TransportKey(Data& pubkey, const PasswordPrompt& reason) const
         -> OTSecret final;
@@ -175,7 +175,7 @@ public:
         -> bool final;
     auto AddContract(
         const identifier::UnitDefinition& instrumentDefinitionID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const PasswordPrompt& reason,
         const bool primary,
         const bool active) -> bool final;
@@ -186,7 +186,7 @@ public:
         const bool active) -> bool final;
     auto AddPaymentCode(
         const opentxs::PaymentCode& code,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const PasswordPrompt& reason,
         const bool primary,
         const bool active) -> bool final;
@@ -201,7 +201,7 @@ public:
         const bool active) -> bool final;
     auto AddSocialMediaProfile(
         const std::string& value,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const PasswordPrompt& reason,
         const bool primary,
         const bool active) -> bool final;
@@ -215,7 +215,7 @@ public:
         const proto::ContactData& data,
         const PasswordPrompt& reason) -> bool final;
     auto SetScope(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const std::string& name,
         const PasswordPrompt& reason,
         const bool primary) -> bool final;

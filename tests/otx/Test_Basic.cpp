@@ -81,7 +81,6 @@
 #include "opentxs/otx/consensus/Base.hpp"
 #include "opentxs/otx/consensus/Client.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
@@ -106,7 +105,7 @@ using namespace opentxs;
 #define UNIT_DEFINITION_TLA "USA"
 #define UNIT_DEFINITION_POWER 2
 #define UNIT_DEFINITION_FRACTIONAL_UNIT_NAME "cents"
-#define UNIT_DEFINITION_UNIT_OF_ACCOUNT ot::proto::CITEMTYPE_USD
+#define UNIT_DEFINITION_UNIT_OF_ACCOUNT ot::contact::ContactItemType::USD
 #define UNIT_DEFINITION_CONTRACT_NAME_2 "Mt Gox BTC"
 #define UNIT_DEFINITION_TERMS_2 "YOLO"
 #define UNIT_DEFINITION_PRIMARY_UNIT_NAME_2 "bitcoins"
@@ -114,7 +113,7 @@ using namespace opentxs;
 #define UNIT_DEFINITION_TLA_2 "BTC"
 #define UNIT_DEFINITION_POWER_2 8
 #define UNIT_DEFINITION_FRACTIONAL_UNIT_NAME_2 "satoshis"
-#define UNIT_DEFINITION_UNIT_OF_ACCOUNT_2 ot::proto::CITEMTYPE_BTC
+#define UNIT_DEFINITION_UNIT_OF_ACCOUNT_2 ot::contact::ContactItemType::BTC
 
 #define MESSAGE_TEXT "example message text"
 #define NEW_SERVER_NAME "Awesome McCoolName"
@@ -2989,7 +2988,7 @@ TEST_F(Test_Basic, addClaim)
     auto& stateMachine = *alice_state_machine_;
     auto started = stateMachine.AddClaim(
         contact::ContactSectionName::Scope,
-        proto::CITEMTYPE_SERVER,
+        contact::ContactItemType::Server,
         String::Factory(NEW_SERVER_NAME),
         true);
 
@@ -3093,7 +3092,7 @@ TEST_F(Test_Basic, addClaim_not_admin)
     auto& stateMachine = *bob_state_machine_;
     auto started = stateMachine.AddClaim(
         contact::ContactSectionName::Scope,
-        proto::CITEMTYPE_SERVER,
+        contact::ContactItemType::Server,
         String::Factory(NEW_SERVER_NAME),
         true);
 

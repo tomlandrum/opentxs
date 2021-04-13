@@ -64,7 +64,6 @@
 #include "opentxs/network/zeromq/socket/Publish.hpp"
 #include "opentxs/network/zeromq/socket/Router.hpp"
 #endif  // OT_BLOCKCHAIN
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -552,11 +551,11 @@ private:
         -> std::optional<DecodedAddress>;
     auto decode_legacy(const std::string& encoded) const noexcept
         -> std::optional<DecodedAddress>;
-    auto bip44_type(const proto::ContactItemType type) const noexcept
+    auto bip44_type(const contact::ContactItemType type) const noexcept
         -> Bip44Type;
     void init_path(
         const std::string& root,
-        const proto::ContactItemType chain,
+        const contact::ContactItemType chain,
         const Bip32Index account,
         const BlockchainAccountType standard,
         proto::HDPath& path) const noexcept;

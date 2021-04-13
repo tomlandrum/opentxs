@@ -29,7 +29,6 @@
 #include "opentxs/identity/CredentialRole.hpp"
 #include "opentxs/protobuf/Claim.pb.h"
 #include "opentxs/protobuf/ContactData.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 #include "opentxs/protobuf/Credential.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
@@ -111,7 +110,7 @@ auto Contact::ClaimID(
     const api::internal::Core& api,
     const std::string& nymid,
     const contact::ContactSectionName section,
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const std::int64_t start,
     const std::int64_t end,
     const std::string& value,
@@ -121,7 +120,7 @@ auto Contact::ClaimID(
     preimage.set_version(1);
     preimage.set_nymid(nymid);
     preimage.set_section(contact::internal::translate(section));
-    preimage.set_type(type);
+    preimage.set_type(contact::internal::translate(type));
     preimage.set_start(start);
     preimage.set_end(end);
     preimage.set_value(value);

@@ -19,7 +19,6 @@
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/Version.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "ui/contactlist/ContactListItem.hpp"
 
 namespace opentxs
@@ -71,14 +70,14 @@ public:
         const PayableListRowID& rowID,
         const PayableListSortKey& key,
         const std::string& paymentcode,
-        const proto::ContactItemType& currency) noexcept;
+        const contact::ContactItemType& currency) noexcept;
     ~PayableListItem() final = default;
 
 private:
     using ot_super = implementation::ContactListItem;
 
     std::string payment_code_;
-    const proto::ContactItemType currency_;
+    const contact::ContactItemType currency_;
 
     auto calculate_section(const Lock& lock) const noexcept -> std::string final
     {

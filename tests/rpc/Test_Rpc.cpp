@@ -48,7 +48,6 @@
 #include "opentxs/protobuf/AddClaim.pb.h"
 #include "opentxs/protobuf/AddContact.pb.h"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 #include "opentxs/protobuf/CreateInstrumentDefinition.pb.h"
 #include "opentxs/protobuf/CreateNym.pb.h"
@@ -633,7 +632,7 @@ TEST_F(Test_Rpc, Create_Nym)
     EXPECT_NE(nullptr, createnym);
 
     createnym->set_version(CREATENYM_VERSION);
-    createnym->set_type(proto::CITEMTYPE_INDIVIDUAL);
+    createnym->set_type(contact::ContactItemType::Individual);
     createnym->set_name("testNym1");
     createnym->set_index(-1);
 
@@ -660,7 +659,7 @@ TEST_F(Test_Rpc, Create_Nym)
     EXPECT_NE(nullptr, createnym);
 
     createnym->set_version(CREATENYM_VERSION);
-    createnym->set_type(proto::CITEMTYPE_INDIVIDUAL);
+    createnym->set_type(contact::ContactItemType::Individual);
     createnym->set_name("testNym2");
     createnym->set_index(-1);
 
@@ -683,7 +682,7 @@ TEST_F(Test_Rpc, Create_Nym)
     EXPECT_NE(nullptr, createnym);
 
     createnym->set_version(CREATENYM_VERSION);
-    createnym->set_type(proto::CITEMTYPE_INDIVIDUAL);
+    createnym->set_type(contact::ContactItemType::Individual);
     createnym->set_name("testNym3");
     createnym->set_index(-1);
 
@@ -814,7 +813,7 @@ TEST_F(Test_Rpc, Create_Unit_Definition)
     def->set_tla("GTD");
     def->set_power(2);
     def->set_terms("Google Test Dollars");
-    def->set_unitofaccount(proto::CITEMTYPE_USD);
+    def->set_unitofaccount(contact::ContactItemType::USD);
     auto response = ot_.RPC(command);
 
     EXPECT_TRUE(proto::Validate(response, VERBOSE));

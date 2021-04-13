@@ -30,7 +30,6 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #if OT_QT
 #include "opentxs/ui/qt/Contact.hpp"
 #endif  // OT_QT

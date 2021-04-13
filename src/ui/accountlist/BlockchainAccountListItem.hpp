@@ -27,7 +27,6 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/AccountListItem.hpp"
 #include "ui/base/Row.hpp"
 
@@ -100,7 +99,10 @@ public:
     auto reindex(const AccountListSortKey& key, CustomData& custom) noexcept
         -> bool final;
     auto Type() const noexcept -> AccountType final { return type_; }
-    auto Unit() const noexcept -> proto::ContactItemType final { return unit_; }
+    auto Unit() const noexcept -> contact::ContactItemType final
+    {
+        return unit_;
+    }
 
 #if OT_QT
     auto qt_data(const int column, const int role) const noexcept
@@ -118,7 +120,7 @@ public:
 
 private:
     const AccountType type_;
-    const proto::ContactItemType unit_;
+    const contact::ContactItemType unit_;
     const blockchain::Type chain_;
     const std::string contract_;
     const std::string notary_;

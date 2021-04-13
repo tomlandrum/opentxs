@@ -24,7 +24,6 @@
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/verify/VerifyContacts.hpp"
 #include "ui/base/Combined.hpp"
 #include "ui/base/List.hpp"

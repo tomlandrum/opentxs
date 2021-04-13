@@ -39,7 +39,6 @@
 #include "opentxs/crypto/SeedStyle.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/AccountActivity.hpp"
 #include "opentxs/ui/BalanceItem.hpp"
 #include "paymentcode/VectorsV3.hpp"
@@ -71,7 +70,7 @@ protected:
     const std::string expected_notary_name_;
     const std::string memo_outgoing_;
     const ot::AccountType expected_account_type_;
-    const ot::proto::ContactItemType expected_unit_type_;
+    const ot::contact::ContactItemType expected_unit_type_;
     const Generator mine_to_alice_;
     const GetBytes get_p2pk_bytes_;
     const GetBytes get_p2ms_bytes_;
@@ -182,7 +181,7 @@ protected:
         , expected_notary_name_(u8"Unit Test Simulation")
         , memo_outgoing_("memo for outgoing transaction")
         , expected_account_type_(ot::AccountType::Blockchain)
-        , expected_unit_type_(ot::proto::CITEMTYPE_REGTEST)
+        , expected_unit_type_(ot::contact::ContactItemType::Regtest)
         , mine_to_alice_([&](Height height) -> Transaction {
             using OutputBuilder = ot::api::Factory::OutputBuilder;
 

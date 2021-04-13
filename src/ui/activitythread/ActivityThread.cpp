@@ -40,7 +40,6 @@
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/StorageThread.pb.h"
 #include "opentxs/protobuf/StorageThreadItem.pb.h"
 #if OT_QT
@@ -110,7 +109,7 @@ bool ActivityThreadQt::pay(
 }
 QString ActivityThreadQt::paymentCode(const int currency) const noexcept
 {
-    return parent_.PaymentCode(static_cast<proto::ContactItemType>(currency))
+    return parent_.PaymentCode(static_cast<contact::ContactItemType>(currency))
         .c_str();
 }
 bool ActivityThreadQt::sendDraft() const noexcept
@@ -399,7 +398,7 @@ auto ActivityThread::Pay(
 }
 
 auto ActivityThread::PaymentCode(
-    const proto::ContactItemType currency) const noexcept -> std::string
+    const contact::ContactItemType currency) const noexcept -> std::string
 {
     Lock lock(contact_lock_);
 

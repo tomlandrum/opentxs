@@ -15,6 +15,7 @@
 #include <type_traits>
 
 #include "internal/api/client/Factory.hpp"
+#include "internal/contact/Contact.hpp"
 #include "internal/core/contract/peer/Peer.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Wallet.hpp"
@@ -35,7 +36,6 @@
 #include "opentxs/protobuf/Bailment.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ConnectionInfo.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Issuer.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
@@ -104,7 +104,7 @@ Issuer::Issuer(
         const auto& type = it.type();
         const auto& unitID = it.unitdefinitionid();
         const auto& accountID = it.accountid();
-        account_map_[type].emplace(
+        account_map_[contact::internal::translate(type)].emplace(
             identifier::UnitDefinition::Factory(unitID),
             Identifier::Factory(accountID));
     }
@@ -245,7 +245,7 @@ auto Issuer::toString() const -> std::string
 }
 
 auto Issuer::AccountList(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const identifier::UnitDefinition& unitID) const -> std::set<OTIdentifier>
 {
     Lock lock(lock_);
@@ -263,7 +263,7 @@ auto Issuer::AccountList(
 }
 
 void Issuer::AddAccount(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const identifier::UnitDefinition& unitID,
     const Identifier& accountID)
 {
@@ -604,7 +604,7 @@ auto Issuer::PrimaryServer() const -> OTServerID
 }
 
 auto Issuer::RemoveAccount(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const identifier::UnitDefinition& unitID,
     const Identifier& accountID) -> bool
 {
@@ -648,7 +648,7 @@ auto Issuer::Serialize() const -> proto::Issuer
         for (const auto& [unitID, accountID] : accountSet) {
             auto& map = *output.add_accounts();
             map.set_version(version_);
-            map.set_type(type);
+            map.set_type(contact::internal::translate(type));
             map.set_unitdefinitionid(unitID->str());
             map.set_accountid(accountID->str());
         }

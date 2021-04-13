@@ -80,7 +80,7 @@ public:
         const noexcept = 0;
 #endif  // OT_BLOCKCHAIN
     OPENTXS_EXPORT virtual AccountType Type() const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::ContactItemType Unit() const noexcept = 0;
+    OPENTXS_EXPORT virtual contact::ContactItemType Unit() const noexcept = 0;
 #if OT_BLOCKCHAIN
     OPENTXS_EXPORT virtual bool ValidateAddress(
         const std::string& text) const noexcept = 0;

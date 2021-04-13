@@ -22,7 +22,6 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/AccountSummaryItem.hpp"
 #include "ui/base/Row.hpp"
 
@@ -92,7 +91,7 @@ public:
 
 private:
     const Identifier& account_id_;
-    const proto::ContactItemType& currency_;
+    const contact::ContactItemType& currency_;
     mutable std::atomic<Amount> balance_;
     IssuerItemSortKey name_;
     mutable OTUnitDefinition contract_;

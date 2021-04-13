@@ -72,7 +72,6 @@
 #include "opentxs/otx/consensus/ManagedNumber.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PeerObject.pb.h"
 #include "opentxs/protobuf/Purse.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
@@ -378,7 +377,7 @@ Operation::Operation(
     , memo_(String::Factory())
     , bool_(false)
     , claim_section_(contact::ContactSectionName::Error)
-    , claim_type_(proto::CITEMTYPE_ERROR)
+    , claim_type_(contact::ContactItemType::Error)
     , cheque_()
     , payment_()
     , inbox_()
@@ -426,7 +425,7 @@ void Operation::account_post()
 
 auto Operation::AddClaim(
     const contact::ContactSectionName section,
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const String& value,
     const bool primary) -> bool
 {
@@ -2304,7 +2303,7 @@ void Operation::reset()
     memo_ = String::Factory();
     bool_ = false;
     claim_section_ = contact::ContactSectionName::Error;
-    claim_type_ = proto::CITEMTYPE_ERROR;
+    claim_type_ = contact::ContactItemType::Error;
     cheque_.reset();
     payment_.reset();
     inbox_.reset();

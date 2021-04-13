@@ -19,6 +19,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/core/contract/peer/Types.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/otx/Types.hpp"
@@ -199,7 +200,8 @@ public:
         const identifier::Nym& localNymID,
         const identifier::Server& serverID,
         const identifier::UnitDefinition& unitID,
-        const proto::ContactItemType advertise = proto::CITEMTYPE_ERROR,
+        const contact::ContactItemType advertise =
+            contact::ContactItemType::Error,
         const std::string& label = "") const = 0;
     OPENTXS_EXPORT virtual BackgroundTask MessageContact(
         const identifier::Nym& senderNymID,

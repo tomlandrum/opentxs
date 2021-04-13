@@ -18,7 +18,6 @@
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/contact/Contact.hpp"
 #include "opentxs/core/Log.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs::factory
 {
@@ -28,7 +27,7 @@ auto PayableListItem(
     const ui::implementation::PayableListRowID& rowID,
     const ui::implementation::PayableListSortKey& key,
     const std::string& paymentcode,
-    const proto::ContactItemType& currency) noexcept
+    const contact::ContactItemType& currency) noexcept
     -> std::shared_ptr<ui::implementation::PayableListRowInternal>
 {
     using ReturnType = ui::implementation::PayableListItem;
@@ -46,7 +45,7 @@ PayableListItem::PayableListItem(
     const PayableListRowID& rowID,
     const PayableListSortKey& key,
     const std::string& paymentcode,
-    const proto::ContactItemType& currency) noexcept
+    const contact::ContactItemType& currency) noexcept
     : ot_super(parent, api, rowID, key)
     , payment_code_(paymentcode)
     , currency_(currency)

@@ -33,7 +33,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/identity/Source.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 #include "opentxs/protobuf/verify/Nym.hpp"
@@ -95,7 +94,8 @@ public:
 
             EXPECT_EQ(1, section.Size());
 
-            const auto pGroup = section.Group(ot::proto::CITEMTYPE_INDIVIDUAL);
+            const auto pGroup =
+                section.Group(ot::contact::ContactItemType::Individual);
 
             EXPECT_TRUE(pGroup);
 
@@ -121,7 +121,7 @@ public:
         const auto reason = api.Factory().PasswordPrompt(__FUNCTION__);
         const auto alias = std::string{"alias"};
         std::unique_ptr<ot::identity::internal::Nym> pNym(ot::Factory::Nym(
-            api, {}, ot::proto::CITEMTYPE_INDIVIDUAL, alias, reason));
+            api, {}, ot::contact::ContactItemType::Individual, alias, reason));
 
         EXPECT_TRUE(pNym);
 

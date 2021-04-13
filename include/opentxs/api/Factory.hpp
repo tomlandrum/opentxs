@@ -25,6 +25,7 @@
 #if OT_BLOCKCHAIN
 #include "opentxs/blockchain/p2p/Address.hpp"
 #endif  // OT_BLOCKCHAIN
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Armored.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -60,7 +61,6 @@
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -203,7 +203,7 @@ public:
         const std::string& symbol,
         const std::string& terms,
         const std::uint64_t weight,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTBasketContract BasketContract(
         const Nym_p& nym,
@@ -338,7 +338,7 @@ public:
         const std::string& tla,
         const std::uint32_t power,
         const std::string& fraction,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version,
         const opentxs::PasswordPrompt& reason) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTCurrencyContract CurrencyContract(
@@ -600,7 +600,7 @@ public:
         const std::string& name,
         const std::string& symbol,
         const std::string& terms,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version,
         const opentxs::PasswordPrompt& reason) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTSecurityContract SecurityContract(

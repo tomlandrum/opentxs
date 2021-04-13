@@ -22,7 +22,6 @@
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/Version.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "ui/base/List.hpp"
 #include "ui/base/Widget.hpp"
 

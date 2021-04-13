@@ -17,7 +17,6 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/protobuf/ContactData.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 #include "opentxs/protobuf/ContactSection.pb.h"
 #include "opentxs/protobuf/verify/VerifyContacts.hpp"
@@ -58,7 +57,7 @@ static auto extract_groups(
     const proto::ContactSection& serialized) -> ContactSection::GroupMap
 {
     ContactSection::GroupMap groupMap{};
-    std::map<proto::ContactItemType, ContactGroup::ItemMap> itemMaps{};
+    std::map<contact::ContactItemType, ContactGroup::ItemMap> itemMaps{};
     const auto& section = serialized.name();
 
     for (const auto& item : serialized.item()) {
@@ -73,7 +72,7 @@ static auto extract_groups(
         OT_ASSERT(instantiated);
 
         const auto& itemID = instantiated->ID();
-        auto& itemMap = itemMaps[itemType];
+        auto& itemMap = itemMaps[contact::internal::translate(itemType)];
         itemMap.emplace(itemID, instantiated);
     }
 
@@ -121,7 +120,9 @@ struct ContactSection::Imp {
         groups[groupID].reset(new ContactGroup(nym_, section_, scope));
 
         auto version = proto::RequiredVersion(
-            contact::internal::translate(section_), item->Type(), version_);
+            contact::internal::translate(section_),
+            contact::internal::translate(item->Type()),
+            version_);
 
         return ContactSection(api_, nym_, version, version, section_, groups);
     }
@@ -282,7 +283,7 @@ auto ContactSection::AddItem(const std::shared_ptr<ContactItem>& item) const
 
     auto version = proto::RequiredVersion(
         contact::internal::translate(imp_->section_),
-        item->Type(),
+        contact::internal::translate(item->Type()),
         imp_->version_);
 
     return ContactSection(
@@ -344,7 +345,7 @@ auto ContactSection::end() const -> ContactSection::GroupMap::const_iterator
     return imp_->groups_.cend();
 }
 
-auto ContactSection::Group(const proto::ContactItemType& type) const
+auto ContactSection::Group(const contact::ContactItemType& type) const
     -> std::shared_ptr<ContactGroup>
 {
     const auto it = imp_->groups_.find(type);

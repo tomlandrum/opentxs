@@ -22,8 +22,8 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 #ifdef SWIG
 // clang-format off
@@ -32,7 +32,7 @@
     std::string BestSocialMediaProfile(const int type) const
     {
         return $self->BestSocialMediaProfile(
-            static_cast<opentxs::proto::ContactItemType>(type));
+            static_cast<opentxs::contact::ContactItemType>(type));
     }
     bool HaveContract(
         const std::string& id,
@@ -42,21 +42,21 @@
     {
         return $self->HaveContract(
             opentxs::identifier::UnitDefinition::Factory(id),
-            static_cast<opentxs::proto::ContactItemType>(currency),
+            static_cast<opentxs::contact::ContactItemType>(currency),
             primary,
             active);
     }
     std::string PaymentCode(const int currency) const
     {
         return $self->PaymentCode(
-            static_cast<opentxs::proto::ContactItemType>(currency));
+            static_cast<opentxs::contact::ContactItemType>(currency));
     }
     std::string SocialMediaProfiles(
         const int type,
         bool active = true) const
     {
         return $self->SocialMediaProfiles(
-            static_cast<opentxs::proto::ContactItemType>(type), active);
+            static_cast<opentxs::contact::ContactItemType>(type), active);
     }
     const std::vector<int> SocialMediaProfileTypes() const
     {
@@ -67,7 +67,7 @@
             types.begin(),
             types.end(),
             std::inserter(output, output.end()),
-            [](opentxs::proto::ContactItemType type) -> int {
+            [](opentxs::contact::ContactItemType type) -> int {
                 return static_cast<int>(type);
             });
 
@@ -86,7 +86,7 @@
     {
         return $self->AddContract(
             instrumentDefinitionID,
-            static_cast<opentxs::proto::ContactItemType>(currency),
+            static_cast<opentxs::contact::ContactItemType>(currency),
             primary,
             active,
             reason);
@@ -100,7 +100,7 @@
     {
         return $self->AddPaymentCode(
             code,
-            static_cast<opentxs::proto::ContactItemType>(currency),
+            static_cast<opentxs::contact::ContactItemType>(currency),
             primary,
             active,
             reason);
@@ -114,7 +114,7 @@
     {
         return $self->AddSocialMediaProfile(
             value,
-            static_cast<opentxs::proto::ContactItemType>(type),
+            static_cast<opentxs::contact::ContactItemType>(type),
             primary,
             active, reason);
     }
@@ -125,7 +125,7 @@
         const PasswordPrompt& reason)
     {
         return $self->SetScope(
-            static_cast<opentxs::proto::ContactItemType>(type),
+            static_cast<opentxs::contact::ContactItemType>(type),
             name,
             primary,
             reason);
@@ -193,7 +193,7 @@ public:
     OPENTXS_EXPORT std::string BestEmail() const;
     OPENTXS_EXPORT std::string BestPhoneNumber() const;
     OPENTXS_EXPORT std::string BestSocialMediaProfile(
-        const proto::ContactItemType type) const;
+        const contact::ContactItemType type) const;
     OPENTXS_EXPORT const opentxs::ContactData& Claims() const;
     OPENTXS_EXPORT bool DeleteClaim(
         const Identifier& id,
@@ -201,22 +201,22 @@ public:
     OPENTXS_EXPORT std::string EmailAddresses(bool active = true) const;
     OPENTXS_EXPORT bool HaveContract(
         const identifier::UnitDefinition& id,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const bool primary,
         const bool active) const;
     OPENTXS_EXPORT std::string Name() const;
     OPENTXS_EXPORT const identity::Nym& Nym() const;
     OPENTXS_EXPORT std::string PaymentCode(
-        const proto::ContactItemType currency) const;
+        const contact::ContactItemType currency) const;
     OPENTXS_EXPORT std::string PhoneNumbers(bool active = true) const;
     OPENTXS_EXPORT std::string PreferredOTServer() const;
     OPENTXS_EXPORT std::string PrintContactData() const;
     OPENTXS_EXPORT std::string SocialMediaProfiles(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         bool active = true) const;
-    OPENTXS_EXPORT std::set<proto::ContactItemType> SocialMediaProfileTypes()
+    OPENTXS_EXPORT std::set<contact::ContactItemType> SocialMediaProfileTypes()
         const;
-    OPENTXS_EXPORT proto::ContactItemType Type() const;
+    OPENTXS_EXPORT contact::ContactItemType Type() const;
     OPENTXS_EXPORT bool Valid() const;
 
     OPENTXS_EXPORT std::string AddChildKeyCredential(
@@ -228,7 +228,7 @@ public:
         const PasswordPrompt& reason);
     OPENTXS_EXPORT bool AddContract(
         const std::string& instrumentDefinitionID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const bool primary,
         const bool active,
         const PasswordPrompt& reason);
@@ -239,7 +239,7 @@ public:
         const PasswordPrompt& reason);
     OPENTXS_EXPORT bool AddPaymentCode(
         const std::string& code,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const bool primary,
         const bool active,
         const PasswordPrompt& reason);
@@ -254,7 +254,7 @@ public:
         const PasswordPrompt& reason);
     OPENTXS_EXPORT bool AddSocialMediaProfile(
         const std::string& value,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const bool primary,
         const bool active,
         const PasswordPrompt& reason);
@@ -266,7 +266,7 @@ public:
         const proto::ContactData& data,
         const PasswordPrompt& reason);
     OPENTXS_EXPORT bool SetScope(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const std::string& name,
         const bool primary,
         const PasswordPrompt& reason);

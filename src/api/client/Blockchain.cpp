@@ -87,7 +87,6 @@
 #include "opentxs/protobuf/BlockchainP2PSync.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #endif  // OT_BLOCKCHAIN
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "opentxs/protobuf/StorageThread.pb.h"
 #include "opentxs/protobuf/StorageThreadItem.pb.h"
@@ -583,50 +582,50 @@ auto Blockchain::BalanceTree(const identifier::Nym& nymID, const Chain chain)
     return balanceList.Nym(nymID);
 }
 
-auto Blockchain::bip44_type(const proto::ContactItemType type) const noexcept
+auto Blockchain::bip44_type(const contact::ContactItemType type) const noexcept
     -> Bip44Type
 {
     switch (type) {
-        case proto::CITEMTYPE_BTC: {
+        case contact::ContactItemType::BTC: {
 
             return Bip44Type::BITCOIN;
         }
-        case proto::CITEMTYPE_LTC: {
+        case contact::ContactItemType::LTC: {
 
             return Bip44Type::LITECOIN;
         }
-        case proto::CITEMTYPE_DOGE: {
+        case contact::ContactItemType::DOGE: {
 
             return Bip44Type::DOGECOIN;
         }
-        case proto::CITEMTYPE_DASH: {
+        case contact::ContactItemType::DASH: {
 
             return Bip44Type::DASH;
         }
-        case proto::CITEMTYPE_BCH: {
+        case contact::ContactItemType::BCH: {
 
             return Bip44Type::BITCOINCASH;
         }
-        case proto::CITEMTYPE_PKT: {
+        case contact::ContactItemType::PKT: {
 
             return Bip44Type::PKT;
         }
-        case proto::CITEMTYPE_TNBCH:
-        case proto::CITEMTYPE_TNBTC:
-        case proto::CITEMTYPE_TNXRP:
-        case proto::CITEMTYPE_TNLTC:
-        case proto::CITEMTYPE_TNXEM:
-        case proto::CITEMTYPE_TNDASH:
-        case proto::CITEMTYPE_TNMAID:
-        case proto::CITEMTYPE_TNLSK:
-        case proto::CITEMTYPE_TNDOGE:
-        case proto::CITEMTYPE_TNXMR:
-        case proto::CITEMTYPE_TNWAVES:
-        case proto::CITEMTYPE_TNNXT:
-        case proto::CITEMTYPE_TNSC:
-        case proto::CITEMTYPE_TNSTEEM:
-        case proto::CITEMTYPE_TNPKT:
-        case proto::CITEMTYPE_REGTEST: {
+        case contact::ContactItemType::TNBCH:
+        case contact::ContactItemType::TNBTC:
+        case contact::ContactItemType::TNXRP:
+        case contact::ContactItemType::TNLTX:
+        case contact::ContactItemType::TNXEM:
+        case contact::ContactItemType::TNDASH:
+        case contact::ContactItemType::TNMAID:
+        case contact::ContactItemType::TNLSK:
+        case contact::ContactItemType::TNDOGE:
+        case contact::ContactItemType::TNXMR:
+        case contact::ContactItemType::TNWAVES:
+        case contact::ContactItemType::TNNXT:
+        case contact::ContactItemType::TNSC:
+        case contact::ContactItemType::TNSTEEM:
+        case contact::ContactItemType::TNPKT:
+        case contact::ContactItemType::Regtest: {
             return Bip44Type::TESTNET;
         }
         default: {
@@ -1061,7 +1060,7 @@ auto Blockchain::get_node(const Identifier& accountID) const noexcept(false)
             const auto type = api_.Storage().BlockchainAccountType(
                 nymID.str(), accountID.str());
 
-            if (proto::CITEMTYPE_ERROR == type) {
+            if (contact::ContactItemType::Error == type) {
                 throw std::out_of_range("Account does not exist");
             }
 
@@ -1074,7 +1073,7 @@ auto Blockchain::get_node(const Identifier& accountID) const noexcept(false)
         case AccountType::PaymentCode: {
             const auto type = api_.Storage().Bip47Chain(nymID, accountID);
 
-            if (proto::CITEMTYPE_ERROR == type) {
+            if (contact::ContactItemType::Error == type) {
                 throw std::out_of_range("Account does not exist");
             }
 
@@ -1099,7 +1098,7 @@ auto Blockchain::HDSubaccount(
     const auto type =
         api_.Storage().BlockchainAccountType(nymID.str(), accountID.str());
 
-    if (proto::CITEMTYPE_ERROR == type) {
+    if (contact::ContactItemType::Error == type) {
         throw std::out_of_range("Account does not exist");
     }
 
@@ -1192,7 +1191,7 @@ auto Blockchain::Init() noexcept -> void { accounts_.Populate(); }
 
 auto Blockchain::init_path(
     const std::string& root,
-    const proto::ContactItemType chain,
+    const contact::ContactItemType chain,
     const Bip32Index account,
     const BlockchainAccountType standard,
     proto::HDPath& path) const noexcept -> void
@@ -1529,7 +1528,7 @@ auto Blockchain::PaymentCodeSubaccount(
 {
     const auto type = api_.Storage().Bip47Chain(nymID, accountID);
 
-    if (proto::CITEMTYPE_ERROR == type) {
+    if (contact::ContactItemType::Error == type) {
         throw std::out_of_range("Account does not exist");
     }
 
@@ -1553,7 +1552,7 @@ auto Blockchain::PaymentCodeSubaccount(
         blockchain::internal::PaymentCode::GetID(api_, chain, local, remote);
     const auto type = api_.Storage().Bip47Chain(nymID, accountID);
 
-    if (proto::CITEMTYPE_ERROR == type) {
+    if (contact::ContactItemType::Error == type) {
         const auto id = new_payment_code(
             nymLock, nymID, local, remote, path, chain, reason);
 

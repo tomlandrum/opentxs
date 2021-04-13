@@ -11,11 +11,11 @@
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/contact/ContactGroup.hpp"  // IWYU pragma: associated
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 #include "opentxs/protobuf/ContactSection.pb.h"
 
@@ -27,7 +27,7 @@ struct ContactGroup::Imp {
     const std::string nym_{};
     const contact::ContactSectionName section_{
         contact::ContactSectionName::Error};
-    const proto::ContactItemType type_{proto::CITEMTYPE_ERROR};
+    const contact::ContactItemType type_{contact::ContactItemType::Error};
     const OTIdentifier primary_;
     const ItemMap items_{};
 
@@ -52,7 +52,7 @@ struct ContactGroup::Imp {
 
     Imp(const std::string& nym,
         const contact::ContactSectionName section,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const ItemMap& items)
         : nym_(nym)
         , section_(section)
@@ -120,7 +120,7 @@ static auto create_item(const std::shared_ptr<ContactItem>& item)
 ContactGroup::ContactGroup(
     const std::string& nym,
     const contact::ContactSectionName section,
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const ItemMap& items)
     : imp_(std::make_unique<Imp>(nym, section, type, items))
 {
@@ -324,7 +324,7 @@ auto ContactGroup::PrimaryClaim() const -> std::shared_ptr<ContactItem>
 
 auto ContactGroup::Size() const -> std::size_t { return imp_->items_.size(); }
 
-auto ContactGroup::Type() const -> const proto::ContactItemType&
+auto ContactGroup::Type() const -> const contact::ContactItemType&
 {
     return imp_->type_;
 }

@@ -15,6 +15,7 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Editor.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/identity/Nym.hpp"
 
 namespace opentxs
@@ -57,7 +58,8 @@ public:
     NewContactFromAddress(
         const std::string& address,
         const std::string& label,
-        const proto::ContactItemType currency = proto::CITEMTYPE_BTC) const = 0;
+        const contact::ContactItemType currency =
+            contact::ContactItemType::BTC) const = 0;
 #endif  // OT_BLOCKCHAIN
     /** Returns an existing contact ID if it exists, or creates a new one */
     OPENTXS_EXPORT virtual OTIdentifier NymToContact(

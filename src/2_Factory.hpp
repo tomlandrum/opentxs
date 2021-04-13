@@ -449,7 +449,7 @@ public:
         const std::string& symbol,
         const std::string& terms,
         const std::uint64_t weight,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version) noexcept
         -> std::shared_ptr<contract::unit::Basket>;
     static auto BasketContract(
@@ -536,7 +536,7 @@ public:
         const std::string& tla,
         const std::uint32_t power,
         const std::string& fraction,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version,
         const opentxs::PasswordPrompt& reason) noexcept
         -> std::shared_ptr<contract::unit::Currency>;
@@ -593,7 +593,7 @@ public:
     OPENTXS_EXPORT static auto Nym(
         const api::internal::Core& api,
         const NymParameters& nymParameters,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const std::string name,
         const opentxs::PasswordPrompt& reason) -> identity::internal::Nym*;
     OPENTXS_EXPORT static auto Nym(
@@ -782,7 +782,7 @@ public:
         const std::string& name,
         const std::string& symbol,
         const std::string& terms,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version,
         const opentxs::PasswordPrompt& reason) noexcept
         -> std::shared_ptr<contract::unit::Security>;

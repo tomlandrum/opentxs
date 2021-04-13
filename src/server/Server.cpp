@@ -221,7 +221,7 @@ void Server::CreateMainFile(bool& mainFileExists)
     nymParameters.SetDefault(false);
 #endif
     m_nymServer = manager_.Wallet().Nym(
-        reason_, name, nymParameters, proto::CITEMTYPE_SERVER);
+        reason_, name, nymParameters, contact::ContactItemType::Server);
 
     if (false == bool(m_nymServer)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(

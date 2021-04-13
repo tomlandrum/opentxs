@@ -24,7 +24,6 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Issuer.pb.h"
 
 namespace opentxs
@@ -45,7 +44,7 @@ public:
     auto toString() const -> std::string final;
 
     auto AccountList(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const identifier::UnitDefinition& unitID) const
         -> std::set<OTIdentifier> final;
     auto BailmentInitiated(const identifier::UnitDefinition& unitID) const
@@ -74,7 +73,7 @@ public:
     auto StoreSecretInitiated() const -> bool final;
 
     void AddAccount(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const identifier::UnitDefinition& unitID,
         const Identifier& accountID) final;
     auto AddReply(
@@ -85,7 +84,7 @@ public:
         const contract::peer::PeerRequestType type,
         const Identifier& requestID) -> bool final;
     auto RemoveAccount(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const identifier::UnitDefinition& unitID,
         const Identifier& accountID) -> bool final;
     void SetPaired(const bool paired) final;
@@ -117,7 +116,7 @@ private:
     mutable OTFlag paired_;
     const OTNymID nym_id_;
     const OTNymID issuer_id_;
-    std::map<proto::ContactItemType, std::set<UnitAccountPair>> account_map_;
+    std::map<contact::ContactItemType, std::set<UnitAccountPair>> account_map_;
     WorkflowMap peer_requests_;
 
     auto find_request(

@@ -24,7 +24,6 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/Profile.hpp"
 #include "ui/base/List.hpp"
 #include "ui/base/Widget.hpp"
@@ -80,7 +79,7 @@ class Profile final : public ProfileList
 public:
     auto AddClaim(
         const contact::ContactSectionName section,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const std::string& value,
         const bool primary,
         const bool active) const noexcept -> bool final;

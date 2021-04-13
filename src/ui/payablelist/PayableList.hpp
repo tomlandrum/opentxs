@@ -22,7 +22,6 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/PayableList.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "ui/base/List.hpp"
@@ -84,7 +83,7 @@ public:
     PayableList(
         const api::client::internal::Manager& api,
         const identifier::Nym& nymID,
-        const proto::ContactItemType& currency,
+        const contact::ContactItemType& currency,
         const SimpleCallback& cb) noexcept;
     ~PayableList() final;
 
@@ -100,7 +99,7 @@ private:
     };
 
     const OTIdentifier owner_contact_id_;
-    const proto::ContactItemType currency_;
+    const contact::ContactItemType currency_;
 
     auto construct_row(
         const PayableListRowID& id,

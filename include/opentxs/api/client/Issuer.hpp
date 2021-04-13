@@ -60,7 +60,7 @@ public:
     virtual std::string toString() const = 0;
 
     virtual std::set<OTIdentifier> AccountList(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const identifier::UnitDefinition& unitID) const = 0;
     virtual bool BailmentInitiated(
         const identifier::UnitDefinition& unitID) const = 0;
@@ -85,7 +85,7 @@ public:
     virtual bool StoreSecretInitiated() const = 0;
 
     virtual void AddAccount(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const identifier::UnitDefinition& unitID,
         const Identifier& accountID) = 0;
     virtual bool AddReply(
@@ -96,7 +96,7 @@ public:
         const contract::peer::PeerRequestType type,
         const Identifier& requestID) = 0;
     virtual bool RemoveAccount(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const identifier::UnitDefinition& unitID,
         const Identifier& accountID) = 0;
     virtual void SetPaired(const bool paired) = 0;

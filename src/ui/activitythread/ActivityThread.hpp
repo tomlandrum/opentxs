@@ -32,7 +32,6 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/api/client/OTX.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/ActivityThread.hpp"
 #include "ui/base/List.hpp"
 #include "ui/base/Widget.hpp"
@@ -153,7 +152,7 @@ public:
         const Identifier& sourceAccount,
         const std::string& memo,
         const PaymentType type) const noexcept -> bool final;
-    auto PaymentCode(const proto::ContactItemType currency) const noexcept
+    auto PaymentCode(const contact::ContactItemType currency) const noexcept
         -> std::string final;
     auto SendDraft() const noexcept -> bool final;
     auto SetDraft(const std::string& draft) const noexcept -> bool final;

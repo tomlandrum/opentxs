@@ -106,7 +106,6 @@
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Envelope.pb.h"  // IWYU pragma: keep
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "opentxs/protobuf/PaymentCode.pb.h"
@@ -331,7 +330,7 @@ auto Factory::BasketContract(
     const std::string& symbol,
     const std::string& terms,
     const std::uint64_t weight,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version) const noexcept(false) -> OTBasketContract
 {
     auto output = opentxs::Factory::BasketContract(
@@ -819,7 +818,7 @@ auto Factory::CurrencyContract(
     const std::string& tla,
     const std::uint32_t power,
     const std::string& fraction,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version,
     const opentxs::PasswordPrompt& reason) const noexcept(false)
     -> OTCurrencyContract
@@ -2082,7 +2081,7 @@ auto Factory::SecurityContract(
     const std::string& name,
     const std::string& symbol,
     const std::string& terms,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version,
     const opentxs::PasswordPrompt& reason) const noexcept(false)
     -> OTSecurityContract

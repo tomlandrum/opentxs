@@ -53,7 +53,7 @@ public:
         const api::internal::Core& api,
         const std::string& nymid,
         const contact::ContactSectionName section,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const std::int64_t start,
         const std::int64_t end,
         const std::string& value,

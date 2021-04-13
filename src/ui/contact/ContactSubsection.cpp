@@ -12,6 +12,7 @@
 #include <thread>
 #include <type_traits>
 
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
@@ -76,7 +77,8 @@ auto ContactSubsection::construct_row(
 auto ContactSubsection::Name(const std::string& lang) const noexcept
     -> std::string
 {
-    return proto::TranslateItemType(row_id_.second, lang);
+    return proto::TranslateItemType(
+        contact::internal::translate(row_id_.second), lang);
 }
 
 auto ContactSubsection::process_group(

@@ -2662,7 +2662,7 @@ auto OTAPI_Exec::GenerateBasketCreation(
             symbol,
             terms,
             weight,
-            proto::CITEMTYPE_UNKNOWN,
+            contact::ContactItemType::Unknown,
             version);
 
         return api_.Factory()

@@ -22,7 +22,6 @@
 #include "opentxs/contact/ContactItemAttribute.hpp"
 #include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 #include "opentxs/protobuf/ContactSection.pb.h"
 
@@ -38,7 +37,7 @@ public:
         , contactGroup_(
               std::string("testContactGroupNym1"),
               ot::contact::ContactSectionName::Identifier,
-              ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
+              ot::contact::ContactItemType::Employee,
               {})
         , primary_(new ot::ContactItem(
               api_,
@@ -46,7 +45,7 @@ public:
               CONTACT_CONTACT_DATA_VERSION,
               CONTACT_CONTACT_DATA_VERSION,
               ot::contact::ContactSectionName::Identifier,
-              ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
+              ot::contact::ContactItemType::Employee,
               std::string("primaryContactItemValue"),
               {ot::contact::ContactItemAttribute::Primary},
               NULL_START,
@@ -58,7 +57,7 @@ public:
               CONTACT_CONTACT_DATA_VERSION,
               CONTACT_CONTACT_DATA_VERSION,
               ot::contact::ContactSectionName::Identifier,
-              ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
+              ot::contact::ContactItemType::Employee,
               std::string("activeContactItemValue"),
               {ot::contact::ContactItemAttribute::Active},
               NULL_START,
@@ -84,7 +83,7 @@ TEST_F(Test_ContactGroup, first_constructor)
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
         ot::contact::ContactSectionName::Identifier,
-        ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
+        ot::contact::ContactItemType::Employee,
         std::string("primaryContactItemValue2"),
         {ot::contact::ContactItemAttribute::Primary},
         NULL_START,
@@ -98,11 +97,11 @@ TEST_F(Test_ContactGroup, first_constructor)
     const ot::ContactGroup group1(
         std::string("testContactGroupNym1"),
         ot::contact::ContactSectionName::Identifier,
-        ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
+        ot::contact::ContactItemType::Employee,
         map);
     // Verify two items were added.
     ASSERT_EQ(2, group1.Size());
-    ASSERT_EQ(ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE, group1.Type());
+    ASSERT_EQ(ot::contact::ContactItemType::Employee, group1.Type());
     // Verify only one item is primary.
     if (primary_->ID() == group1.Primary()) {
         ASSERT_TRUE(group1.Claim(primary_->ID())->isPrimary());
@@ -119,11 +118,11 @@ TEST_F(Test_ContactGroup, first_constructor_no_items)
     const ot::ContactGroup group1(
         std::string("testContactGroupNym1"),
         ot::contact::ContactSectionName::Identifier,
-        ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
+        ot::contact::ContactItemType::Employee,
         {});
     // Verify the private static methods didn't blow up.
     ASSERT_EQ(group1.Size(), 0);
-    ASSERT_EQ(ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE, group1.Type());
+    ASSERT_EQ(ot::contact::ContactItemType::Employee, group1.Type());
 }
 
 TEST_F(Test_ContactGroup, second_constructor)
@@ -181,7 +180,7 @@ TEST_F(Test_ContactGroup, operator_plus)
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
         ot::contact::ContactSectionName::Identifier,
-        ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
+        ot::contact::ContactItemType::Employee,
         std::string("primaryContactItemValue2"),
         {ot::contact::ContactItemAttribute::Primary},
         NULL_START,
@@ -290,7 +289,7 @@ TEST_F(Test_ContactGroup, Best_active_and_local)
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
         ot::contact::ContactSectionName::Identifier,
-        ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
+        ot::contact::ContactItemType::Employee,
         std::string("localContactItemValue"),
         {ot::contact::ContactItemAttribute::Local},
         NULL_START,
@@ -420,7 +419,7 @@ TEST_F(Test_ContactGroup, SerializeTo)
         ot::contact::internal::translate(contactSection1.name()));
     ot::proto::ContactItem item = contactSection1.item(0);
     ASSERT_EQ(active_->Version(), item.version());
-    ASSERT_EQ(active_->Type(), item.type());
+    ASSERT_EQ(active_->Type(), ot::contact::internal::translate(item.type()));
     ASSERT_EQ(active_->Value(), item.value());
     ASSERT_EQ(active_->Start(), item.start());
     ASSERT_EQ(active_->End(), item.end());
@@ -441,7 +440,7 @@ TEST_F(Test_ContactGroup, SerializeTo)
     item = contactSection2.item(0);
     ASSERT_EQ(active_->ID().str(), item.id());
     ASSERT_EQ(active_->Version(), item.version());
-    ASSERT_EQ(active_->Type(), item.type());
+    ASSERT_EQ(active_->Type(), ot::contact::internal::translate(item.type()));
     ASSERT_EQ(active_->Value(), item.value());
     ASSERT_EQ(active_->Start(), item.start());
     ASSERT_EQ(active_->End(), item.end());
@@ -469,6 +468,5 @@ TEST_F(Test_ContactGroup, Size)
 
 TEST_F(Test_ContactGroup, Type)
 {
-    ASSERT_EQ(
-        ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE, contactGroup_.Type());
+    ASSERT_EQ(ot::contact::ContactItemType::Employee, contactGroup_.Type());
 }

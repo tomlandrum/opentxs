@@ -54,7 +54,6 @@
 #include "opentxs/protobuf/AcceptPendingPayment.pb.h"
 #include "opentxs/protobuf/AccountEvent.pb.h"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/protobuf/RPCCommand.pb.h"
 #include "opentxs/protobuf/RPCEnums.pb.h"
@@ -326,7 +325,7 @@ void Test_Rpc_Async::setup()
         "GTD",
         2,
         "gcent",
-        ot::proto::CITEMTYPE_USD,
+        ot::contact::ContactItemType::USD,
         reasonS);
     unit_definition_id_ =
         identifier::UnitDefinition::Factory(unit_definition->ID()->str());

@@ -35,7 +35,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/verify/VerifyContacts.hpp"
 #include "opentxs/ui/Profile.hpp"
 #include "opentxs/ui/ProfileSection.hpp"
@@ -120,7 +119,7 @@ Profile::Profile(
 
 auto Profile::AddClaim(
     const contact::ContactSectionName section,
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const std::string& value,
     const bool primary,
     const bool active) const noexcept -> bool
@@ -135,15 +134,15 @@ auto Profile::AddClaim(
         }
         case contact::ContactSectionName::Communication: {
             switch (type) {
-                case proto::CITEMTYPE_EMAIL: {
+                case contact::ContactItemType::Email: {
 
                     return nym.AddEmail(value, primary, active, reason);
                 }
-                case proto::CITEMTYPE_PHONE: {
+                case contact::ContactItemType::Phone: {
 
                     return nym.AddPhoneNumber(value, primary, active, reason);
                 }
-                case proto::CITEMTYPE_OPENTXS: {
+                case contact::ContactItemType::Opentxs: {
 
                     return nym.AddPreferredOTServer(value, primary, reason);
                 }
@@ -172,7 +171,7 @@ auto Profile::AddClaim(
         claim;
     id = "";
     claimSection = contact::internal::translate(section);
-    claimType = type;
+    claimType = contact::internal::translate(type);
     claimValue = value;
     start = 0;
     end = 0;

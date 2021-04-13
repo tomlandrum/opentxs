@@ -31,7 +31,6 @@
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/Message.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/AccountActivity.hpp"
 #include "opentxs/ui/AccountList.hpp"
 #include "opentxs/ui/AccountSummary.hpp"
@@ -340,7 +339,7 @@ auto UI::AccountListQt(const identifier::Nym& nymID, const SimpleCallback cb)
 auto UI::account_summary(
     const Lock& lock,
     const identifier::Nym& nymID,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const SimpleCallback& cb) const noexcept -> AccountSummaryMap::mapped_type&
 {
     auto key = AccountSummaryKey{nymID, currency};
@@ -364,7 +363,7 @@ auto UI::account_summary(
 
 auto UI::AccountSummary(
     const identifier::Nym& nymID,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const SimpleCallback cb) const noexcept -> const ui::AccountSummary&
 {
     Lock lock(lock_);
@@ -375,7 +374,7 @@ auto UI::AccountSummary(
 #if OT_QT
 auto UI::AccountSummaryQt(
     const identifier::Nym& nymID,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const SimpleCallback cb) const noexcept -> ui::AccountSummaryQt*
 {
     Lock lock(lock_);
@@ -775,7 +774,7 @@ auto UI::MessagableListQt(const identifier::Nym& nymID, const SimpleCallback cb)
 auto UI::payable_list(
     const Lock& lock,
     const identifier::Nym& nymID,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const SimpleCallback& cb) const noexcept -> PayableListMap::mapped_type&
 {
     auto key = PayableListKey{nymID, currency};
@@ -796,7 +795,7 @@ auto UI::payable_list(
 
 auto UI::PayableList(
     const identifier::Nym& nymID,
-    proto::ContactItemType currency,
+    contact::ContactItemType currency,
     const SimpleCallback cb) const noexcept -> const ui::PayableList&
 {
     Lock lock(lock_);
@@ -807,7 +806,7 @@ auto UI::PayableList(
 #if OT_QT
 auto UI::PayableListQt(
     const identifier::Nym& nymID,
-    proto::ContactItemType currency,
+    contact::ContactItemType currency,
     const SimpleCallback cb) const noexcept -> ui::PayableListQt*
 {
     Lock lock(lock_);

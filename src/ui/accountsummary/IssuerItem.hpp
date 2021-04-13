@@ -25,7 +25,6 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/api/client/Issuer.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "ui/base/Combined.hpp"
 #include "ui/base/List.hpp"
 #include "ui/base/RowType.hpp"
@@ -104,7 +103,7 @@ public:
         const AccountSummaryRowID& rowID,
         const AccountSummarySortKey& sortKey,
         CustomData& custom,
-        const proto::ContactItemType currency) noexcept;
+        const contact::ContactItemType currency) noexcept;
     ~IssuerItem() final;
 
 private:
@@ -112,7 +111,7 @@ private:
     const std::string& name_;
     std::atomic<bool> connection_;
     const std::shared_ptr<const api::client::Issuer> issuer_;
-    const proto::ContactItemType currency_;
+    const contact::ContactItemType currency_;
 
     auto construct_row(
         const IssuerItemRowID& id,

@@ -24,7 +24,6 @@
 #include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/verify/VerifyContacts.hpp"
 #include "opentxs/ui/ProfileSection.hpp"
 #include "ui/base/Combined.hpp"
@@ -139,7 +138,9 @@ auto ProfileSection::AllowedItems(
 
     try {
         for (const auto& type : allowed_types_.at(section)) {
-            output.emplace_back(type, proto::TranslateItemType(type, lang));
+            output.emplace_back(
+                contact::internal::translate(type),
+                proto::TranslateItemType(type, lang));
         }
     } catch (const std::out_of_range&) {
     }
@@ -168,7 +169,7 @@ ProfileSection::ProfileSection(
 }
 
 auto ProfileSection::AddClaim(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const std::string& value,
     const bool primary,
     const bool active) const noexcept -> bool
@@ -179,7 +180,8 @@ auto ProfileSection::AddClaim(
 auto ProfileSection::check_type(const ProfileSectionRowID type) noexcept -> bool
 {
     try {
-        return 1 == allowed_types_.at(type.first).count(type.second);
+        return 1 == allowed_types_.at(type.first)
+                        .count(contact::internal::translate(type.second));
     } catch (const std::out_of_range&) {
     }
 
@@ -199,7 +201,7 @@ auto ProfileSection::Delete(const int type, const std::string& claimID)
 {
     rLock lock{recursive_lock_};
     const ProfileSectionRowID key{
-        row_id_, static_cast<proto::ContactItemType>(type)};
+        row_id_, static_cast<contact::ContactItemType>(type)};
     auto& group = lookup(lock, key);
 
     if (false == group.Valid()) { return false; }
@@ -258,7 +260,7 @@ auto ProfileSection::SetActive(
 {
     rLock lock{recursive_lock_};
     const ProfileSectionRowID key{
-        row_id_, static_cast<proto::ContactItemType>(type)};
+        row_id_, static_cast<contact::ContactItemType>(type)};
     auto& group = lookup(lock, key);
 
     if (false == group.Valid()) { return false; }
@@ -273,7 +275,7 @@ auto ProfileSection::SetPrimary(
 {
     rLock lock{recursive_lock_};
     const ProfileSectionRowID key{
-        row_id_, static_cast<proto::ContactItemType>(type)};
+        row_id_, static_cast<contact::ContactItemType>(type)};
     auto& group = lookup(lock, key);
 
     if (false == group.Valid()) { return false; }
@@ -288,7 +290,7 @@ auto ProfileSection::SetValue(
 {
     rLock lock{recursive_lock_};
     const ProfileSectionRowID key{
-        row_id_, static_cast<proto::ContactItemType>(type)};
+        row_id_, static_cast<contact::ContactItemType>(type)};
     auto& group = lookup(lock, key);
 
     if (false == group.Valid()) { return false; }
@@ -298,7 +300,8 @@ auto ProfileSection::SetValue(
 
 auto ProfileSection::sort_key(const ProfileSectionRowID type) noexcept -> int
 {
-    return sort_keys_.at(type.first).at(type.second);
+    return sort_keys_.at(type.first)
+        .at(contact::internal::translate(type.second));
 }
 
 void ProfileSection::startup(const opentxs::ContactSection section) noexcept

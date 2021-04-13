@@ -35,7 +35,7 @@ public:
     // User roles return the same data for all columns
     //
     // NotaryIDRole: QString
-    // UnitRole: int (proto::ContactItemType)
+    // UnitRole: int (contact::ContactItemType)
     // AccountIDRole: QString
     // BalanceRole: int
     // PolarityRole: int (-1, 0, or 1)

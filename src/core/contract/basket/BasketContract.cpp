@@ -25,7 +25,6 @@
 #include "opentxs/protobuf/BasketItem.pb.h"
 #include "opentxs/protobuf/BasketParams.pb.h"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 #include "opentxs/protobuf/verify/UnitDefinition.hpp"
@@ -45,7 +44,7 @@ auto Factory::BasketContract(
     const std::string& symbol,
     const std::string& terms,
     const std::uint64_t weight,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version) noexcept
     -> std::shared_ptr<contract::unit::Basket>
 {
@@ -150,7 +149,7 @@ Basket::Basket(
     const std::string& symbol,
     const std::string& terms,
     const std::uint64_t weight,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version)
     : Unit(api, nym, shortname, name, symbol, terms, unitOfAccount, version)
     , subcontracts_()

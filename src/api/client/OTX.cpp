@@ -84,7 +84,6 @@
 #include "opentxs/otx/Reply.hpp"
 #include "opentxs/otx/ServerReplyType.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/protobuf/ServerContract.pb.h"
 #include "opentxs/protobuf/ServerReply.pb.h"
@@ -1450,7 +1449,7 @@ auto OTX::IssueUnitDefinition(
     const identifier::Nym& localNymID,
     const identifier::Server& serverID,
     const identifier::UnitDefinition& unitID,
-    const proto::ContactItemType advertise,
+    const contact::ContactItemType advertise,
     const std::string& label) const -> OTX::BackgroundTask
 {
     CHECK_ARGS(localNymID, serverID, unitID)
@@ -1885,7 +1884,7 @@ auto OTX::refresh_contacts() const -> bool
 
                 const auto serverGroup = data->Group(
                     contact::ContactSectionName::Communication,
-                    proto::CITEMTYPE_OPENTXS);
+                    contact::ContactItemType::Opentxs);
 
                 if (false == bool(serverGroup)) {
 

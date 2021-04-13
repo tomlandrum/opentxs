@@ -70,7 +70,7 @@ public:
     OPENTXS_EXPORT virtual bool SetValue(
         const std::string& claimID,
         const std::string& value) const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::ContactItemType Type() const noexcept = 0;
+    OPENTXS_EXPORT virtual contact::ContactItemType Type() const noexcept = 0;
 
     OPENTXS_EXPORT ~ProfileSubsection() override = default;
 

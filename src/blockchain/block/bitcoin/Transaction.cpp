@@ -23,6 +23,7 @@
 #include "internal/api/client/Client.hpp"
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/block/Block.hpp"  // IWYU pragma: keep
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Core.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -42,7 +43,6 @@
 #include "opentxs/protobuf/BlockchainTransaction.pb.h"
 #include "opentxs/protobuf/BlockchainTransactionInput.pb.h"
 #include "opentxs/protobuf/BlockchainTransactionOutput.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "util/Container.hpp"
 
 namespace be = boost::endian;
@@ -260,7 +260,7 @@ auto BitcoinTransaction(
         std::end(in.chain()),
         std::back_inserter(chains),
         [](const auto& type) -> auto {
-            return Translate(static_cast<proto::ContactItemType>(type));
+            return Translate(static_cast<contact::ContactItemType>(type));
         });
 
     if (0 == chains.size()) {
@@ -879,7 +879,7 @@ auto Transaction::Serialize(const api::client::Blockchain& blockchain)
     output.set_version(std::max(default_version_, serialize_version_));
     std::for_each(
         std::begin(chains_), std::end(chains_), [&](const auto& chain) {
-            output.add_chain(Translate(chain));
+            output.add_chain(contact::internal::translate(Translate(chain)));
         });
     output.set_txid(txid_->str());
     output.set_txversion(version_);

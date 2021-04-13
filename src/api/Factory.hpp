@@ -72,7 +72,6 @@
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/identity/Types.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -230,7 +229,7 @@ public:
         const std::string& symbol,
         const std::string& terms,
         const std::uint64_t weight,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version) const noexcept(false)
         -> OTBasketContract final;
     auto BasketContract(
@@ -388,7 +387,7 @@ public:
         const std::string& tla,
         const std::uint32_t power,
         const std::string& fraction,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version,
         const opentxs::PasswordPrompt& reason) const noexcept(false)
         -> OTCurrencyContract final;
@@ -668,7 +667,7 @@ public:
         const std::string& name,
         const std::string& symbol,
         const std::string& terms,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version,
         const opentxs::PasswordPrompt& reason) const noexcept(false)
         -> OTSecurityContract final;

@@ -39,7 +39,7 @@ public:
     OPENTXS_EXPORT ContactGroup(
         const std::string& nym,
         const contact::ContactSectionName section,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const ItemMap& items);
     OPENTXS_EXPORT ContactGroup(
         const std::string& nym,
@@ -67,7 +67,7 @@ public:
         proto::ContactSection& section,
         const bool withIDs = false) const;
     OPENTXS_EXPORT std::size_t Size() const;
-    OPENTXS_EXPORT const proto::ContactItemType& Type() const;
+    OPENTXS_EXPORT const contact::ContactItemType& Type() const;
 
     OPENTXS_EXPORT ~ContactGroup();
 

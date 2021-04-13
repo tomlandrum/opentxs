@@ -50,7 +50,6 @@
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/HD.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 
 #if OT_CRYPTO_WITH_BIP32
@@ -64,7 +63,8 @@ struct AddressData {
 };
 
 bool init_{false};
-const ot::proto::ContactItemType individual_{ot::proto::CITEMTYPE_INDIVIDUAL};
+const ot::contact::ContactItemType individual_{
+    ot::contact::ContactItemType::Individual};
 const ot::blockchain::Type btc_chain_{ot::blockchain::Type::Bitcoin};
 const ot::blockchain::Type bch_chain_{ot::blockchain::Type::BitcoinCash};
 const ot::blockchain::Type ltc_chain_{ot::blockchain::Type::Litecoin};

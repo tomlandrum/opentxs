@@ -16,7 +16,6 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/CurrencyContract.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
 
 namespace opentxs
@@ -59,7 +58,7 @@ public:
         const std::string& tla,
         const std::uint32_t power,
         const std::string& fraction,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version);
     Currency(
         const api::internal::Core& api,

@@ -33,7 +33,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 
 template class opentxs::Pimpl<opentxs::Identifier>;
@@ -295,7 +294,7 @@ auto Identifier::Factory(const Item& item) -> OTIdentifier
 }
 
 auto Identifier::Factory(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const proto::HDPath& path) -> OTIdentifier
 {
     return OTIdentifier(new implementation::Identifier(type, path));
@@ -369,7 +368,7 @@ Identifier::Identifier(const Vector& data, const ID type)
 }
 
 Identifier::Identifier(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const proto::HDPath& path)
     : ot_super()
     , type_(DefaultType)
@@ -433,7 +432,7 @@ auto Identifier::IDToHashType(const ID type) -> crypto::HashType
 }
 
 auto Identifier::path_to_data(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const proto::HDPath& path) -> OTData
 {
     auto output = Data::Factory(static_cast<const void*>(&type), sizeof(type));

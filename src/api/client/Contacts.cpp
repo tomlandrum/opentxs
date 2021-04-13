@@ -32,7 +32,6 @@
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Message.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/util/WorkType.hpp"
 
 #define OT_METHOD "opentxs::api::implementation::Contacts::"
@@ -205,15 +204,15 @@ auto Contacts::import_contacts(const rLock& lock) -> void
             }
 
             switch (nym->Claims().Type()) {
-                case proto::CITEMTYPE_INDIVIDUAL:
-                case proto::CITEMTYPE_ORGANIZATION:
-                case proto::CITEMTYPE_BUSINESS:
-                case proto::CITEMTYPE_GOVERNMENT: {
+                case contact::ContactItemType::Individual:
+                case contact::ContactItemType::Organization:
+                case contact::ContactItemType::Business:
+                case contact::ContactItemType::Government: {
                     auto code = api_.Factory().PaymentCode(nym->PaymentCode());
                     new_contact(lock, nym->Alias(), nymID, code);
                 } break;
-                case proto::CITEMTYPE_ERROR:
-                case proto::CITEMTYPE_SERVER:
+                case contact::ContactItemType::Error:
+                case contact::ContactItemType::Server:
                 default: {
                 }
             }
@@ -255,7 +254,7 @@ void Contacts::init_nym_map(const rLock& lock)
 
         const auto type = contact->Type();
 
-        if (proto::CITEMTYPE_ERROR == type) {
+        if (contact::ContactItemType::Error == type) {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid contact ")(it.first)(
                 ".")
                 .Flush();
@@ -499,7 +498,7 @@ auto Contacts::NewContact(
 auto Contacts::NewContactFromAddress(
     const std::string& address,
     const std::string& label,
-    const proto::ContactItemType currency) const
+    const contact::ContactItemType currency) const
     -> std::shared_ptr<const opentxs::Contact>
 {
     auto blockchain = blockchain_.lock();
@@ -706,10 +705,10 @@ auto Contacts::Update(const proto::Nym& serialized) const
     auto& data = nym->Claims();
 
     switch (data.Type()) {
-        case proto::CITEMTYPE_INDIVIDUAL:
-        case proto::CITEMTYPE_ORGANIZATION:
-        case proto::CITEMTYPE_BUSINESS:
-        case proto::CITEMTYPE_GOVERNMENT: {
+        case contact::ContactItemType::Individual:
+        case contact::ContactItemType::Organization:
+        case contact::ContactItemType::Business:
+        case contact::ContactItemType::Government: {
             break;
         }
         default: {

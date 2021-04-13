@@ -26,6 +26,7 @@
 #include "opentxs/api/HDSeed.hpp"
 #endif  // OT_CRYPTO_WITH_BIP32
 #include "opentxs/contact/ContactData.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/core/Armored.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
@@ -48,7 +49,6 @@
 #include "opentxs/protobuf/Authority.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ContactData.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/HDPath.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 #include "opentxs/protobuf/NymIDSource.pb.h"
@@ -65,7 +65,7 @@ namespace opentxs
 auto Factory::Nym(
     const api::internal::Core& api,
     const NymParameters& params,
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const std::string name,
     const opentxs::PasswordPrompt& reason) -> identity::internal::Nym*
 {
@@ -92,7 +92,7 @@ auto Factory::Nym(
             return nullptr;
         }
 
-        if (proto::CITEMTYPE_ERROR != type && !name.empty()) {
+        if (contact::ContactItemType::Error != type && !name.empty()) {
             const auto version =
                 ReturnType::contact_credential_to_contact_data_version_.at(
                     identity::internal::Authority::NymToContactCredential(
@@ -294,7 +294,7 @@ auto Nym::AddClaim(const Claim& claim, const opentxs::PasswordPrompt& reason)
 
 auto Nym::AddContract(
     const identifier::UnitDefinition& instrumentDefinitionID,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const opentxs::PasswordPrompt& reason,
     const bool primary,
     const bool active) -> bool
@@ -337,7 +337,7 @@ auto Nym::AddEmail(
 
 auto Nym::AddPaymentCode(
     const opentxs::PaymentCode& code,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const opentxs::PasswordPrompt& reason,
     const bool primary,
     const bool active) -> bool
@@ -399,7 +399,7 @@ auto Nym::AddPreferredOTServer(
 
 auto Nym::AddSocialMediaProfile(
     const std::string& value,
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const opentxs::PasswordPrompt& reason,
     const bool primary,
     const bool active) -> bool
@@ -460,7 +460,7 @@ auto Nym::BestPhoneNumber() const -> std::string
     return contact_data_->BestPhoneNumber();
 }
 
-auto Nym::BestSocialMediaProfile(const proto::ContactItemType type) const
+auto Nym::BestSocialMediaProfile(const contact::ContactItemType type) const
     -> std::string
 {
     eLock lock(shared_lock_);
@@ -506,7 +506,7 @@ auto Nym::ContactCredentialVersion() const -> VersionNumber
 }
 
 auto Nym::Contracts(
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const bool onlyActive) const -> std::set<OTIdentifier>
 {
     eLock lock(shared_lock_);
@@ -1254,7 +1254,7 @@ auto Nym::SetContactData(
 }
 
 auto Nym::SetScope(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const std::string& name,
     const opentxs::PasswordPrompt& reason,
     const bool primary) -> bool
@@ -1263,7 +1263,7 @@ auto Nym::SetScope(
 
     if (false == bool(contact_data_)) { init_claims(lock); }
 
-    if (proto::CITEMTYPE_UNKNOWN != contact_data_->Type()) {
+    if (contact::ContactItemType::Unknown != contact_data_->Type()) {
         contact_data_.reset(
             new ContactData(contact_data_->SetName(name, primary)));
     } else {
@@ -1319,7 +1319,7 @@ auto Nym::Sign(
     return haveSig;
 }
 
-auto Nym::SocialMediaProfiles(const proto::ContactItemType type, bool active)
+auto Nym::SocialMediaProfiles(const contact::ContactItemType type, bool active)
     const -> std::string
 {
     eLock lock(shared_lock_);
@@ -1332,7 +1332,7 @@ auto Nym::SocialMediaProfiles(const proto::ContactItemType type, bool active)
 }
 
 auto Nym::SocialMediaProfileTypes() const
-    -> const std::set<proto::ContactItemType>
+    -> const std::set<contact::ContactItemType>
 {
     eLock lock(shared_lock_);
 

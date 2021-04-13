@@ -53,7 +53,7 @@ public:
     OPENTXS_EXPORT virtual std::string NotaryID() const noexcept = 0;
     OPENTXS_EXPORT virtual std::string NotaryName() const noexcept = 0;
     OPENTXS_EXPORT virtual AccountType Type() const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::ContactItemType Unit() const noexcept = 0;
+    OPENTXS_EXPORT virtual contact::ContactItemType Unit() const noexcept = 0;
 
     OPENTXS_EXPORT ~AccountListItem() override = default;
 

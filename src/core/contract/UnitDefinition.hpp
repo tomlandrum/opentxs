@@ -17,7 +17,6 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -93,7 +92,7 @@ public:
         const std::string& str_decimal) const -> bool override;
     auto TLA() const -> std::string override { return short_name_; }
     auto Type() const -> contract::UnitType override = 0;
-    auto UnitOfAccount() const -> proto::ContactItemType override
+    auto UnitOfAccount() const -> contact::ContactItemType override
     {
         return unit_of_account_;
     }
@@ -112,7 +111,7 @@ public:
 
 protected:
     const std::string primary_unit_symbol_;
-    const proto::ContactItemType unit_of_account_;
+    const contact::ContactItemType unit_of_account_;
 
     virtual auto IDVersion(const Lock& lock) const -> SerializedType;
     virtual auto SigVersion(const Lock& lock) const -> SerializedType;
@@ -128,7 +127,7 @@ protected:
         const std::string& name,
         const std::string& symbol,
         const std::string& terms,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const VersionNumber version);
     Unit(
         const api::internal::Core& api,

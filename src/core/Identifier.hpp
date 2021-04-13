@@ -21,7 +21,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -96,7 +95,7 @@ public:
     explicit Identifier(const identity::Nym& nym);
     explicit Identifier(const Contract& contract);
     explicit Identifier(const Vector& data, const ID type);
-    Identifier(const proto::ContactItemType type, const proto::HDPath& path);
+    Identifier(const contact::ContactItemType type, const proto::HDPath& path);
     Identifier();
 
     ~Identifier() final = default;
@@ -119,7 +118,7 @@ private:
         -> Identifier*;
     static auto IDToHashType(const ID type) -> crypto::HashType;
     static auto path_to_data(
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const proto::HDPath& path) -> OTData;
 
     Identifier(const Identifier& rhs) = delete;

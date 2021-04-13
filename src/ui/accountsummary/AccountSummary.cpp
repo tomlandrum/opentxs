@@ -26,7 +26,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #if OT_QT
 #include "opentxs/ui/qt/AccountSummary.hpp"
 #endif  // OT_QT
@@ -39,7 +38,7 @@ namespace opentxs::factory
 auto AccountSummaryModel(
     const api::client::internal::Manager& api,
     const identifier::Nym& nymID,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const SimpleCallback& cb) noexcept
     -> std::unique_ptr<ui::implementation::AccountSummary>
 {
@@ -71,7 +70,7 @@ namespace opentxs::ui::implementation
 AccountSummary::AccountSummary(
     const api::client::internal::Manager& api,
     const identifier::Nym& nymID,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const SimpleCallback& cb) noexcept
     : AccountSummaryList(
           api,

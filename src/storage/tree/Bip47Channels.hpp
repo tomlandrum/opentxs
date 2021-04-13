@@ -15,7 +15,6 @@
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/StorageBip47Contexts.pb.h"
 #include "storage/tree/Node.hpp"
 
@@ -50,8 +49,8 @@ class Bip47Channels final : public Node
 public:
     using ChannelList = std::set<OTIdentifier>;
 
-    auto Chain(const Identifier& channelID) const -> proto::ContactItemType;
-    auto ChannelsByChain(const proto::ContactItemType chain) const
+    auto Chain(const Identifier& channelID) const -> contact::ContactItemType;
+    auto ChannelsByChain(const contact::ContactItemType chain) const
         -> ChannelList;
     auto Load(
         const Identifier& id,
@@ -72,12 +71,12 @@ private:
     /** Address, channel ID */
     using AddressReverseMap = std::map<std::string, OTIdentifier>;
     /** chain */
-    using ChannelData = proto::ContactItemType;
+    using ChannelData = contact::ContactItemType;
     /** channel id, channel data */
     using ReverseIndex = std::map<OTIdentifier, ChannelData>;
 
     mutable std::shared_mutex index_lock_;
-    std::map<proto::ContactItemType, ChannelList> chain_map_;
+    std::map<contact::ContactItemType, ChannelList> chain_map_;
     mutable ReverseIndex channel_data_{};
 
     template <typename I, typename V>

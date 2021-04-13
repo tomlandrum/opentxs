@@ -187,7 +187,8 @@ struct User {
     void init(
         const ot::api::client::Manager& api,
         const Server& server,
-        const ot::proto::ContactItemType type = ot::proto::CITEMTYPE_INDIVIDUAL,
+        const ot::contact::ContactItemType type =
+            ot::contact::ContactItemType::Individual,
         const std::uint32_t index = 0)
     {
         if (init_) { return; }

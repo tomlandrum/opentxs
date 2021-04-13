@@ -14,6 +14,7 @@
 
 #include "internal/contact/Contact.hpp"
 #include "opentxs/api/storage/Driver.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
@@ -75,7 +76,10 @@ void Contacts::extract_nyms(const Lock& lock, const proto::Contact& data) const
         }
 
         for (const auto& item : section.item()) {
-            if (item.type() != proto::CITEMTYPE_CONTACT) { break; }
+            if (contact::internal::translate(item.type()) !=
+                contact::ContactItemType::Contact) {
+                break;
+            }
 
             const auto& nymID = item.value();
             nym_contact_index_[nymID] = contact;

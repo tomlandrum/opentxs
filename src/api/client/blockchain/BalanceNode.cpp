@@ -17,6 +17,7 @@
 
 #include "internal/api/Api.hpp"
 #include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/crypto/key/HD.hpp"  // IWYU pragma: keep
 #include "opentxs/protobuf/BlockchainAccountData.pb.h"
@@ -75,7 +76,7 @@ BalanceNode::BalanceNode(
           convert(serialized.spent()),
           out)
 {
-    if (Translate(serialized.chain()) != chain_) {
+    if (Translate(contact::internal::translate(serialized.chain())) != chain_) {
         throw std::runtime_error("Wrong account type");
     }
 }
@@ -264,7 +265,7 @@ auto BalanceNode::serialize_common(
     out.set_version(BlockchainAccountDataVersion);
     out.set_id(id_->str());
     out.set_revision(revision_.load());
-    out.set_chain(Translate(chain_));
+    out.set_chain(contact::internal::translate(Translate(chain_)));
 
     for (const auto& [coin, data] : unspent_) {
         auto converted = Activity{coin, data.first, data.second};

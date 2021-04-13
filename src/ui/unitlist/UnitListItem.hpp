@@ -23,7 +23,6 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/UnitListItem.hpp"
 #include "ui/base/Row.hpp"
 
@@ -68,7 +67,7 @@ class UnitListItem final : public UnitListItemRow
 {
 public:
     auto Name() const noexcept -> std::string final { return name_; }
-    auto Unit() const noexcept -> proto::ContactItemType final
+    auto Unit() const noexcept -> contact::ContactItemType final
     {
         return row_id_;
     }

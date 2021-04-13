@@ -19,7 +19,6 @@
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/identity/credential/Contact.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 
 #define OT_METHOD "opentxs::ContactItem::"
@@ -55,7 +54,7 @@ struct ContactItem::Imp {
     const VersionNumber version_;
     const std::string nym_;
     const contact::ContactSectionName section_;
-    const proto::ContactItemType type_;
+    const contact::ContactItemType type_;
     const std::string value_;
     const std::time_t start_;
     const std::time_t end_;
@@ -78,7 +77,7 @@ struct ContactItem::Imp {
         const VersionNumber version,
         const VersionNumber parentVersion,
         const contact::ContactSectionName section,
-        const proto::ContactItemType& type,
+        const contact::ContactItemType& type,
         const std::string& value,
         const std::set<contact::ContactItemAttribute>& attributes,
         const std::time_t start,
@@ -175,7 +174,7 @@ ContactItem::ContactItem(
     const VersionNumber version,
     const VersionNumber parentVersion,
     const contact::ContactSectionName section,
-    const proto::ContactItemType& type,
+    const contact::ContactItemType& type,
     const std::string& value,
     const std::set<contact::ContactItemAttribute>& attributes,
     const std::time_t start,
@@ -221,7 +220,7 @@ ContactItem::ContactItem(
           version,
           parentVersion,
           static_cast<contact::ContactSectionName>(std::get<1>(claim)),
-          static_cast<proto::ContactItemType>(std::get<2>(claim)),
+          static_cast<contact::ContactItemType>(std::get<2>(claim)),
           std::get<3>(claim),
           extract_attributes(claim),
           std::get<4>(claim),
@@ -242,7 +241,7 @@ ContactItem::ContactItem(
           data.version(),
           parentVersion,
           section,
-          data.type(),
+          contact::internal::translate(data.type()),
           data.value(),
           extract_attributes(data),
           data.start(),
@@ -307,7 +306,7 @@ auto ContactItem::Serialize(const bool withID) const -> proto::ContactItem
 
     if (withID) { output.set_id(String::Factory(imp_->id_)->Get()); }
 
-    output.set_type(imp_->type_);
+    output.set_type(contact::internal::translate(imp_->type_));
     output.set_value(imp_->value_);
     output.set_start(imp_->start_);
     output.set_end(imp_->end_);
@@ -410,7 +409,7 @@ auto ContactItem::Subtype() const -> const std::string&
     return imp_->subtype_;
 }
 
-auto ContactItem::Type() const -> const proto::ContactItemType&
+auto ContactItem::Type() const -> const contact::ContactItemType&
 {
     return imp_->type_;
 }

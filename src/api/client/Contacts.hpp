@@ -21,7 +21,6 @@
 #include "opentxs/api/Editor.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -75,7 +74,7 @@ public:
     auto NewContactFromAddress(
         const std::string& address,
         const std::string& label,
-        const proto::ContactItemType currency) const
+        const contact::ContactItemType currency) const
         -> std::shared_ptr<const opentxs::Contact> final;
 #endif  // OT_BLOCKCHAIN
     auto NymToContact(const identifier::Nym& nymID) const -> OTIdentifier final;
@@ -93,7 +92,7 @@ public:
 private:
     using ContactLock =
         std::pair<std::mutex, std::shared_ptr<opentxs::Contact>>;
-    using Address = std::pair<proto::ContactItemType, std::string>;
+    using Address = std::pair<contact::ContactItemType, std::string>;
     using ContactMap = std::map<OTIdentifier, ContactLock>;
     using ContactNameMap = std::map<OTIdentifier, std::string>;
 

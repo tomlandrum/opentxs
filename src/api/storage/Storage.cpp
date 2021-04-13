@@ -29,6 +29,7 @@
 #include "opentxs/api/crypto/Encode.hpp"
 #include "opentxs/api/crypto/Hash.hpp"
 #include "opentxs/api/storage/Multiplex.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Log.hpp"
@@ -38,7 +39,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/protobuf/Contact.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/Context.pb.h"
 #include "opentxs/protobuf/Nym.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
@@ -410,7 +410,7 @@ auto Storage::AccountSigner(const Identifier& accountID) const -> OTNymID
 }
 
 auto Storage::AccountUnit(const Identifier& accountID) const
-    -> proto::ContactItemType
+    -> contact::ContactItemType
 {
     return Root().Tree().Accounts().AccountUnit(accountID);
 }
@@ -439,7 +439,7 @@ auto Storage::AccountsByServer(const identifier::Server& server) const
     return Root().Tree().Accounts().AccountsByServer(server);
 }
 
-auto Storage::AccountsByUnit(const proto::ContactItemType unit) const
+auto Storage::AccountsByUnit(const contact::ContactItemType unit) const
     -> std::set<OTIdentifier>
 {
     return Root().Tree().Accounts().AccountsByUnit(unit);
@@ -447,7 +447,7 @@ auto Storage::AccountsByUnit(const proto::ContactItemType unit) const
 
 auto Storage::Bip47Chain(
     const identifier::Nym& nymID,
-    const Identifier& channelID) const -> proto::ContactItemType
+    const Identifier& channelID) const -> contact::ContactItemType
 {
     const bool exists = Root().Tree().Nyms().Exists(nymID.str());
 
@@ -455,7 +455,7 @@ auto Storage::Bip47Chain(
         LogOutput(OT_METHOD)(__FUNCTION__)(": Nym ")(nymID)(" doesn't exist.")
             .Flush();
 
-        return proto::CITEMTYPE_ERROR;
+        return contact::ContactItemType::Error;
     }
 
     return Root()
@@ -468,7 +468,7 @@ auto Storage::Bip47Chain(
 
 auto Storage::Bip47ChannelsByChain(
     const identifier::Nym& nymID,
-    const proto::ContactItemType chain) const -> Storage::Bip47ChannelList
+    const contact::ContactItemType chain) const -> Storage::Bip47ChannelList
 {
     const bool exists = Root().Tree().Nyms().Exists(nymID.str());
 
@@ -496,14 +496,14 @@ auto Storage::blockchain_thread_item_id(
 
 auto Storage::BlockchainAccountList(
     const std::string& nymID,
-    const proto::ContactItemType type) const -> std::set<std::string>
+    const contact::ContactItemType type) const -> std::set<std::string>
 {
     return Root().Tree().Nyms().Nym(nymID).BlockchainAccountList(type);
 }
 
 auto Storage::BlockchainAccountType(
     const std::string& nymID,
-    const std::string& accountID) const -> proto::ContactItemType
+    const std::string& accountID) const -> contact::ContactItemType
 {
     return Root().Tree().Nyms().Nym(nymID).BlockchainAccountType(accountID);
 }
@@ -1963,7 +1963,7 @@ auto Storage::Store(
     const identifier::Nym& issuerNym,
     const identifier::Server& server,
     const identifier::UnitDefinition& contract,
-    const proto::ContactItemType unit) const -> bool
+    const contact::ContactItemType unit) const -> bool
 {
     return mutable_Root()
         .get()
@@ -1985,7 +1985,7 @@ auto Storage::Store(
 
 auto Storage::Store(
     const std::string& nymID,
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const proto::HDAccount& data) const -> bool
 {
     return mutable_Root()

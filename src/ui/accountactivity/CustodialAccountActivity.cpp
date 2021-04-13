@@ -38,7 +38,6 @@
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentEvent.pb.h"
 #include "opentxs/protobuf/PaymentWorkflow.pb.h"
 #include "ui/base/Widget.hpp"
@@ -589,7 +588,7 @@ auto CustodialAccountActivity::startup() noexcept -> void
     }
 }
 
-auto CustodialAccountActivity::Unit() const noexcept -> proto::ContactItemType
+auto CustodialAccountActivity::Unit() const noexcept -> contact::ContactItemType
 {
     sLock lock(shared_lock_);
 

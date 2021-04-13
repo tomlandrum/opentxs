@@ -42,7 +42,6 @@
 #include "opentxs/network/zeromq/socket/Pull.hpp"
 #include "opentxs/network/zeromq/socket/Subscribe.hpp"
 #include "opentxs/otx/LastReplyStatus.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "otx/client/StateMachine.hpp"
 
 namespace opentxs
@@ -206,7 +205,7 @@ public:
         const identifier::Nym& localNymID,
         const identifier::Server& serverID,
         const identifier::UnitDefinition& unitID,
-        const proto::ContactItemType advertise,
+        const contact::ContactItemType advertise,
         const std::string& label) const -> BackgroundTask final;
     auto MessageContact(
         const identifier::Nym& senderNymID,

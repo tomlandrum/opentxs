@@ -23,7 +23,6 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 #include "opentxs/ui/AccountActivity.hpp"
 #include "opentxs/util/WorkType.hpp"
@@ -85,7 +84,7 @@ public:
     auto Name() const noexcept -> std::string final;
     auto NotaryID() const noexcept -> std::string final;
     auto NotaryName() const noexcept -> std::string final;
-    auto Unit() const noexcept -> proto::ContactItemType final;
+    auto Unit() const noexcept -> contact::ContactItemType final;
 
     CustodialAccountActivity(
         const api::client::internal::Manager& api,

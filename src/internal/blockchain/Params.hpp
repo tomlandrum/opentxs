@@ -30,7 +30,6 @@
 #include "opentxs/blockchain/p2p/Types.hpp"
 #include "opentxs/crypto/Bip44Type.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs::blockchain::params
 {
@@ -58,7 +57,7 @@ struct Data {
 
     bool supported_{};
     bool testnet_{};
-    proto::ContactItemType proto_{};
+    contact::ContactItemType itemtype_{};
     Bip44Type bip44_{};
     std::string display_string_{};
     std::string display_ticker_{};

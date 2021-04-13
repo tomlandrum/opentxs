@@ -58,7 +58,6 @@
 #include "opentxs/protobuf/BailmentReply.pb.h"  // IWYU pragma: keep
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/ConnectionInfoReply.pb.h"  // IWYU pragma: keep
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PairEvent.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
@@ -88,7 +87,7 @@ class Manager;
 #define UNIT_DEFINITION_TLA "USD"
 #define UNIT_DEFINITION_POWER 2
 #define UNIT_DEFINITION_FRACTIONAL_UNIT_NAME "cents"
-#define UNIT_DEFINITION_UNIT_OF_ACCOUNT ot::proto::CITEMTYPE_USD
+#define UNIT_DEFINITION_UNIT_OF_ACCOUNT ot::contact::ContactItemType::USD
 
 namespace
 {
@@ -224,7 +223,7 @@ TEST_F(Test_Pair, init_ui)
     account_summary_.expected_ = 0;
     api_chris_.UI().AccountSummary(
         chris_.nym_id_,
-        ot::proto::CITEMTYPE_USD,
+        ot::contact::ContactItemType::USD,
         make_cb(account_summary_, "account summary USD"));
 }
 
@@ -233,7 +232,7 @@ TEST_F(Test_Pair, initial_state)
     ASSERT_TRUE(wait_for_counter(account_summary_));
 
     const auto& widget = chris_.api_->UI().AccountSummary(
-        chris_.nym_id_, ot::proto::CITEMTYPE_USD);
+        chris_.nym_id_, ot::contact::ContactItemType::USD);
     auto row = widget.First();
 
     EXPECT_FALSE(row->Valid());
@@ -270,7 +269,10 @@ TEST_F(Test_Pair, issue_dollars)
     }
 
     auto task = api_issuer_.OTX().IssueUnitDefinition(
-        issuer_.nym_id_, server_1_.id_, unit_id_, ot::proto::CITEMTYPE_USD);
+        issuer_.nym_id_,
+        server_1_.id_,
+        unit_id_,
+        ot::contact::ContactItemType::USD);
     auto& [taskID, future] = task;
     const auto result = future.get();
 
@@ -297,7 +299,7 @@ TEST_F(Test_Pair, issue_dollars)
         ASSERT_TRUE(pSection);
 
         const auto& section = *pSection;
-        const auto pGroup = section.Group(ot::proto::CITEMTYPE_USD);
+        const auto pGroup = section.Group(ot::contact::ContactItemType::USD);
 
         ASSERT_TRUE(pGroup);
 
@@ -332,7 +334,9 @@ TEST_F(Test_Pair, pair_untrusted)
         const auto& issuer = *pIssuer;
 
         EXPECT_EQ(
-            1, issuer.AccountList(ot::proto::CITEMTYPE_USD, unit_id_).size());
+            1,
+            issuer.AccountList(ot::contact::ContactItemType::USD, unit_id_)
+                .size());
         EXPECT_FALSE(issuer.BailmentInitiated(unit_id_));
         EXPECT_EQ(3, issuer.BailmentInstructions(unit_id_).size());
         EXPECT_EQ(
@@ -394,7 +398,7 @@ TEST_F(Test_Pair, pair_untrusted_state)
     ASSERT_TRUE(wait_for_counter(account_summary_));
 
     const auto& widget = chris_.api_->UI().AccountSummary(
-        chris_.nym_id_, ot::proto::CITEMTYPE_USD);
+        chris_.nym_id_, ot::contact::ContactItemType::USD);
     auto row = widget.First();
 
     ASSERT_TRUE(row->Valid());
@@ -436,7 +440,9 @@ TEST_F(Test_Pair, pair_trusted)
         const auto& issuer = *pIssuer;
 
         EXPECT_EQ(
-            1, issuer.AccountList(ot::proto::CITEMTYPE_USD, unit_id_).size());
+            1,
+            issuer.AccountList(ot::contact::ContactItemType::USD, unit_id_)
+                .size());
         EXPECT_FALSE(issuer.BailmentInitiated(unit_id_));
         EXPECT_EQ(3, issuer.BailmentInstructions(unit_id_).size());
         EXPECT_EQ(
@@ -502,7 +508,7 @@ TEST_F(Test_Pair, pair_trusted_state)
     ASSERT_TRUE(wait_for_counter(account_summary_));
 
     const auto& widget = chris_.api_->UI().AccountSummary(
-        chris_.nym_id_, ot::proto::CITEMTYPE_USD);
+        chris_.nym_id_, ot::contact::ContactItemType::USD);
     auto row = widget.First();
 
     ASSERT_TRUE(row->Valid());

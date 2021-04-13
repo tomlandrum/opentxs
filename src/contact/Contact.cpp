@@ -39,7 +39,6 @@
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Contact.pb.h"
 #include "opentxs/protobuf/ContactData.pb.h"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/ContactItem.pb.h"
 #include "opentxs/protobuf/verify/ContactItem.hpp"
 #include "opentxs/protobuf/verify/VerifyContacts.hpp"
@@ -130,7 +129,7 @@ struct Contact::Imp {
 
     static auto translate(
         const api::client::internal::Manager& api,
-        const proto::ContactItemType chain,
+        const contact::ContactItemType chain,
         const std::string& value,
         const std::string& subtype) noexcept(false)
         -> Contact::BlockchainAddress
@@ -253,8 +252,9 @@ struct Contact::Imp {
 
         const auto contactType = type(lock);
         const auto nymType = ExtractType(*nym);
-        const bool haveType = (proto::CITEMTYPE_ERROR != contactType) &&
-                              (proto::CITEMTYPE_UNKNOWN != contactType);
+        const bool haveType =
+            (contact::ContactItemType::Error != contactType) &&
+            (contact::ContactItemType::Unknown != contactType);
         const bool typeMismatch = (contactType != nymType);
 
         if (haveType && typeMismatch) {
@@ -295,7 +295,7 @@ struct Contact::Imp {
             CONTACT_CONTACT_DATA_VERSION,
             CONTACT_CONTACT_DATA_VERSION,
             contact::ContactSectionName::Relationship,
-            proto::CITEMTYPE_CONTACT,
+            contact::ContactItemType::Contact,
             String::Factory(nymID)->Get(),
             attr,
             NULL_START,
@@ -326,7 +326,7 @@ struct Contact::Imp {
 
         const auto nyms = contact_data_->Group(
             contact::ContactSectionName::Relationship,
-            proto::CITEMTYPE_CONTACT);
+            contact::ContactItemType::Contact);
 
         if (false == bool(nyms)) { return; }
 
@@ -387,8 +387,10 @@ struct Contact::Imp {
         return output;
     }
 
-    auto payment_codes(const Lock& lock, const proto::ContactItemType currency)
-        const -> std::shared_ptr<ContactGroup>
+    auto payment_codes(
+        const Lock& lock,
+        const contact::ContactItemType currency) const
+        -> std::shared_ptr<ContactGroup>
     {
         const auto data = merged_data(lock);
 
@@ -397,13 +399,13 @@ struct Contact::Imp {
         return data->Group(contact::ContactSectionName::Procedure, currency);
     }
 
-    auto type(const Lock& lock) const -> proto::ContactItemType
+    auto type(const Lock& lock) const -> contact::ContactItemType
     {
         OT_ASSERT(verify_write_lock(lock));
 
         const auto data = merged_data(lock);
 
-        if (false == bool(data)) { return proto::CITEMTYPE_ERROR; }
+        if (false == bool(data)) { return contact::ContactItemType::Error; }
 
         return data->Type();
     }
@@ -525,7 +527,7 @@ auto Contact::operator+=(Contact& rhs) -> Contact&
 
 auto Contact::AddBlockchainAddress(
     const std::string& address,
-    const proto::ContactItemType currency) -> bool
+    const contact::ContactItemType currency) -> bool
 {
     const auto& api = imp_->api_;
     auto [bytes, style, chains, supported] =
@@ -624,7 +626,7 @@ auto Contact::AddNym(const identifier::Nym& nymID, const bool primary) -> bool
 auto Contact::AddPaymentCode(
     const opentxs::PaymentCode& code,
     const bool primary,
-    const proto::ContactItemType currency,
+    const contact::ContactItemType currency,
     const bool active) -> bool
 {
     std::set<contact::ContactItemAttribute> attr{
@@ -680,7 +682,7 @@ auto Contact::AddPhoneNumber(
 
 auto Contact::AddSocialMediaProfile(
     const std::string& value,
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     const bool primary,
     const bool active) -> bool
 {
@@ -739,7 +741,7 @@ auto Contact::BestPhoneNumber() const -> std::string
     return data->BestPhoneNumber();
 }
 
-auto Contact::BestSocialMediaProfile(const proto::ContactItemType type) const
+auto Contact::BestSocialMediaProfile(const contact::ContactItemType type) const
     -> std::string
 {
     Lock lock(imp_->lock_);
@@ -776,7 +778,7 @@ auto Contact::BlockchainAddresses() const
             {version,
              contact::internal::translate(
                  contact::ContactSectionName::Contract)},
-            type);
+            contact::internal::translate(type));
 
         if (false == currency) { continue; }
 
@@ -820,7 +822,7 @@ auto Contact::ExtractLabel(const identity::Nym& nym) -> std::string
     return nym.Claims().Name();
 }
 
-auto Contact::ExtractType(const identity::Nym& nym) -> proto::ContactItemType
+auto Contact::ExtractType(const identity::Nym& nym) -> contact::ContactItemType
 {
     return nym.Claims().Type();
 }
@@ -834,7 +836,8 @@ auto Contact::LastUpdated() const -> std::time_t
     OT_ASSERT(imp_->contact_data_);
 
     const auto group = imp_->contact_data_->Group(
-        contact::ContactSectionName::Event, proto::CITEMTYPE_REFRESHED);
+        contact::ContactSectionName::Event,
+        contact::ContactItemType::Refreshed);
 
     if (false == bool(group)) { return {}; }
 
@@ -875,7 +878,8 @@ auto opentxs::Contact::Nyms(const bool includeInactive) const
     if (false == bool(data)) { return {}; }
 
     const auto group = data->Group(
-        contact::ContactSectionName::Relationship, proto::CITEMTYPE_CONTACT);
+        contact::ContactSectionName::Relationship,
+        contact::ContactItemType::Contact);
 
     if (false == bool(group)) { return {}; }
 
@@ -905,7 +909,7 @@ auto opentxs::Contact::Nyms(const bool includeInactive) const
 
 auto Contact::PaymentCode(
     const ContactData& data,
-    const proto::ContactItemType currency) -> std::string
+    const contact::ContactItemType currency) -> std::string
 {
     auto group = data.Group(contact::ContactSectionName::Procedure, currency);
 
@@ -918,7 +922,7 @@ auto Contact::PaymentCode(
     return item->Value();
 }
 
-auto Contact::PaymentCode(const proto::ContactItemType currency) const
+auto Contact::PaymentCode(const contact::ContactItemType currency) const
     -> std::string
 {
     Lock lock(imp_->lock_);
@@ -930,7 +934,7 @@ auto Contact::PaymentCode(const proto::ContactItemType currency) const
     return PaymentCode(*data, currency);
 }
 
-auto Contact::PaymentCodes(const proto::ContactItemType currency) const
+auto Contact::PaymentCodes(const contact::ContactItemType currency) const
     -> std::vector<std::string>
 {
     Lock lock(imp_->lock_);
@@ -1030,7 +1034,7 @@ void Contact::SetLabel(const std::string& label)
 }
 
 auto Contact::SocialMediaProfiles(
-    const proto::ContactItemType type,
+    const contact::ContactItemType type,
     bool active) const -> std::string
 {
     Lock lock(imp_->lock_);
@@ -1043,7 +1047,7 @@ auto Contact::SocialMediaProfiles(
 }
 
 auto Contact::SocialMediaProfileTypes() const
-    -> const std::set<proto::ContactItemType>
+    -> const std::set<contact::ContactItemType>
 {
     Lock lock(imp_->lock_);
     const auto data = imp_->merged_data(lock);
@@ -1052,7 +1056,7 @@ auto Contact::SocialMediaProfileTypes() const
     return data->SocialMediaProfileTypes();
 }
 
-auto Contact::Type() const -> proto::ContactItemType
+auto Contact::Type() const -> contact::ContactItemType
 {
     Lock lock(imp_->lock_);
 
@@ -1086,7 +1090,7 @@ void Contact::Update(const proto::Nym& serialized)
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
         contact::ContactSectionName::Event,
-        proto::CITEMTYPE_REFRESHED,
+        contact::ContactItemType::Refreshed,
         std::to_string(std::time(nullptr)),
         {contact::ContactItemAttribute::Primary,
          contact::ContactItemAttribute::Active,

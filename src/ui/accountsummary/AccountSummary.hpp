@@ -24,7 +24,6 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "ui/base/List.hpp"
 #include "ui/base/Widget.hpp"
 
@@ -70,7 +69,7 @@ using AccountSummaryList = List<
 class AccountSummary final : public AccountSummaryList
 {
 public:
-    auto Currency() const noexcept -> proto::ContactItemType final
+    auto Currency() const noexcept -> contact::ContactItemType final
     {
         return currency_;
     }
@@ -88,14 +87,14 @@ public:
     AccountSummary(
         const api::client::internal::Manager& api,
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback& cb) noexcept;
 
     ~AccountSummary() final;
 
 private:
     const ListenerDefinitions listeners_;
-    const proto::ContactItemType currency_;
+    const contact::ContactItemType currency_;
     std::set<OTNymID> issuers_;
     std::map<OTServerID, OTNymID> server_issuer_map_;
     std::map<OTNymID, OTServerID> nym_server_map_;

@@ -15,7 +15,6 @@
 #include "internal/core/contract/Contract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/EquityParams.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
@@ -32,7 +31,7 @@ auto Factory::SecurityContract(
     const std::string& name,
     const std::string& symbol,
     const std::string& terms,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version,
     const opentxs::PasswordPrompt& reason) noexcept
     -> std::shared_ptr<contract::unit::Security>
@@ -91,7 +90,7 @@ Security::Security(
     const std::string& name,
     const std::string& symbol,
     const std::string& terms,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version)
     : Unit(api, nym, shortname, name, symbol, terms, unitOfAccount, version)
 {

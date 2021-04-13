@@ -30,7 +30,7 @@
     {
         return $self->AddClaim(
             static_cast<opentxs::contact::ContactSectionName>(section),
-            static_cast<opentxs::proto::ContactItemType>(type),
+            static_cast<opentxs::contact::ContactItemType>(type),
             value,
             primary,
             active);
@@ -47,7 +47,7 @@
             types.begin(),
             types.end(),
             std::inserter(output, output.end()),
-            [](std::pair<opentxs::proto::ContactItemType, std::string> type) ->
+            [](std::pair<opentxs::contact::ContactItemType, std::string> type) ->
                 std::pair<int, std::string> {
                     return {static_cast<int>(type.first), type.second};} );
 
@@ -92,14 +92,14 @@ namespace ui
 class Profile : virtual public List
 {
 public:
-    using ItemType = std::pair<proto::ContactItemType, std::string>;
+    using ItemType = std::pair<contact::ContactItemType, std::string>;
     using ItemTypeList = std::vector<ItemType>;
     using SectionType = std::pair<contact::ContactSectionName, std::string>;
     using SectionTypeList = std::vector<SectionType>;
 
     OPENTXS_EXPORT virtual bool AddClaim(
         const contact::ContactSectionName section,
-        const proto::ContactItemType type,
+        const contact::ContactItemType type,
         const std::string& value,
         const bool primary,
         const bool active) const noexcept = 0;

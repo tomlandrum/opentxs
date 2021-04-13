@@ -46,7 +46,7 @@ class ContactSection
 {
 public:
     using GroupMap =
-        std::map<proto::ContactItemType, std::shared_ptr<ContactGroup>>;
+        std::map<contact::ContactItemType, std::shared_ptr<ContactGroup>>;
 
     OPENTXS_EXPORT ContactSection(
         const api::internal::Core& api,
@@ -80,7 +80,7 @@ public:
     OPENTXS_EXPORT ContactSection Delete(const Identifier& id) const;
     OPENTXS_EXPORT GroupMap::const_iterator end() const;
     OPENTXS_EXPORT std::shared_ptr<ContactGroup> Group(
-        const proto::ContactItemType& type) const;
+        const contact::ContactItemType& type) const;
     OPENTXS_EXPORT bool HaveClaim(const Identifier& item) const;
     OPENTXS_EXPORT bool SerializeTo(
         proto::ContactData& data,

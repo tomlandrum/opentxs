@@ -19,7 +19,6 @@
 #include "opentxs/api/Editor.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/StorageContacts.pb.h"
 #include "storage/tree/Node.hpp"
 
@@ -68,7 +67,7 @@ public:
 private:
     friend Tree;
     using ot_super = Node;
-    using Address = std::pair<proto::ContactItemType, std::string>;
+    using Address = std::pair<contact::ContactItemType, std::string>;
 
     static const VersionNumber CurrentVersion{2};
     static const VersionNumber MergeIndexVersion{1};

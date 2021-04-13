@@ -47,7 +47,7 @@ public:
         const VersionNumber version,
         const VersionNumber parentVersion,
         const contact::ContactSectionName section,
-        const proto::ContactItemType& type,
+        const contact::ContactItemType& type,
         const std::string& value,
         const std::set<contact::ContactItemAttribute>& attributes,
         const std::time_t start,
@@ -89,7 +89,7 @@ public:
     OPENTXS_EXPORT ContactItem SetValue(const std::string& value) const;
     OPENTXS_EXPORT const std::time_t& Start() const;
     OPENTXS_EXPORT const std::string& Subtype() const;
-    OPENTXS_EXPORT const proto::ContactItemType& Type() const;
+    OPENTXS_EXPORT const contact::ContactItemType& Type() const;
     OPENTXS_EXPORT const std::string& Value() const;
     OPENTXS_EXPORT VersionNumber Version() const;
 

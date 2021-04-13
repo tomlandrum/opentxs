@@ -365,7 +365,7 @@ auto StateMachine::check_server_name(const otx::context::Server& context) const
         DO_OPERATION(
             AddClaim,
             contact::ContactSectionName::Scope,
-            proto::CITEMTYPE_SERVER,
+            contact::ContactItemType::Server,
             String::Factory(myName),
             true);
 
@@ -663,7 +663,7 @@ auto StateMachine::issue_unit_definition(
 
         DO_OPERATION(IssueUnitDefinition, serialized, args);
 
-        if (success && (proto::CITEMTYPE_ERROR != advertise)) {
+        if (success && (contact::ContactItemType::Error != advertise)) {
             OT_ASSERT(result.second);
 
             const auto& reply = *result.second;

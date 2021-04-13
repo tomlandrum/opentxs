@@ -68,7 +68,7 @@ auto ProfileItem::as_claim() const noexcept -> Claim
     auto& [id, section, type, value, start, end, attributes] = output;
     id = "";
     section = contact::internal::translate(parent_.Section());
-    type = parent_.Type();
+    type = contact::internal::translate(parent_.Type());
     value = item_->Value();
     start = item_->Start();
     end = item_->End();

@@ -21,7 +21,6 @@
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "ui/base/Combined.hpp"
 #include "ui/base/List.hpp"
 #include "ui/base/RowType.hpp"
@@ -81,7 +80,7 @@ class ContactSubsection final : public Combined<
 {
 public:
     auto Name(const std::string& lang) const noexcept -> std::string final;
-    auto Type() const noexcept -> proto::ContactItemType final
+    auto Type() const noexcept -> contact::ContactItemType final
     {
         return row_id_.second;
     }

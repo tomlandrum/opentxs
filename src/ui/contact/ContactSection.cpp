@@ -20,7 +20,6 @@
 #include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "ui/base/Combined.hpp"
 #include "ui/base/Widget.hpp"
 
@@ -148,7 +147,8 @@ ContactSection::ContactSection(
 auto ContactSection::check_type(const ContactSectionRowID type) noexcept -> bool
 {
     try {
-        return 1 == allowed_types_.at(type.first).count(type.second);
+        return 1 == allowed_types_.at(type.first)
+                        .count(contact::internal::translate(type.second));
     } catch (const std::out_of_range&) {
     }
 
@@ -198,7 +198,8 @@ auto ContactSection::reindex(
 
 auto ContactSection::sort_key(const ContactSectionRowID type) noexcept -> int
 {
-    return sort_keys_.at(type.first).at(type.second);
+    return sort_keys_.at(type.first)
+        .at(contact::internal::translate(type.second));
 }
 
 void ContactSection::startup(const opentxs::ContactSection section) noexcept

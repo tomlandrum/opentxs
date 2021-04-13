@@ -13,16 +13,17 @@
 #include <type_traits>
 #include <utility>
 
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/storage/Driver.hpp"
+#include "opentxs/contact/Contact.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/protobuf/Bip47Channel.pb.h"
 #include "opentxs/protobuf/BlockchainAccountData.pb.h"
 #include "opentxs/protobuf/BlockchainDeterministicAccountData.pb.h"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/StorageBip47ChannelList.pb.h"
 #include "opentxs/protobuf/StorageBip47Contexts.pb.h"
 #include "opentxs/protobuf/StorageItemHash.pb.h"
@@ -55,14 +56,14 @@ Bip47Channels::Bip47Channels(
 }
 
 auto Bip47Channels::Chain(const Identifier& channelID) const
-    -> proto::ContactItemType
+    -> contact::ContactItemType
 {
     sLock lock(index_lock_);
 
     return get_channel_data(lock, channelID);
 }
 
-auto Bip47Channels::ChannelsByChain(const proto::ContactItemType chain) const
+auto Bip47Channels::ChannelsByChain(const contact::ContactItemType chain) const
     -> Bip47Channels::ChannelList
 {
     return extract_set(chain, chain_map_);
@@ -103,7 +104,7 @@ auto Bip47Channels::_get_channel_data(
     try {
         return channel_data_.at(id);
     } catch (const std::out_of_range&) {
-        auto blank = ChannelData{proto::CITEMTYPE_ERROR};
+        auto blank = ChannelData{contact::ContactItemType::Error};
 
         return channel_data_.insert({std::move(id), std::move(blank)})
             .first->second;
@@ -134,7 +135,7 @@ void Bip47Channels::init(const std::string& hash)
     for (const auto& index : serialized->index()) {
         auto id = Identifier::Factory(index.channelid());
         auto& chain = get_channel_data(lock, id.get());
-        chain = index.chain();
+        chain = contact::internal::translate(index.chain());
         chain_map_[chain].emplace(id);
     }
 }
@@ -185,7 +186,7 @@ auto Bip47Channels::serialize() const -> proto::StorageBip47Contexts
         const auto& chain = data;
         auto& index = *serialized.add_index();
         index.set_version(CHANNEL_INDEX_VERSION);
-        index.set_chain(chain);
+        index.set_chain(contact::internal::translate(chain));
         const auto valid = proto::Validate(index, SILENT);
 
         // Invalid entries may appear due to queries for properties of
@@ -204,7 +205,7 @@ auto Bip47Channels::Store(const Identifier& id, const proto::Bip47Channel& data)
     {
         eLock lock(index_lock_);
         auto& chain = get_channel_data(lock, id);
-        chain = common.chain();
+        chain = contact::internal::translate(common.chain());
     }
 
     return store_proto(data, id.str(), "");

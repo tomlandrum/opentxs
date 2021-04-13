@@ -40,7 +40,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/PaymentWorkflowEnums.pb.h"
 
 namespace opentxs
@@ -149,8 +148,10 @@ class UniqueQueue;
 
 namespace opentxs
 {
-auto Translate(const blockchain::Type type) noexcept -> proto::ContactItemType;
-auto Translate(const proto::ContactItemType type) noexcept -> blockchain::Type;
+auto Translate(const blockchain::Type type) noexcept
+    -> contact::ContactItemType;
+auto Translate(const contact::ContactItemType type) noexcept
+    -> blockchain::Type;
 }  // namespace opentxs
 
 namespace opentxs::api::client::internal

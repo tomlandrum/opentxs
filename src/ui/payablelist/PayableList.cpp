@@ -27,7 +27,6 @@
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #if OT_QT
 #include "opentxs/ui/qt/PayableList.hpp"
 #endif  // OT_QT
@@ -47,7 +46,7 @@ namespace opentxs::factory
 auto PayableListModel(
     const api::client::internal::Manager& api,
     const identifier::Nym& nymID,
-    const proto::ContactItemType& currency,
+    const contact::ContactItemType& currency,
     const SimpleCallback& cb) noexcept
     -> std::unique_ptr<ui::implementation::PayableList>
 {
@@ -72,7 +71,7 @@ namespace opentxs::ui::implementation
 PayableList::PayableList(
     const api::client::internal::Manager& api,
     const identifier::Nym& nymID,
-    const proto::ContactItemType& currency,
+    const contact::ContactItemType& currency,
     const SimpleCallback& cb) noexcept
     : PayableListList(
           api,

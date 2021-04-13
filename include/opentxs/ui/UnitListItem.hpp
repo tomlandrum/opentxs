@@ -45,7 +45,7 @@ class UnitListItem : virtual public ListRow
 {
 public:
     OPENTXS_EXPORT virtual std::string Name() const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::ContactItemType Unit() const noexcept = 0;
+    OPENTXS_EXPORT virtual contact::ContactItemType Unit() const noexcept = 0;
 
     ~UnitListItem() override = default;
 

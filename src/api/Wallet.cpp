@@ -18,6 +18,7 @@
 #include "Exclusive.tpp"
 #include "internal/api/Api.hpp"
 #include "internal/api/client/Factory.hpp"
+#include "internal/contact/Contact.hpp"
 #include "internal/core/Core.hpp"
 #include "internal/identity/Identity.hpp"
 #include "internal/otx/OTX.hpp"
@@ -698,13 +699,13 @@ auto Wallet::UpdateAccount(
 
 auto Wallet::CurrencyTypeBasedOnUnitType(
     const identifier::UnitDefinition& contractID) const
-    -> proto::ContactItemType
+    -> contact::ContactItemType
 {
     return extract_unit(contractID);
 }
 
 auto Wallet::extract_unit(const identifier::UnitDefinition& contractID) const
-    -> proto::ContactItemType
+    -> contact::ContactItemType
 {
     try {
         const auto contract = UnitDefinition(contractID);
@@ -715,22 +716,23 @@ auto Wallet::extract_unit(const identifier::UnitDefinition& contractID) const
             ": Unable to load unit definition contract ")(contractID)(".")
             .Flush();
 
-        return proto::CITEMTYPE_UNKNOWN;
+        return contact::ContactItemType::Unknown;
     }
 }
 
 auto Wallet::extract_unit(const contract::Unit& contract) const
-    -> proto::ContactItemType
+    -> contact::ContactItemType
 {
     try {
         if (contract.Version() < 2) {
-            return unit_of_account_.at(contract.TLA());
+            return contact::internal::translate(
+                unit_of_account_.at(contract.TLA()));
         }
 
         return contract.UnitOfAccount();
     } catch (...) {
 
-        return proto::CITEMTYPE_UNKNOWN;
+        return contact::ContactItemType::Unknown;
     }
 }
 
@@ -1163,7 +1165,7 @@ auto Wallet::Nym(
     const PasswordPrompt& reason,
     const std::string name,
     const NymParameters& parameters,
-    const proto::ContactItemType type) const -> Nym_p
+    const contact::ContactItemType type) const -> Nym_p
 {
     std::shared_ptr<identity::internal::Nym> pNym(
         opentxs::Factory::Nym(api_, parameters, type, name, reason));
@@ -2622,7 +2624,7 @@ auto Wallet::UnitDefinition(
     const std::string& tla,
     const std::uint32_t power,
     const std::string& fraction,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const PasswordPrompt& reason,
     const VersionNumber version) const -> OTUnitDefinition
 {
@@ -2666,7 +2668,7 @@ auto Wallet::UnitDefinition(
     const std::string& name,
     const std::string& symbol,
     const std::string& terms,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const PasswordPrompt& reason,
     const VersionNumber version) const -> OTUnitDefinition
 {

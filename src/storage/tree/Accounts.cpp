@@ -10,12 +10,13 @@
 #include <memory>
 #include <utility>
 
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/storage/Driver.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/StorageAccountIndex.pb.h"
 #include "opentxs/protobuf/StorageAccounts.pb.h"
 #include "opentxs/protobuf/StorageEnums.pb.h"
@@ -131,7 +132,8 @@ auto Accounts::AccountSigner(const Identifier& id) const -> OTNymID
     EXTRACT_FIELD(1);
 }
 
-auto Accounts::AccountUnit(const Identifier& id) const -> proto::ContactItemType
+auto Accounts::AccountUnit(const Identifier& id) const
+    -> contact::ContactItemType
 {
     EXTRACT_FIELD(5);
 }
@@ -160,7 +162,7 @@ auto Accounts::AccountsByServer(const identifier::Server& server) const
     EXTRACT_SET_BY_ID(server_index_, server);
 }
 
-auto Accounts::AccountsByUnit(const proto::ContactItemType unit) const
+auto Accounts::AccountsByUnit(const contact::ContactItemType unit) const
     -> std::set<OTIdentifier>
 {
     EXTRACT_SET_BY_VALUE(unit_index_, unit);
@@ -205,7 +207,7 @@ auto Accounts::check_update_account(
     const identifier::Nym& issuerNym,
     const identifier::Server& server,
     const identifier::UnitDefinition& contract,
-    const proto::ContactItemType unit) -> bool
+    const contact::ContactItemType unit) -> bool
 {
     if (accountID->empty()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid account ID.").Flush();
@@ -272,7 +274,7 @@ auto Accounts::check_update_account(
         return false;
     }
 
-    if (proto::CITEMTYPE_UNKNOWN != unit) {
+    if (contact::ContactItemType::Unknown != unit) {
         mapUnit = unit;
         unit_index_[unit].emplace(accountID);
     }
@@ -315,7 +317,7 @@ auto Accounts::get_account_data(const Lock& lock, const OTIdentifier& accountID)
             identifier::Nym::Factory(),
             identifier::Server::Factory(),
             identifier::UnitDefinition::Factory(),
-            proto::CITEMTYPE_UNKNOWN};
+            contact::ContactItemType::Unknown};
         auto [output, added] =
             account_data_.emplace(accountID, std::move(blank));
 
@@ -356,13 +358,14 @@ void Accounts::init(const std::string& hash)
 
     for (const auto& it : serialized->index()) {
         const auto unit = it.type();
-        auto& map = unit_index_[unit];
+        auto& map = unit_index_[contact::internal::translate(unit)];
 
         for (const auto& account : it.account()) {
             const auto accountID = Identifier::Factory(account);
 
             map.emplace(accountID);
-            std::get<5>(get_account_data(lock, accountID)) = unit;
+            std::get<5>(get_account_data(lock, accountID)) =
+                contact::internal::translate(unit);
         }
     }
 }
@@ -419,7 +422,7 @@ auto Accounts::serialize() const -> proto::StorageAccounts
     for (const auto& [type, accounts] : unit_index_) {
         auto& listProto = *serialized.add_index();
         listProto.set_version(INDEX_VERSION);
-        listProto.set_type(type);
+        listProto.set_type(contact::internal::translate(type));
 
         for (const auto& accountID : accounts) {
             if (accountID->empty()) { continue; }
@@ -449,7 +452,7 @@ auto Accounts::Store(
     const identifier::Nym& issuer,
     const identifier::Server& server,
     const identifier::UnitDefinition& contract,
-    const proto::ContactItemType unit) -> bool
+    const contact::ContactItemType unit) -> bool
 {
     Lock lock(write_lock_);
     const auto account = Identifier::Factory(id);

@@ -279,15 +279,24 @@ auto Unit::ParseFormatted(
 }
 
 auto Unit::ValidUnits(const VersionNumber version) noexcept
-    -> std::set<proto::ContactItemType>
+    -> std::set<contact::ContactItemType>
 {
     try {
-
-        return proto::AllowedItemTypes().at(
+        auto validunits = proto::AllowedItemTypes().at(
             {implementation::Unit::unit_of_account_version_map_.at(version),
              contact::internal::translate(
                  contact::ContactSectionName::Contract)});
 
+        std::set<contact::ContactItemType> output;
+        std::transform(
+            validunits.begin(),
+            validunits.end(),
+            std::inserter(output, output.end()),
+            [](proto::ContactItemType itemtype) -> contact::ContactItemType {
+                return contact::internal::translate(itemtype);
+            });
+
+        return output;
     } catch (...) {
 
         return {};
@@ -307,7 +316,7 @@ Unit::Unit(
     const std::string& name,
     const std::string& symbol,
     const std::string& terms,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version)
     : Signable(
           api,
@@ -340,7 +349,7 @@ Unit::Unit(
                     serialized.signature())}
               : Signatures{})
     , primary_unit_symbol_(serialized.symbol())
-    , unit_of_account_(serialized.unitofaccount())
+    , unit_of_account_(contact::internal::translate(serialized.unitofaccount()))
     , primary_unit_name_(serialized.name())
     , short_name_(serialized.shortname())
 {
@@ -733,7 +742,10 @@ auto Unit::IDVersion(const Lock& lock) const -> SerializedType
     contract.set_symbol(primary_unit_symbol_);
     contract.set_type(contract::internal::translate(Type()));
 
-    if (version_ > 1) { contract.set_unitofaccount(unit_of_account_); }
+    if (version_ > 1) {
+        contract.set_unitofaccount(
+            contact::internal::translate(unit_of_account_));
+    }
 
     return contract;
 }

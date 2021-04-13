@@ -16,7 +16,6 @@
 #include "opentxs/core/contract/UnitType.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/protobuf/CurrencyParams.pb.h"
 #include "opentxs/protobuf/Signature.pb.h"
 #include "opentxs/protobuf/UnitDefinition.pb.h"
@@ -36,7 +35,7 @@ auto Factory::CurrencyContract(
     const std::string& tla,
     const std::uint32_t power,
     const std::string& fraction,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version,
     const opentxs::PasswordPrompt& reason) noexcept
     -> std::shared_ptr<contract::unit::Currency>
@@ -108,7 +107,7 @@ Currency::Currency(
     const std::string& tla,
     const std::uint32_t power,
     const std::string& fraction,
-    const proto::ContactItemType unitOfAccount,
+    const contact::ContactItemType unitOfAccount,
     const VersionNumber version)
     : Unit(api, nym, shortname, name, symbol, terms, unitOfAccount, version)
     , tla_(tla)

@@ -33,7 +33,6 @@
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 #include "opentxs/ui/AccountActivity.hpp"
 #include "opentxs/ui/AccountList.hpp"
 #include "opentxs/ui/AccountSummary.hpp"
@@ -131,7 +130,7 @@ public:
         const noexcept -> const ui::AccountList& final;
     auto AccountSummary(
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback cb) const noexcept
         -> const ui::AccountSummary& final;
     auto ActivateUICallback(const Identifier& widget) const noexcept
@@ -172,7 +171,7 @@ public:
         const noexcept -> const ui::MessagableList& final;
     auto PayableList(
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback cb) const noexcept -> const ui::PayableList& final;
     auto Profile(const identifier::Nym& nymID, const SimpleCallback cb)
         const noexcept -> const ui::Profile& final;
@@ -193,7 +192,7 @@ public:
         const noexcept -> ui::AccountListQt* final;
     auto AccountSummaryQt(
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback cb) const noexcept -> ui::AccountSummaryQt* final;
     auto ActivitySummaryQt(
         const identifier::Nym& nymID,
@@ -221,7 +220,7 @@ public:
         const noexcept -> ui::MessagableListQt* final;
     auto PayableListQt(
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback cb) const noexcept -> ui::PayableListQt* final;
     auto ProfileQt(const identifier::Nym& nymID, const SimpleCallback cb)
         const noexcept -> ui::ProfileQt* final;
@@ -250,14 +249,14 @@ private:
     using AccountActivityKey = std::pair<OTNymID, OTIdentifier>;
     using AccountListKey = OTNymID;
     /** NymID, currency*/
-    using AccountSummaryKey = std::pair<OTNymID, proto::ContactItemType>;
+    using AccountSummaryKey = std::pair<OTNymID, contact::ContactItemType>;
     using ActivitySummaryKey = OTNymID;
     using ActivityThreadKey = std::pair<OTNymID, OTIdentifier>;
     using ContactKey = OTIdentifier;
     using ContactListKey = OTNymID;
     using MessagableListKey = OTNymID;
     /** NymID, currency*/
-    using PayableListKey = std::pair<OTNymID, proto::ContactItemType>;
+    using PayableListKey = std::pair<OTNymID, contact::ContactItemType>;
     using ProfileKey = OTNymID;
     using UnitListKey = OTNymID;
 
@@ -417,7 +416,7 @@ private:
     auto account_summary(
         const Lock& lock,
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback& cb) const noexcept
         -> AccountSummaryMap::mapped_type&;
     auto activity_summary(
@@ -459,7 +458,7 @@ private:
     auto payable_list(
         const Lock& lock,
         const identifier::Nym& nymID,
-        const proto::ContactItemType currency,
+        const contact::ContactItemType currency,
         const SimpleCallback& cb) const noexcept
         -> PayableListMap::mapped_type&;
     auto profile(

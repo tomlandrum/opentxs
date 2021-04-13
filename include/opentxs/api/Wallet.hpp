@@ -22,6 +22,7 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Editor.hpp"
 #include "opentxs/blind/CashType.hpp"
+#include "opentxs/contact/ContactItemType.hpp"
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
@@ -262,8 +263,8 @@ public:
         const PasswordPrompt& reason,
         const std::string name = "",
         const NymParameters& parameters = {},
-        const proto::ContactItemType type =
-            proto::CITEMTYPE_INDIVIDUAL) const = 0;
+        const contact::ContactItemType type =
+            contact::ContactItemType::Individual) const = 0;
 
     OPENTXS_EXPORT virtual NymData mutable_Nym(
         const identifier::Nym& id,
@@ -698,7 +699,7 @@ public:
         const std::string& tla,
         const std::uint32_t power,
         const std::string& fraction,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const PasswordPrompt& reason,
         const VersionNumber version = contract::Unit::DefaultVersion) const
         noexcept(false) = 0;
@@ -719,12 +720,12 @@ public:
         const std::string& name,
         const std::string& symbol,
         const std::string& terms,
-        const proto::ContactItemType unitOfAccount,
+        const contact::ContactItemType unitOfAccount,
         const PasswordPrompt& reason,
         const VersionNumber version = contract::Unit::DefaultVersion) const
         noexcept(false) = 0;
 
-    OPENTXS_EXPORT virtual proto::ContactItemType CurrencyTypeBasedOnUnitType(
+    OPENTXS_EXPORT virtual contact::ContactItemType CurrencyTypeBasedOnUnitType(
         const identifier::UnitDefinition& contractID) const = 0;
 
     OPENTXS_EXPORT virtual bool LoadCredential(
