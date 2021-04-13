@@ -14,6 +14,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/ui/List.hpp"
 #include "opentxs/ui/ListRow.hpp"
 
@@ -56,7 +57,8 @@ public:
     First() const noexcept = 0;
     OPENTXS_EXPORT virtual opentxs::SharedPimpl<opentxs::ui::ContactSubsection>
     Next() const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::ContactSectionName Type() const noexcept = 0;
+    OPENTXS_EXPORT virtual contact::ContactSectionName Type()
+        const noexcept = 0;
 
     OPENTXS_EXPORT ~ContactSection() override = default;
 

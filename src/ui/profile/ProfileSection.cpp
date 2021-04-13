@@ -17,9 +17,11 @@
 #include <utility>
 
 #include "internal/ui/UI.hpp"
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactSection.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -51,9 +53,9 @@ auto ProfileSectionWidget(
 namespace opentxs::ui
 {
 static const std::
-    map<proto::ContactSectionName, std::set<proto::ContactItemType>>
+    map<contact::ContactSectionName, std::set<proto::ContactItemType>>
         allowed_types_{
-            {proto::CONTACTSECTION_COMMUNICATION,
+            {contact::ContactSectionName::Communication,
              {
                  proto::CITEMTYPE_PHONE,
                  proto::CITEMTYPE_EMAIL,
@@ -68,7 +70,7 @@ static const std::
                  proto::CITEMTYPE_WECHAT,
                  proto::CITEMTYPE_KAKAOTALK,
              }},
-            {proto::CONTACTSECTION_PROFILE,
+            {contact::ContactSectionName::Profile,
              {
                  proto::CITEMTYPE_FACEBOOK,  proto::CITEMTYPE_GOOGLE,
                  proto::CITEMTYPE_LINKEDIN,  proto::CITEMTYPE_VK,
@@ -85,9 +87,9 @@ static const std::
         };
 
 static const std::
-    map<proto::ContactSectionName, std::map<proto::ContactItemType, int>>
+    map<contact::ContactSectionName, std::map<proto::ContactItemType, int>>
         sort_keys_{
-            {proto::CONTACTSECTION_COMMUNICATION,
+            {contact::ContactSectionName::Communication,
              {
                  {proto::CITEMTYPE_PHONE, 0},
                  {proto::CITEMTYPE_EMAIL, 1},
@@ -102,7 +104,7 @@ static const std::
                  {proto::CITEMTYPE_WHATSAPP, 10},
                  {proto::CITEMTYPE_BITMESSAGE, 11},
              }},
-            {proto::CONTACTSECTION_PROFILE,
+            {contact::ContactSectionName::Profile,
              {
                  {proto::CITEMTYPE_FACEBOOK, 0},
                  {proto::CITEMTYPE_TWITTER, 1},
@@ -130,7 +132,7 @@ static const std::
         };
 
 auto ProfileSection::AllowedItems(
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const std::string& lang) noexcept -> ProfileSection::ItemTypeList
 {
     ItemTypeList output{};
@@ -213,7 +215,8 @@ auto ProfileSection::Items(const std::string& lang) const noexcept
 
 auto ProfileSection::Name(const std::string& lang) const noexcept -> std::string
 {
-    return proto::TranslateSectionName(row_id_, lang);
+    return proto::TranslateSectionName(
+        contact::internal::translate(row_id_), lang);
 }
 
 auto ProfileSection::process_section(

@@ -49,6 +49,7 @@
 #include "opentxs/blind/Token.hpp"
 #include "opentxs/client/OTAPI_Exec.hpp"
 #include "opentxs/client/OT_API.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/Armored.hpp"
 #include "opentxs/core/Cheque.hpp"
@@ -2987,7 +2988,7 @@ TEST_F(Test_Basic, addClaim)
     verify_state_pre(*clientContext, serverContext.get(), sequence);
     auto& stateMachine = *alice_state_machine_;
     auto started = stateMachine.AddClaim(
-        proto::CONTACTSECTION_SCOPE,
+        contact::ContactSectionName::Scope,
         proto::CITEMTYPE_SERVER,
         String::Factory(NEW_SERVER_NAME),
         true);
@@ -3091,7 +3092,7 @@ TEST_F(Test_Basic, addClaim_not_admin)
     verify_state_pre(*clientContext, serverContext.get(), sequence);
     auto& stateMachine = *bob_state_machine_;
     auto started = stateMachine.AddClaim(
-        proto::CONTACTSECTION_SCOPE,
+        contact::ContactSectionName::Scope,
         proto::CITEMTYPE_SERVER,
         String::Factory(NEW_SERVER_NAME),
         true);

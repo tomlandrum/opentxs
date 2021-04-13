@@ -44,6 +44,7 @@
 #include "opentxs/contact/ContactData.hpp"
 #include "opentxs/contact/ContactGroup.hpp"  // IWYU pragma: keep
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/Cheque.hpp"
 #include "opentxs/core/Flag.hpp"
@@ -1883,7 +1884,7 @@ auto OTX::refresh_contacts() const -> bool
                 if (false == bool(data)) { continue; }
 
                 const auto serverGroup = data->Group(
-                    proto::CONTACTSECTION_COMMUNICATION,
+                    contact::ContactSectionName::Communication,
                     proto::CITEMTYPE_OPENTXS);
 
                 if (false == bool(serverGroup)) {

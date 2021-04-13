@@ -24,6 +24,7 @@
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/contact/Contact.hpp"
 #include "opentxs/contact/ContactSection.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
@@ -83,13 +84,13 @@ QString ContactQt::paymentCode() const noexcept
 
 namespace opentxs::ui::implementation
 {
-const std::set<proto::ContactSectionName> Contact::allowed_types_{
-    proto::CONTACTSECTION_COMMUNICATION,
-    proto::CONTACTSECTION_PROFILE};
+const std::set<contact::ContactSectionName> Contact::allowed_types_{
+    contact::ContactSectionName::Communication,
+    contact::ContactSectionName::Profile};
 
-const std::map<proto::ContactSectionName, int> Contact::sort_keys_{
-    {proto::CONTACTSECTION_COMMUNICATION, 0},
-    {proto::CONTACTSECTION_PROFILE, 1}};
+const std::map<contact::ContactSectionName, int> Contact::sort_keys_{
+    {contact::ContactSectionName::Communication, 0},
+    {contact::ContactSectionName::Profile, 1}};
 
 Contact::Contact(
     const api::client::internal::Manager& api,
@@ -111,7 +112,8 @@ Contact::Contact(
     OT_ASSERT(startup_)
 }
 
-auto Contact::check_type(const proto::ContactSectionName type) noexcept -> bool
+auto Contact::check_type(const contact::ContactSectionName type) noexcept
+    -> bool
 {
     return 1 == allowed_types_.count(type);
 }
@@ -194,7 +196,7 @@ void Contact::process_contact(const Message& message) noexcept
     process_contact(*contact);
 }
 
-auto Contact::sort_key(const proto::ContactSectionName type) noexcept -> int
+auto Contact::sort_key(const contact::ContactSectionName type) noexcept -> int
 {
     return sort_keys_.at(type);
 }

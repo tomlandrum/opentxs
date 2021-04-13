@@ -22,12 +22,14 @@
 #include "2_Factory.hpp"
 #include "core/OTStorage.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/contact/Contact.hpp"
 #include "internal/core/contract/Contract.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Shared.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/Legacy.hpp"
 #include "opentxs/api/Wallet.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/AccountVisitor.hpp"
 #include "opentxs/core/Data.hpp"
@@ -283,7 +285,8 @@ auto Unit::ValidUnits(const VersionNumber version) noexcept
 
         return proto::AllowedItemTypes().at(
             {implementation::Unit::unit_of_account_version_map_.at(version),
-             proto::CONTACTSECTION_CONTRACT});
+             contact::internal::translate(
+                 contact::ContactSectionName::Contract)});
 
     } catch (...) {
 

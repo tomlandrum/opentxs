@@ -10,11 +10,14 @@
 #include "1_Internal.hpp"
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
 #include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Context.hpp"
 #include "opentxs/api/client/Manager.hpp"
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactItemAttribute.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/identity/credential/Contact.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -34,10 +37,10 @@ public:
               std::string("testNym"),
               CONTACT_CONTACT_DATA_VERSION,
               CONTACT_CONTACT_DATA_VERSION,
-              ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+              ot::contact::ContactSectionName::Identifier,
               ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
               std::string("testValue"),
-              {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+              {ot::contact::ContactItemAttribute::Active},
               NULL_START,
               NULL_END,
               "")
@@ -57,10 +60,10 @@ TEST_F(Test_ContactItem, first_constructor)
         std::string("testContactItemNym"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
         std::string("testValue"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         "");
@@ -69,7 +72,7 @@ TEST_F(Test_ContactItem, first_constructor)
         ot::Identifier::Factory(ot::identity::credential::Contact::ClaimID(
             api_,
             "testContactItemNym",
-            ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+            ot::contact::ContactSectionName::Identifier,
             ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
             NULL_START,
             NULL_END,
@@ -78,8 +81,7 @@ TEST_F(Test_ContactItem, first_constructor)
     ASSERT_EQ(identifier, contactItem1.ID());
     ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, contactItem1.Version());
     ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        contactItem1.Section());
+        ot::contact::ContactSectionName::Identifier, contactItem1.Section());
     ASSERT_EQ(
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE, contactItem1.Type());
     ASSERT_EQ("testValue", contactItem1.Value());
@@ -98,10 +100,10 @@ TEST_F(Test_ContactItem, first_constructor_different_versions)
         std::string("testContactItemNym"),
         CONTACT_CONTACT_DATA_VERSION - 1,  // previous version
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
         std::string("testValue"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         "");
@@ -117,18 +119,20 @@ TEST_F(Test_ContactItem, second_constructor)
         CONTACT_CONTACT_DATA_VERSION,
         ot::Claim(
             "",
-            ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+            ot::contact::internal::translate(
+                ot::contact::ContactSectionName::Identifier),
             ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
             "testValue",
             NULL_START,
             NULL_END,
-            {ot::proto::CITEMATTR_ACTIVE}));
+            {static_cast<uint32_t>(
+                ot::contact::ContactItemAttribute::Active)}));
 
     const ot::OTIdentifier identifier(
         ot::Identifier::Factory(ot::identity::credential::Contact::ClaimID(
             api_,
             "testContactItemNym",
-            ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+            ot::contact::ContactSectionName::Identifier,
             ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
             NULL_START,
             NULL_END,
@@ -137,8 +141,7 @@ TEST_F(Test_ContactItem, second_constructor)
     ASSERT_EQ(identifier, contactItem1.ID());
     ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, contactItem1.Version());
     ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        contactItem1.Section());
+        ot::contact::ContactSectionName::Identifier, contactItem1.Section());
     ASSERT_EQ(
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE, contactItem1.Type());
     ASSERT_EQ("testValue", contactItem1.Value());
@@ -156,7 +159,8 @@ TEST_F(Test_ContactItem, third_constructor)
     data.set_version(CONTACT_CONTACT_DATA_VERSION);
     data.set_type(ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE);
     data.set_value("testValue");
-    data.add_attribute(ot::proto::CITEMATTR_ACTIVE);
+    data.add_attribute(ot::contact::internal::translate(
+        ot::contact::ContactItemAttribute::Active));
     data.set_start(NULL_START);
     data.set_end(NULL_END);
 
@@ -164,14 +168,14 @@ TEST_F(Test_ContactItem, third_constructor)
         api_,
         std::string("testContactItemNym"),
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         data);
 
     const ot::OTIdentifier identifier(
         ot::Identifier::Factory(ot::identity::credential::Contact::ClaimID(
             api_,
             "testContactItemNym",
-            ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+            ot::contact::ContactSectionName::Identifier,
             ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
             NULL_START,
             NULL_END,
@@ -180,8 +184,7 @@ TEST_F(Test_ContactItem, third_constructor)
     ASSERT_EQ(identifier, contactItem1.ID());
     ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, contactItem1.Version());
     ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        contactItem1.Section());
+        ot::contact::ContactSectionName::Identifier, contactItem1.Section());
     ASSERT_EQ(
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE, contactItem1.Type());
     ASSERT_EQ("testValue", contactItem1.Value());
@@ -222,10 +225,10 @@ TEST_F(Test_ContactItem, operator_equal_false)
         std::string("testNym2"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
         std::string("testValue2"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         "");
@@ -261,7 +264,7 @@ TEST_F(Test_ContactItem, public_accessors)
         ot::Identifier::Factory(ot::identity::credential::Contact::ClaimID(
             api_,
             "testNym",
-            ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+            ot::contact::ContactSectionName::Identifier,
             ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
             NULL_START,
             NULL_END,
@@ -269,8 +272,7 @@ TEST_F(Test_ContactItem, public_accessors)
             "")));
     ASSERT_EQ(identifier, contactItem_.ID());
     ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        contactItem_.Section());
+        ot::contact::ContactSectionName::Identifier, contactItem_.Section());
     ASSERT_EQ(
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE, contactItem_.Type());
     ASSERT_EQ("testValue", contactItem_.Value());

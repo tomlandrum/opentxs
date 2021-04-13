@@ -97,7 +97,7 @@ public:
     {
         return primary_id_;
     }
-    auto Section() const noexcept -> proto::ContactSectionName final
+    auto Section() const noexcept -> contact::ContactSectionName final
     {
         return row_id_.first;
     }

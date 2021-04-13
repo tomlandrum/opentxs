@@ -11,10 +11,13 @@
 #include <sstream>
 #include <tuple>
 
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactItemAttribute.hpp"
 #include "opentxs/contact/ContactSection.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/core/String.hpp"
@@ -49,11 +52,12 @@ static auto extract_sections(
 
     for (const auto& it : serialized.section()) {
         if ((0 != it.version()) && (it.item_size() > 0)) {
-            sectionMap[it.name()].reset(new ContactSection(
-                api,
-                nym,
-                check_version(serialized.version(), targetVersion),
-                it));
+            sectionMap[contact::internal::translate(it.name())].reset(
+                new ContactSection(
+                    api,
+                    nym,
+                    check_version(serialized.version(), targetVersion),
+                    it));
         }
     }
 
@@ -97,7 +101,7 @@ struct ContactData::Imp {
 
     auto scope() const -> Scope
     {
-        const auto it = sections_.find(proto::CONTACTSECTION_SCOPE);
+        const auto it = sections_.find(contact::ContactSectionName::Scope);
 
         if (sections_.end() == it) {
             return {proto::CITEMTYPE_UNKNOWN, nullptr};
@@ -191,20 +195,24 @@ auto ContactData::AddContract(
     const bool active) const -> ContactData
 {
     bool needPrimary{true};
-    const proto::ContactSectionName section{proto::CONTACTSECTION_CONTRACT};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Contract};
     auto group = Group(section, currency);
 
     if (group) { needPrimary = group->Primary().empty(); }
 
-    std::set<proto::ContactItemAttribute> attrib{};
+    std::set<contact::ContactItemAttribute> attrib{};
 
     if (active || primary || needPrimary) {
-        attrib.emplace(proto::CITEMATTR_ACTIVE);
+        attrib.emplace(contact::ContactItemAttribute::Active);
     }
 
-    if (primary || needPrimary) { attrib.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary || needPrimary) {
+        attrib.emplace(contact::ContactItemAttribute::Primary);
+    }
 
-    auto version = proto::RequiredVersion(section, currency, imp_->version_);
+    auto version = proto::RequiredVersion(
+        contact::internal::translate(section), currency, imp_->version_);
 
     auto item = std::make_shared<ContactItem>(
         imp_->api_,
@@ -230,22 +238,25 @@ auto ContactData::AddEmail(
     const bool active) const -> ContactData
 {
     bool needPrimary{true};
-    const proto::ContactSectionName section{
-        proto::CONTACTSECTION_COMMUNICATION};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Communication};
     const proto::ContactItemType type{proto::CITEMTYPE_EMAIL};
     auto group = Group(section, type);
 
     if (group) { needPrimary = group->Primary().empty(); }
 
-    std::set<proto::ContactItemAttribute> attrib{};
+    std::set<contact::ContactItemAttribute> attrib{};
 
     if (active || primary || needPrimary) {
-        attrib.emplace(proto::CITEMATTR_ACTIVE);
+        attrib.emplace(contact::ContactItemAttribute::Active);
     }
 
-    if (primary || needPrimary) { attrib.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary || needPrimary) {
+        attrib.emplace(contact::ContactItemAttribute::Primary);
+    }
 
-    auto version = proto::RequiredVersion(section, type, imp_->version_);
+    auto version = proto::RequiredVersion(
+        contact::internal::translate(section), type, imp_->version_);
 
     auto item = std::make_shared<ContactItem>(
         imp_->api_,
@@ -268,7 +279,8 @@ auto ContactData::AddEmail(
 auto ContactData::AddItem(const ClaimTuple& claim) const -> ContactData
 {
     auto version = proto::RequiredVersion(
-        static_cast<proto::ContactSectionName>(std::get<1>(claim)),
+        contact::internal::translate(
+            static_cast<contact::ContactSectionName>(std::get<1>(claim))),
         static_cast<proto::ContactItemType>(std::get<2>(claim)),
         imp_->version_);
 
@@ -287,8 +299,8 @@ auto ContactData::AddItem(const std::shared_ptr<ContactItem>& item) const
     auto map{imp_->sections_};
     auto it = map.find(sectionID);
 
-    auto version =
-        proto::RequiredVersion(sectionID, item->Type(), imp_->version_);
+    auto version = proto::RequiredVersion(
+        contact::internal::translate(sectionID), item->Type(), imp_->version_);
 
     if (map.end() == it) {
         auto& section = map[sectionID];
@@ -316,20 +328,24 @@ auto ContactData::AddPaymentCode(
     const bool active) const -> ContactData
 {
     bool needPrimary{true};
-    const proto::ContactSectionName section{proto::CONTACTSECTION_PROCEDURE};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Procedure};
     auto group = Group(section, currency);
 
     if (group) { needPrimary = group->Primary().empty(); }
 
-    std::set<proto::ContactItemAttribute> attrib{};
+    std::set<contact::ContactItemAttribute> attrib{};
 
     if (active || primary || needPrimary) {
-        attrib.emplace(proto::CITEMATTR_ACTIVE);
+        attrib.emplace(contact::ContactItemAttribute::Active);
     }
 
-    if (primary || needPrimary) { attrib.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary || needPrimary) {
+        attrib.emplace(contact::ContactItemAttribute::Primary);
+    }
 
-    auto version = proto::RequiredVersion(section, currency, imp_->version_);
+    auto version = proto::RequiredVersion(
+        contact::internal::translate(section), currency, imp_->version_);
 
     auto item = std::make_shared<ContactItem>(
         imp_->api_,
@@ -355,22 +371,25 @@ auto ContactData::AddPhoneNumber(
     const bool active) const -> ContactData
 {
     bool needPrimary{true};
-    const proto::ContactSectionName section{
-        proto::CONTACTSECTION_COMMUNICATION};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Communication};
     const proto::ContactItemType type{proto::CITEMTYPE_PHONE};
     auto group = Group(section, type);
 
     if (group) { needPrimary = group->Primary().empty(); }
 
-    std::set<proto::ContactItemAttribute> attrib{};
+    std::set<contact::ContactItemAttribute> attrib{};
 
     if (active || primary || needPrimary) {
-        attrib.emplace(proto::CITEMATTR_ACTIVE);
+        attrib.emplace(contact::ContactItemAttribute::Active);
     }
 
-    if (primary || needPrimary) { attrib.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary || needPrimary) {
+        attrib.emplace(contact::ContactItemAttribute::Primary);
+    }
 
-    auto version = proto::RequiredVersion(section, type, imp_->version_);
+    auto version = proto::RequiredVersion(
+        contact::internal::translate(section), type, imp_->version_);
 
     auto item = std::make_shared<ContactItem>(
         imp_->api_,
@@ -394,18 +413,22 @@ auto ContactData::AddPreferredOTServer(const Identifier& id, const bool primary)
     const -> ContactData
 {
     bool needPrimary{true};
-    const proto::ContactSectionName section{
-        proto::CONTACTSECTION_COMMUNICATION};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Communication};
     const proto::ContactItemType type{proto::CITEMTYPE_OPENTXS};
     auto group = Group(section, type);
 
     if (group) { needPrimary = group->Primary().empty(); }
 
-    std::set<proto::ContactItemAttribute> attrib{proto::CITEMATTR_ACTIVE};
+    std::set<contact::ContactItemAttribute> attrib{
+        contact::ContactItemAttribute::Active};
 
-    if (primary || needPrimary) { attrib.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary || needPrimary) {
+        attrib.emplace(contact::ContactItemAttribute::Primary);
+    }
 
-    auto version = proto::RequiredVersion(section, type, imp_->version_);
+    auto version = proto::RequiredVersion(
+        contact::internal::translate(section), type, imp_->version_);
 
     auto item = std::make_shared<ContactItem>(
         imp_->api_,
@@ -433,7 +456,7 @@ auto ContactData::AddSocialMediaProfile(
 {
     auto map = imp_->sections_;
     // Add the item to the profile section.
-    auto& section = map[proto::CONTACTSECTION_PROFILE];
+    auto& section = map[contact::ContactSectionName::Profile];
 
     bool needPrimary{true};
     if (section) {
@@ -442,23 +465,27 @@ auto ContactData::AddSocialMediaProfile(
         if (group) { needPrimary = group->Primary().empty(); }
     }
 
-    std::set<proto::ContactItemAttribute> attrib{};
+    std::set<contact::ContactItemAttribute> attrib{};
 
     if (active || primary || needPrimary) {
-        attrib.emplace(proto::CITEMATTR_ACTIVE);
+        attrib.emplace(contact::ContactItemAttribute::Active);
     }
 
-    if (primary || needPrimary) { attrib.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary || needPrimary) {
+        attrib.emplace(contact::ContactItemAttribute::Primary);
+    }
 
     auto version = proto::RequiredVersion(
-        proto::CONTACTSECTION_PROFILE, type, imp_->version_);
+        contact::internal::translate(contact::ContactSectionName::Profile),
+        type,
+        imp_->version_);
 
     auto item = std::make_shared<ContactItem>(
         imp_->api_,
         imp_->nym_,
         version,
         version,
-        proto::CONTACTSECTION_PROFILE,
+        contact::ContactSectionName::Profile,
         type,
         value,
         attrib,
@@ -476,7 +503,7 @@ auto ContactData::AddSocialMediaProfile(
             imp_->nym_,
             version,
             version,
-            proto::CONTACTSECTION_PROFILE,
+            contact::ContactSectionName::Profile,
             item));
     }
 
@@ -485,9 +512,11 @@ auto ContactData::AddSocialMediaProfile(
     // Add the item to the communication section.
     auto commSectionTypes =
         proto::AllowedItemTypes().at(proto::ContactSectionVersion(
-            version, proto::CONTACTSECTION_COMMUNICATION));
+            version,
+            contact::internal::translate(
+                contact::ContactSectionName::Communication)));
     if (commSectionTypes.count(type)) {
-        auto& commSection = map[proto::CONTACTSECTION_COMMUNICATION];
+        auto& commSection = map[contact::ContactSectionName::Communication];
 
         if (commSection) {
             auto group = commSection->Group(type);
@@ -498,11 +527,11 @@ auto ContactData::AddSocialMediaProfile(
         attrib.clear();
 
         if (active || primary || needPrimary) {
-            attrib.emplace(proto::CITEMATTR_ACTIVE);
+            attrib.emplace(contact::ContactItemAttribute::Active);
         }
 
         if (primary || needPrimary) {
-            attrib.emplace(proto::CITEMATTR_PRIMARY);
+            attrib.emplace(contact::ContactItemAttribute::Primary);
         }
 
         item = std::make_shared<ContactItem>(
@@ -510,7 +539,7 @@ auto ContactData::AddSocialMediaProfile(
             imp_->nym_,
             version,
             version,
-            proto::CONTACTSECTION_COMMUNICATION,
+            contact::ContactSectionName::Communication,
             type,
             value,
             attrib,
@@ -528,7 +557,7 @@ auto ContactData::AddSocialMediaProfile(
                 imp_->nym_,
                 version,
                 version,
-                proto::CONTACTSECTION_COMMUNICATION,
+                contact::ContactSectionName::Communication,
                 item));
         }
 
@@ -538,9 +567,11 @@ auto ContactData::AddSocialMediaProfile(
     // Add the item to the identifier section.
     auto identifierSectionTypes =
         proto::AllowedItemTypes().at(proto::ContactSectionVersion(
-            version, proto::CONTACTSECTION_IDENTIFIER));
+            version,
+            contact::internal::translate(
+                contact::ContactSectionName::Identifier)));
     if (identifierSectionTypes.count(type)) {
-        auto& identifierSection = map[proto::CONTACTSECTION_IDENTIFIER];
+        auto& identifierSection = map[contact::ContactSectionName::Identifier];
 
         if (identifierSection) {
             auto group = identifierSection->Group(type);
@@ -551,11 +582,11 @@ auto ContactData::AddSocialMediaProfile(
         attrib.clear();
 
         if (active || primary || needPrimary) {
-            attrib.emplace(proto::CITEMATTR_ACTIVE);
+            attrib.emplace(contact::ContactItemAttribute::Active);
         }
 
         if (primary || needPrimary) {
-            attrib.emplace(proto::CITEMATTR_PRIMARY);
+            attrib.emplace(contact::ContactItemAttribute::Primary);
         }
 
         item = std::make_shared<ContactItem>(
@@ -563,7 +594,7 @@ auto ContactData::AddSocialMediaProfile(
             imp_->nym_,
             version,
             version,
-            proto::CONTACTSECTION_IDENTIFIER,
+            contact::ContactSectionName::Identifier,
             type,
             value,
             attrib,
@@ -582,7 +613,7 @@ auto ContactData::AddSocialMediaProfile(
                 imp_->nym_,
                 version,
                 version,
-                proto::CONTACTSECTION_IDENTIFIER,
+                contact::ContactSectionName::Identifier,
                 item));
         }
 
@@ -601,8 +632,8 @@ auto ContactData::BestEmail() const -> std::string
 {
     std::string bestEmail;
 
-    auto group =
-        Group(proto::CONTACTSECTION_COMMUNICATION, proto::CITEMTYPE_EMAIL);
+    auto group = Group(
+        contact::ContactSectionName::Communication, proto::CITEMTYPE_EMAIL);
 
     if (group) {
         std::shared_ptr<ContactItem> best = group->Best();
@@ -617,8 +648,8 @@ auto ContactData::BestPhoneNumber() const -> std::string
 {
     std::string bestEmail;
 
-    auto group =
-        Group(proto::CONTACTSECTION_COMMUNICATION, proto::CITEMTYPE_PHONE);
+    auto group = Group(
+        contact::ContactSectionName::Communication, proto::CITEMTYPE_PHONE);
 
     if (group) {
         std::shared_ptr<ContactItem> best = group->Best();
@@ -634,7 +665,7 @@ auto ContactData::BestSocialMediaProfile(
 {
     std::string bestProfile;
 
-    auto group = Group(proto::CONTACTSECTION_PROFILE, type);
+    auto group = Group(contact::ContactSectionName::Profile, type);
     if (group) {
         std::shared_ptr<ContactItem> best = group->Best();
 
@@ -665,7 +696,8 @@ auto ContactData::Contracts(
     const bool onlyActive) const -> std::set<OTIdentifier>
 {
     std::set<OTIdentifier> output{};
-    const proto::ContactSectionName section{proto::CONTACTSECTION_CONTRACT};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Contract};
     auto group = Group(section, currency);
 
     if (group) {
@@ -718,8 +750,8 @@ auto ContactData::EmailAddresses(bool active) const -> std::string
 {
     std::ostringstream stream;
 
-    auto group =
-        Group(proto::CONTACTSECTION_COMMUNICATION, proto::CITEMTYPE_EMAIL);
+    auto group = Group(
+        contact::ContactSectionName::Communication, proto::CITEMTYPE_EMAIL);
     if (group) {
         for (const auto& it : *group) {
             OT_ASSERT(it.second);
@@ -745,7 +777,7 @@ ContactData::SectionMap::const_iterator ContactData::end() const
 }
 
 auto ContactData::Group(
-    const proto::ContactSectionName& section,
+    const contact::ContactSectionName& section,
     const proto::ContactItemType& type) const -> std::shared_ptr<ContactGroup>
 {
     const auto it = imp_->sections_.find(section);
@@ -769,7 +801,7 @@ auto ContactData::HaveClaim(const Identifier& item) const -> bool
 }
 
 auto ContactData::HaveClaim(
-    const proto::ContactSectionName& section,
+    const contact::ContactSectionName& section,
     const proto::ContactItemType& type,
     const std::string& value) const -> bool
 {
@@ -805,8 +837,8 @@ auto ContactData::PhoneNumbers(bool active) const -> std::string
 {
     std::ostringstream stream;
 
-    auto group =
-        Group(proto::CONTACTSECTION_COMMUNICATION, proto::CITEMTYPE_PHONE);
+    auto group = Group(
+        contact::ContactSectionName::Communication, proto::CITEMTYPE_PHONE);
     if (group) {
         for (const auto& it : *group) {
             OT_ASSERT(it.second);
@@ -828,8 +860,8 @@ auto ContactData::PhoneNumbers(bool active) const -> std::string
 
 auto ContactData::PreferredOTServer() const -> OTServerID
 {
-    auto group =
-        Group(proto::CONTACTSECTION_COMMUNICATION, proto::CITEMTYPE_OPENTXS);
+    auto group = Group(
+        contact::ContactSectionName::Communication, proto::CITEMTYPE_OPENTXS);
 
     if (false == bool(group)) { return identifier::Server::Factory(); }
 
@@ -862,8 +894,9 @@ auto ContactData::PrintContactData(const proto::ContactData& data)
 
             for (const auto& attribute : item.attribute()) {
                 output << proto::TranslateItemAttributes(
-                              static_cast<proto::ContactItemAttribute>(
-                                  attribute))
+                              contact::internal::translate(
+                                  static_cast<contact::ContactItemAttribute>(
+                                      attribute)))
                        << " ";
             }
 
@@ -874,7 +907,7 @@ auto ContactData::PrintContactData(const proto::ContactData& data)
     return output.str();
 }
 
-auto ContactData::Section(const proto::ContactSectionName& section) const
+auto ContactData::Section(const contact::ContactSectionName& section) const
     -> std::shared_ptr<ContactSection>
 {
     const auto it = imp_->sections_.find(section);
@@ -886,10 +919,12 @@ auto ContactData::Section(const proto::ContactSectionName& section) const
 
 auto ContactData::SetCommonName(const std::string& name) const -> ContactData
 {
-    const proto::ContactSectionName section{proto::CONTACTSECTION_IDENTIFIER};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Identifier};
     const proto::ContactItemType type{proto::CITEMTYPE_COMMONNAME};
-    std::set<proto::ContactItemAttribute> attrib{
-        proto::CITEMATTR_ACTIVE, proto::CITEMATTR_PRIMARY};
+    std::set<contact::ContactItemAttribute> attrib{
+        contact::ContactItemAttribute::Active,
+        contact::ContactItemAttribute::Primary};
 
     auto item = std::make_shared<ContactItem>(
         imp_->api_,
@@ -916,12 +951,14 @@ auto ContactData::SetName(const std::string& name, const bool primary) const
 
     OT_ASSERT(scopeInfo.second);
 
-    const proto::ContactSectionName section{proto::CONTACTSECTION_SCOPE};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Scope};
     const proto::ContactItemType type = scopeInfo.first;
 
-    std::set<proto::ContactItemAttribute> attrib{proto::CITEMATTR_ACTIVE};
+    std::set<contact::ContactItemAttribute> attrib{
+        contact::ContactItemAttribute::Active};
 
-    if (primary) { attrib.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary) { attrib.emplace(contact::ContactItemAttribute::Primary); }
 
     auto item = std::make_shared<ContactItem>(
         imp_->api_,
@@ -947,15 +984,18 @@ auto ContactData::SetScope(
 {
     OT_ASSERT(type);
 
-    const proto::ContactSectionName section{proto::CONTACTSECTION_SCOPE};
+    const contact::ContactSectionName section{
+        contact::ContactSectionName::Scope};
 
     if (proto::CITEMTYPE_UNKNOWN == imp_->scope().first) {
         auto mapCopy = imp_->sections_;
         mapCopy.erase(section);
-        std::set<proto::ContactItemAttribute> attrib{
-            proto::CITEMATTR_ACTIVE, proto::CITEMATTR_PRIMARY};
+        std::set<contact::ContactItemAttribute> attrib{
+            contact::ContactItemAttribute::Active,
+            contact::ContactItemAttribute::Primary};
 
-        auto version = proto::RequiredVersion(section, type, imp_->version_);
+        auto version = proto::RequiredVersion(
+            contact::internal::translate(section), type, imp_->version_);
 
         auto item = std::make_shared<ContactItem>(
             imp_->api_,
@@ -1009,7 +1049,7 @@ auto ContactData::SocialMediaProfiles(
 {
     std::ostringstream stream;
 
-    auto group = Group(proto::CONTACTSECTION_PROFILE, type);
+    auto group = Group(contact::ContactSectionName::Profile, type);
     if (group) {
         for (const auto& it : *group) {
             OT_ASSERT(it.second);

@@ -26,6 +26,7 @@
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/contact/ContactSection.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -84,7 +85,7 @@ public:
         {
             const auto& claims = nym.Claims();
             const auto pSection =
-                claims.Section(ot::proto::CONTACTSECTION_SCOPE);
+                claims.Section(ot::contact::ContactSectionName::Scope);
 
             EXPECT_TRUE(pSection);
 
@@ -235,7 +236,8 @@ TEST_F(Test_Nym, default_params)
     EXPECT_EQ(1, nym.Revision());
     EXPECT_TRUE(nym.Name().empty());
 
-    const auto pSection = claims.Section(ot::proto::CONTACTSECTION_SCOPE);
+    const auto pSection =
+        claims.Section(ot::contact::ContactSectionName::Scope);
 
     EXPECT_FALSE(pSection);
 }

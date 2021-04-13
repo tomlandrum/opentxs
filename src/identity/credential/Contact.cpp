@@ -16,6 +16,7 @@
 #include "2_Factory.hpp"
 #include "identity/credential/Base.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/contact/Contact.hpp"
 #include "internal/crypto/key/Key.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -109,7 +110,7 @@ auto Contact::ClaimID(
 auto Contact::ClaimID(
     const api::internal::Core& api,
     const std::string& nymid,
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const proto::ContactItemType type,
     const std::int64_t start,
     const std::int64_t end,
@@ -119,7 +120,7 @@ auto Contact::ClaimID(
     proto::Claim preimage;
     preimage.set_version(1);
     preimage.set_nymid(nymid);
-    preimage.set_section(section);
+    preimage.set_section(contact::internal::translate(section));
     preimage.set_type(type);
     preimage.set_start(start);
     preimage.set_end(end);

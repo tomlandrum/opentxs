@@ -109,7 +109,7 @@ public:
         const int type,
         const std::string& claimID,
         const std::string& value) const noexcept -> bool final;
-    auto Type() const noexcept -> proto::ContactSectionName final
+    auto Type() const noexcept -> contact::ContactSectionName final
     {
         return row_id_;
     }

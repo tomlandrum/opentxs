@@ -23,6 +23,7 @@
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/contact/ContactSection.hpp"  // IWYU pragma: keep
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
@@ -144,7 +145,7 @@ auto Issuer::toString() const -> std::string
     const auto& issuerClaims = nym->Claims();
     const auto serverID = issuerClaims.PreferredOTServer();
     const auto contractSection =
-        issuerClaims.Section(proto::CONTACTSECTION_CONTRACT);
+        issuerClaims.Section(contact::ContactSectionName::Contract);
     const auto haveAccounts = bool(contractSection);
 
     if (serverID->empty()) {

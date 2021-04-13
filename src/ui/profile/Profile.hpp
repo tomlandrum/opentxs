@@ -79,13 +79,13 @@ class Profile final : public ProfileList
 {
 public:
     auto AddClaim(
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItemType type,
         const std::string& value,
         const bool primary,
         const bool active) const noexcept -> bool final;
     auto AllowedItems(
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const std::string& lang) const noexcept -> ItemTypeList final;
     auto AllowedSections(const std::string& lang) const noexcept
         -> SectionTypeList final;
@@ -131,11 +131,12 @@ private:
     std::string name_;
     std::string payment_code_;
 
-    static const std::set<proto::ContactSectionName> allowed_types_;
-    static const std::map<proto::ContactSectionName, int> sort_keys_;
+    static const std::set<contact::ContactSectionName> allowed_types_;
+    static const std::map<contact::ContactSectionName, int> sort_keys_;
 
-    static auto sort_key(const proto::ContactSectionName type) noexcept -> int;
-    static auto check_type(const proto::ContactSectionName type) noexcept
+    static auto sort_key(const contact::ContactSectionName type) noexcept
+        -> int;
+    static auto check_type(const contact::ContactSectionName type) noexcept
         -> bool;
     static auto nym_name(
         const api::Wallet& wallet,

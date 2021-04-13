@@ -16,6 +16,7 @@
 #include <string>
 
 #include "opentxs/Proto.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
 
 namespace opentxs
@@ -37,12 +38,12 @@ public:
 
     OPENTXS_EXPORT ContactGroup(
         const std::string& nym,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItemType type,
         const ItemMap& items);
     OPENTXS_EXPORT ContactGroup(
         const std::string& nym,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const std::shared_ptr<ContactItem>& item);
     OPENTXS_EXPORT ContactGroup(const ContactGroup&) noexcept;
     OPENTXS_EXPORT ContactGroup(ContactGroup&&) noexcept;

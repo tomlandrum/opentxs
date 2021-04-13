@@ -12,7 +12,9 @@
 #include <set>
 #include <tuple>
 
+#include "internal/contact/Contact.hpp"
 #include "opentxs/api/storage/Driver.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/protobuf/Check.hpp"
@@ -67,7 +69,10 @@ void Contacts::extract_nyms(const Lock& lock, const proto::Contact& data) const
     const auto& contact = data.id();
 
     for (const auto& section : data.contactdata().section()) {
-        if (section.name() != proto::CONTACTSECTION_RELATIONSHIP) { break; }
+        if (section.name() != contact::internal::translate(
+                                  contact::ContactSectionName::Relationship)) {
+            break;
+        }
 
         for (const auto& item : section.item()) {
             if (item.type() != proto::CITEMTYPE_CONTACT) { break; }

@@ -14,6 +14,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/ui/List.hpp"
 #include "opentxs/ui/ListRow.hpp"
 
@@ -43,7 +44,7 @@
         const std::string& lang)
     {
         const auto types = opentxs::ui::ProfileSection::AllowedItems(
-            static_cast<opentxs::proto::ContactSectionName>(section),
+            static_cast<opentxs::contact::ContactSectionName>(section),
             lang);
         std::vector<std::pair<int, std::string>> output;
         std::transform(
@@ -109,7 +110,7 @@ public:
     using ItemTypeList = std::vector<ItemType>;
 
     OPENTXS_EXPORT static ItemTypeList AllowedItems(
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const std::string& lang) noexcept;
 
     OPENTXS_EXPORT virtual bool AddClaim(
@@ -140,7 +141,8 @@ public:
         const int type,
         const std::string& claimID,
         const std::string& value) const noexcept = 0;
-    OPENTXS_EXPORT virtual proto::ContactSectionName Type() const noexcept = 0;
+    OPENTXS_EXPORT virtual contact::ContactSectionName Type()
+        const noexcept = 0;
 
     OPENTXS_EXPORT ~ProfileSection() override = default;
 

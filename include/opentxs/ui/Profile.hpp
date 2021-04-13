@@ -15,6 +15,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/ui/List.hpp"
 
 #ifdef SWIG
@@ -28,7 +29,7 @@
         const bool active) const noexcept
     {
         return $self->AddClaim(
-            static_cast<opentxs::proto::ContactSectionName>(section),
+            static_cast<opentxs::contact::ContactSectionName>(section),
             static_cast<opentxs::proto::ContactItemType>(type),
             value,
             primary,
@@ -39,7 +40,7 @@
         const std::string& lang) noexcept
     {
         const auto types = opentxs::ui::ProfileSection::AllowedItems(
-            static_cast<opentxs::proto::ContactSectionName>(section),
+            static_cast<opentxs::contact::ContactSectionName>(section),
             lang);
         std::vector<std::pair<int, std::string>> output;
         std::transform(
@@ -61,7 +62,7 @@
             sections.begin(),
             sections.end(),
             std::inserter(output, output.end()),
-            [](std::pair<opentxs::proto::ContactSectionName, std::string> type) ->
+            [](std::pair<opentxs::contact::ContactSectionName, std::string> type) ->
                 std::pair<int, std::string> {
                     return {static_cast<int>(type.first), type.second};} );
 
@@ -93,17 +94,17 @@ class Profile : virtual public List
 public:
     using ItemType = std::pair<proto::ContactItemType, std::string>;
     using ItemTypeList = std::vector<ItemType>;
-    using SectionType = std::pair<proto::ContactSectionName, std::string>;
+    using SectionType = std::pair<contact::ContactSectionName, std::string>;
     using SectionTypeList = std::vector<SectionType>;
 
     OPENTXS_EXPORT virtual bool AddClaim(
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItemType type,
         const std::string& value,
         const bool primary,
         const bool active) const noexcept = 0;
     OPENTXS_EXPORT virtual ItemTypeList AllowedItems(
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const std::string& lang) const noexcept = 0;
     OPENTXS_EXPORT virtual SectionTypeList AllowedSections(
         const std::string& lang) const noexcept = 0;

@@ -21,6 +21,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/protobuf/ContactItem.pb.h"
 
@@ -45,10 +46,10 @@ public:
         const std::string& nym,
         const VersionNumber version,
         const VersionNumber parentVersion,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItemType& type,
         const std::string& value,
-        const std::set<proto::ContactItemAttribute>& attributes,
+        const std::set<contact::ContactItemAttribute>& attributes,
         const std::time_t start,
         const std::time_t end,
         const std::string subtype);
@@ -62,7 +63,7 @@ public:
         const api::internal::Core& api,
         const std::string& nym,
         const VersionNumber parentVersion,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItem& serialized);
     OPENTXS_EXPORT ContactItem(const ContactItem&) noexcept;
     OPENTXS_EXPORT ContactItem(ContactItem&&) noexcept;
@@ -77,7 +78,7 @@ public:
     OPENTXS_EXPORT bool isActive() const;
     OPENTXS_EXPORT bool isLocal() const;
     OPENTXS_EXPORT bool isPrimary() const;
-    OPENTXS_EXPORT const proto::ContactSectionName& Section() const;
+    OPENTXS_EXPORT const contact::ContactSectionName& Section() const;
     OPENTXS_EXPORT proto::ContactItem Serialize(
         const bool withID = false) const;
     OPENTXS_EXPORT ContactItem SetActive(const bool active) const;

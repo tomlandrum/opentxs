@@ -12,6 +12,7 @@
 #include "opentxs/api/Core.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/client/OTX.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
@@ -252,7 +253,7 @@ struct Operation {
     virtual auto ServerID() const -> const identifier::Server& = 0;
 
     virtual auto AddClaim(
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItemType type,
         const String& value,
         const bool primary) -> bool = 0;

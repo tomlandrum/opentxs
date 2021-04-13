@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "internal/ui/UI.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Endpoints.hpp"
@@ -26,7 +27,9 @@
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/client/NymData.hpp"
 #include "opentxs/contact/ContactData.hpp"
+#include "opentxs/contact/ContactItemAttribute.hpp"
 #include "opentxs/contact/ContactSection.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/identity/Nym.hpp"
@@ -88,13 +91,13 @@ QString ProfileQt::paymentCode() const noexcept
 
 namespace opentxs::ui::implementation
 {
-const std::set<proto::ContactSectionName> Profile::allowed_types_{
-    proto::CONTACTSECTION_COMMUNICATION,
-    proto::CONTACTSECTION_PROFILE};
+const std::set<contact::ContactSectionName> Profile::allowed_types_{
+    contact::ContactSectionName::Communication,
+    contact::ContactSectionName::Profile};
 
-const std::map<proto::ContactSectionName, int> Profile::sort_keys_{
-    {proto::CONTACTSECTION_COMMUNICATION, 0},
-    {proto::CONTACTSECTION_PROFILE, 1}};
+const std::map<contact::ContactSectionName, int> Profile::sort_keys_{
+    {contact::ContactSectionName::Communication, 0},
+    {contact::ContactSectionName::Profile, 1}};
 
 Profile::Profile(
     const api::client::internal::Manager& api,
@@ -116,7 +119,7 @@ Profile::Profile(
 }
 
 auto Profile::AddClaim(
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const proto::ContactItemType type,
     const std::string& value,
     const bool primary,
@@ -126,11 +129,11 @@ auto Profile::AddClaim(
     auto nym = api_.Wallet().mutable_Nym(primary_id_, reason);
 
     switch (section) {
-        case proto::CONTACTSECTION_SCOPE: {
+        case contact::ContactSectionName::Scope: {
 
             return nym.SetScope(type, value, primary, reason);
         }
-        case proto::CONTACTSECTION_COMMUNICATION: {
+        case contact::ContactSectionName::Communication: {
             switch (type) {
                 case proto::CITEMTYPE_EMAIL: {
 
@@ -148,16 +151,16 @@ auto Profile::AddClaim(
                 }
             }
         } break;
-        case proto::CONTACTSECTION_PROFILE: {
+        case contact::ContactSectionName::Profile: {
 
             return nym.AddSocialMediaProfile(
                 value, type, primary, active, reason);
         }
-        case proto::CONTACTSECTION_CONTRACT: {
+        case contact::ContactSectionName::Contract: {
 
             return nym.AddContract(value, type, primary, active, reason);
         }
-        case proto::CONTACTSECTION_PROCEDURE: {
+        case contact::ContactSectionName::Procedure: {
             return nym.AddPaymentCode(value, type, primary, active, reason);
         }
         default: {
@@ -168,21 +171,27 @@ auto Profile::AddClaim(
     auto& [id, claimSection, claimType, claimValue, start, end, attributes] =
         claim;
     id = "";
-    claimSection = section;
+    claimSection = contact::internal::translate(section);
     claimType = type;
     claimValue = value;
     start = 0;
     end = 0;
 
-    if (primary) { attributes.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary) {
+        attributes.emplace(contact::internal::translate(
+            contact::ContactItemAttribute::Primary));
+    }
 
-    if (primary || active) { attributes.emplace(proto::CITEMATTR_ACTIVE); }
+    if (primary || active) {
+        attributes.emplace(contact::internal::translate(
+            contact::ContactItemAttribute::Active));
+    }
 
     return nym.AddClaim(claim, reason);
 }
 
 auto Profile::AllowedItems(
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const std::string& lang) const noexcept -> Profile::ItemTypeList
 {
     return ui::ProfileSection::AllowedItems(section, lang);
@@ -194,13 +203,17 @@ auto Profile::AllowedSections(const std::string& lang) const noexcept
     SectionTypeList output{};
 
     for (const auto& type : allowed_types_) {
-        output.emplace_back(type, proto::TranslateSectionName(type, lang));
+        output.emplace_back(
+            type,
+            proto::TranslateSectionName(
+                contact::internal::translate(type), lang));
     }
 
     return output;
 }
 
-auto Profile::check_type(const proto::ContactSectionName type) noexcept -> bool
+auto Profile::check_type(const contact::ContactSectionName type) noexcept
+    -> bool
 {
     return 1 == allowed_types_.count(type);
 }
@@ -335,7 +348,7 @@ auto Profile::SetValue(
     return section.SetValue(type, claimID, value);
 }
 
-auto Profile::sort_key(const proto::ContactSectionName type) noexcept -> int
+auto Profile::sort_key(const contact::ContactSectionName type) noexcept -> int
 {
     return sort_keys_.at(type);
 }

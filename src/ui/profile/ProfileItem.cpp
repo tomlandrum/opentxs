@@ -11,11 +11,13 @@
 #include <tuple>
 
 #include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "internal/ui/UI.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/client/NymData.hpp"
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactItemAttribute.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/protobuf/ContactEnums.pb.h"
 #include "ui/base/Widget.hpp"
@@ -65,16 +67,20 @@ auto ProfileItem::as_claim() const noexcept -> Claim
     Claim output{};
     auto& [id, section, type, value, start, end, attributes] = output;
     id = "";
-    section = parent_.Section();
+    section = contact::internal::translate(parent_.Section());
     type = parent_.Type();
     value = item_->Value();
     start = item_->Start();
     end = item_->End();
 
-    if (item_->isPrimary()) { attributes.emplace(proto::CITEMATTR_PRIMARY); }
+    if (item_->isPrimary()) {
+        attributes.emplace(contact::internal::translate(
+            contact::ContactItemAttribute::Primary));
+    }
 
     if (item_->isPrimary() || item_->isActive()) {
-        attributes.emplace(proto::CITEMATTR_ACTIVE);
+        attributes.emplace(contact::internal::translate(
+            contact::ContactItemAttribute::Active));
     }
 
     return output;
@@ -108,10 +114,13 @@ auto ProfileItem::SetActive(const bool& active) const noexcept -> bool
     auto& attributes = std::get<6>(claim);
 
     if (active) {
-        attributes.emplace(proto::CITEMATTR_ACTIVE);
+        attributes.emplace(contact::internal::translate(
+            contact::ContactItemAttribute::Active));
     } else {
-        attributes.erase(proto::CITEMATTR_ACTIVE);
-        attributes.erase(proto::CITEMATTR_PRIMARY);
+        attributes.erase(contact::internal::translate(
+            contact::ContactItemAttribute::Active));
+        attributes.erase(contact::internal::translate(
+            contact::ContactItemAttribute::Primary));
     }
 
     return add_claim(claim);
@@ -123,10 +132,13 @@ auto ProfileItem::SetPrimary(const bool& primary) const noexcept -> bool
     auto& attributes = std::get<6>(claim);
 
     if (primary) {
-        attributes.emplace(proto::CITEMATTR_PRIMARY);
-        attributes.emplace(proto::CITEMATTR_ACTIVE);
+        attributes.emplace(contact::internal::translate(
+            contact::ContactItemAttribute::Primary));
+        attributes.emplace(contact::internal::translate(
+            contact::ContactItemAttribute::Active));
     } else {
-        attributes.erase(proto::CITEMATTR_PRIMARY);
+        attributes.erase(contact::internal::translate(
+            contact::ContactItemAttribute::Primary));
     }
 
     return add_claim(claim);

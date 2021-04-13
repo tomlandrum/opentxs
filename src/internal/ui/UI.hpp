@@ -290,7 +290,7 @@ using BlockchainSelectionSortKey = std::pair<bool, std::string>;
 using ContactPrimaryID = OTIdentifier;
 using ContactExternalInterface = ui::Contact;
 using ContactInternalInterface = ui::internal::Contact;
-using ContactRowID = proto::ContactSectionName;
+using ContactRowID = contact::ContactSectionName;
 using ContactRowInterface = ui::ContactSection;
 using ContactRowInternal = ui::internal::ContactSection;
 using ContactRowBlank = ui::internal::blank::ContactSection;
@@ -300,7 +300,7 @@ using ContactSectionPrimaryID = ContactPrimaryID;
 using ContactSectionExternalInterface = ContactRowInterface;
 using ContactSectionInternalInterface = ui::internal::ContactSection;
 using ContactSectionRowID =
-    std::pair<proto::ContactSectionName, proto::ContactItemType>;
+    std::pair<contact::ContactSectionName, proto::ContactItemType>;
 using ContactSectionRowInterface = ui::ContactSubsection;
 using ContactSectionRowInternal = ui::internal::ContactSubsection;
 using ContactSectionRowBlank = ui::internal::blank::ContactSubsection;
@@ -349,7 +349,7 @@ using PayableListSortKey = std::string;
 using ProfilePrimaryID = OTNymID;
 using ProfileExternalInterface = ui::Profile;
 using ProfileInternalInterface = ui::internal::Profile;
-using ProfileRowID = proto::ContactSectionName;
+using ProfileRowID = contact::ContactSectionName;
 using ProfileRowInterface = ui::ProfileSection;
 using ProfileRowInternal = ui::internal::ProfileSection;
 using ProfileRowBlank = ui::internal::blank::ProfileSection;
@@ -359,7 +359,7 @@ using ProfileSectionPrimaryID = ProfilePrimaryID;
 using ProfileSectionExternalInterface = ProfileRowInterface;
 using ProfileSectionInternalInterface = ui::internal::ProfileSection;
 using ProfileSectionRowID =
-    std::pair<proto::ContactSectionName, proto::ContactItemType>;
+    std::pair<contact::ContactSectionName, proto::ContactItemType>;
 using ProfileSectionRowInterface = ui::ProfileSubsection;
 using ProfileSectionRowInternal = ui::internal::ProfileSubsection;
 using ProfileSectionRowBlank = ui::internal::blank::ProfileSubsection;
@@ -702,7 +702,7 @@ struct ProfileSubsection : virtual public List,
         const noexcept -> bool = 0;
     // custom
     virtual auto NymID() const noexcept -> const identifier::Nym& = 0;
-    virtual auto Section() const noexcept -> proto::ContactSectionName = 0;
+    virtual auto Section() const noexcept -> contact::ContactSectionName = 0;
 
     ~ProfileSubsection() override = default;
 };
@@ -990,7 +990,10 @@ struct ContactSection final : public List<
     {
         return {};
     }
-    auto Type() const noexcept -> proto::ContactSectionName final { return {}; }
+    auto Type() const noexcept -> contact::ContactSectionName final
+    {
+        return {};
+    }
 
     auto reindex(
         const implementation::ContactSortKey&,
@@ -1119,7 +1122,10 @@ struct ProfileSection : public List<
     {
         return false;
     }
-    auto Type() const noexcept -> proto::ContactSectionName final { return {}; }
+    auto Type() const noexcept -> contact::ContactSectionName final
+    {
+        return {};
+    }
 
     auto reindex(
         const implementation::ProfileSortKey& key,
@@ -1153,7 +1159,7 @@ struct ProfileSubsection : public List<
         return nym_id_;
     }
     auto Type() const noexcept -> proto::ContactItemType final { return {}; }
-    auto Section() const noexcept -> proto::ContactSectionName final
+    auto Section() const noexcept -> contact::ContactSectionName final
     {
         return {};
     }

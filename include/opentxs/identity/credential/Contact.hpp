@@ -15,8 +15,8 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/identity/credential/Base.hpp"
-#include "opentxs/protobuf/ContactEnums.pb.h"
 
 namespace opentxs
 {
@@ -52,7 +52,7 @@ public:
     OPENTXS_EXPORT static std::string ClaimID(
         const api::internal::Core& api,
         const std::string& nymid,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItemType type,
         const std::int64_t start,
         const std::int64_t end,

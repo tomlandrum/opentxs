@@ -34,6 +34,7 @@
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/contact/ContactSection.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/Message.hpp"
@@ -291,7 +292,7 @@ TEST_F(Test_Pair, issue_dollars)
         const auto& nym = *pNym;
         const auto& claims = nym.Claims();
         const auto pSection =
-            claims.Section(ot::proto::CONTACTSECTION_CONTRACT);
+            claims.Section(ot::contact::ContactSectionName::Contract);
 
         ASSERT_TRUE(pSection);
 

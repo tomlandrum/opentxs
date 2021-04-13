@@ -8,9 +8,12 @@
 
 #include "0_stdafx.hpp"    // IWYU pragma: associated
 #include "1_Internal.hpp"  // IWYU pragma: associated
+
+#include "internal/contact/Contact.hpp"
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/contact/ContactSection.hpp"  // IWYU pragma: associated
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/protobuf/ContactData.pb.h"
@@ -35,7 +38,7 @@ static auto check_version(
 
 static auto create_group(
     const std::string& nym,
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const std::shared_ptr<ContactItem>& item) -> ContactSection::GroupMap
 {
     OT_ASSERT(item);
@@ -64,7 +67,7 @@ static auto extract_groups(
             api,
             nym,
             check_version(serialized.version(), parentVersion),
-            section,
+            contact::internal::translate(section),
             item);
 
         OT_ASSERT(instantiated);
@@ -78,7 +81,8 @@ static auto extract_groups(
         const auto& type = itemMap.first;
         const auto& map = itemMap.second;
         auto& group = groupMap[type];
-        group.reset(new ContactGroup(nym, section, type, map));
+        group.reset(new ContactGroup(
+            nym, contact::internal::translate(section), type, map));
     }
 
     return groupMap;
@@ -88,7 +92,7 @@ struct ContactSection::Imp {
     const api::internal::Core& api_;
     const VersionNumber version_;
     const std::string nym_;
-    const proto::ContactSectionName section_;
+    const contact::ContactSectionName section_;
     const GroupMap groups_;
 
     auto add_scope(const std::shared_ptr<ContactItem>& item) const
@@ -116,7 +120,8 @@ struct ContactSection::Imp {
 
         groups[groupID].reset(new ContactGroup(nym_, section_, scope));
 
-        auto version = proto::RequiredVersion(section_, item->Type(), version_);
+        auto version = proto::RequiredVersion(
+            contact::internal::translate(section_), item->Type(), version_);
 
         return ContactSection(api_, nym_, version, version, section_, groups);
     }
@@ -125,7 +130,7 @@ struct ContactSection::Imp {
         const std::string& nym,
         const VersionNumber version,
         const VersionNumber parentVersion,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const GroupMap& groups)
         : api_(api)
         , version_(check_version(version, parentVersion))
@@ -159,7 +164,7 @@ ContactSection::ContactSection(
     const std::string& nym,
     const VersionNumber version,
     const VersionNumber parentVersion,
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const GroupMap& groups)
     : imp_(std::make_unique<
            Imp>(api, nym, version, parentVersion, section, groups))
@@ -183,7 +188,7 @@ ContactSection::ContactSection(
     const std::string& nym,
     const VersionNumber version,
     const VersionNumber parentVersion,
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const std::shared_ptr<ContactItem>& item)
     : ContactSection(
           api,
@@ -210,7 +215,7 @@ ContactSection::ContactSection(
           nym,
           serialized.version(),
           parentVersion,
-          serialized.name(),
+          contact::internal::translate(serialized.name()),
           extract_groups(api, nym, parentVersion, serialized))
 {
 }
@@ -257,7 +262,7 @@ auto ContactSection::AddItem(const std::shared_ptr<ContactItem>& item) const
     OT_ASSERT(item);
 
     const bool specialCaseScope =
-        (proto::CONTACTSECTION_SCOPE == imp_->section_);
+        (contact::ContactSectionName::Scope == imp_->section_);
 
     if (specialCaseScope) { return imp_->add_scope(item); }
 
@@ -275,8 +280,10 @@ auto ContactSection::AddItem(const std::shared_ptr<ContactItem>& item) const
         map[groupID].reset(new ContactGroup(imp_->nym_, imp_->section_, item));
     }
 
-    auto version =
-        proto::RequiredVersion(imp_->section_, item->Type(), imp_->version_);
+    auto version = proto::RequiredVersion(
+        contact::internal::translate(imp_->section_),
+        item->Type(),
+        imp_->version_);
 
     return ContactSection(
         imp_->api_, imp_->nym_, version, version, imp_->section_, map);
@@ -365,7 +372,7 @@ auto ContactSection::SerializeTo(
     bool output = true;
     auto& serialized = *section.add_section();
     serialized.set_version(imp_->version_);
-    serialized.set_name(imp_->section_);
+    serialized.set_name(contact::internal::translate(imp_->section_));
 
     for (const auto& it : imp_->groups_) {
         const auto& group = it.second;
@@ -383,7 +390,7 @@ auto ContactSection::Size() const -> std::size_t
     return imp_->groups_.size();
 }
 
-auto ContactSection::Type() const -> const proto::ContactSectionName&
+auto ContactSection::Type() const -> const contact::ContactSectionName&
 {
     return imp_->section_;
 }

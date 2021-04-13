@@ -17,6 +17,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contact/Types.hpp"
 
 namespace opentxs
 {
@@ -52,14 +53,14 @@ public:
         const std::string& nym,
         const VersionNumber version,
         const VersionNumber parentVersion,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const GroupMap& groups);
     OPENTXS_EXPORT ContactSection(
         const api::internal::Core& api,
         const std::string& nym,
         const VersionNumber version,
         const VersionNumber parentVersion,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const std::shared_ptr<ContactItem>& item);
     OPENTXS_EXPORT ContactSection(
         const api::internal::Core& api,
@@ -85,7 +86,7 @@ public:
         proto::ContactData& data,
         const bool withIDs = false) const;
     OPENTXS_EXPORT std::size_t Size() const;
-    OPENTXS_EXPORT const proto::ContactSectionName& Type() const;
+    OPENTXS_EXPORT const contact::ContactSectionName& Type() const;
     OPENTXS_EXPORT VersionNumber Version() const;
 
     OPENTXS_EXPORT ~ContactSection();

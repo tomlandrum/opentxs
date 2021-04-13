@@ -32,6 +32,7 @@
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/client/NymData.hpp"
 #include "opentxs/client/OT_API.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Cheque.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
@@ -363,7 +364,7 @@ auto StateMachine::check_server_name(const otx::context::Server& context) const
 
         DO_OPERATION(
             AddClaim,
-            proto::CONTACTSECTION_SCOPE,
+            contact::ContactSectionName::Scope,
             proto::CITEMTYPE_SERVER,
             String::Factory(myName),
             true);

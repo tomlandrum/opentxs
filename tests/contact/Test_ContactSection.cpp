@@ -12,12 +12,15 @@
 #include "1_Internal.hpp"
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
 #include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/api/Context.hpp"
 #include "opentxs/api/client/Manager.hpp"
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactItemAttribute.hpp"
 #include "opentxs/contact/ContactSection.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/protobuf/ContactData.pb.h"
 #include "opentxs/protobuf/ContactEnums.pb.h"
@@ -38,11 +41,11 @@ public:
               std::string("testContactSectionNym1"),
               CONTACT_CONTACT_DATA_VERSION,
               CONTACT_CONTACT_DATA_VERSION,
-              ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+              ot::contact::ContactSectionName::Identifier,
               ot::ContactSection::GroupMap{})
         , contactGroup_(new ot::ContactGroup(
               std::string("testContactGroupNym1"),
-              ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+              ot::contact::ContactSectionName::Identifier,
               ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
               {}))
         , activeContactItem_(new ot::ContactItem(
@@ -50,10 +53,10 @@ public:
               std::string("activeContactItem"),
               CONTACT_CONTACT_DATA_VERSION,
               CONTACT_CONTACT_DATA_VERSION,
-              ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+              ot::contact::ContactSectionName::Identifier,
               ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
               std::string("activeContactItemValue"),
-              {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+              {ot::contact::ContactItemAttribute::Active},
               NULL_START,
               NULL_END,
               ""))
@@ -80,11 +83,9 @@ TEST_F(Test_ContactSection, first_constructor)
         "testContactSectionNym1",
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         groupMap);
-    ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        section1.Type());
+    ASSERT_EQ(ot::contact::ContactSectionName::Identifier, section1.Type());
     ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, section1.Version());
     ASSERT_EQ(section1.Size(), 1);
     ASSERT_EQ(
@@ -101,7 +102,7 @@ TEST_F(Test_ContactSection, first_constructor_different_versions)
         "testContactSectionNym2",
         CONTACT_CONTACT_DATA_VERSION - 1,  // previous version
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::ContactSection::GroupMap{});
     ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, section2.Version());
 }
@@ -113,11 +114,9 @@ TEST_F(Test_ContactSection, second_constructor)
         "testContactSectionNym1",
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         activeContactItem_);
-    ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        section1.Type());
+    ASSERT_EQ(ot::contact::ContactSectionName::Identifier, section1.Type());
     ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, section1.Version());
     ASSERT_EQ(section1.Size(), 1);
     ASSERT_NE(
@@ -132,8 +131,8 @@ TEST_F(Test_ContactSection, second_constructor)
 TEST_F(Test_ContactSection, third_constructor)
 {
     ot::proto::ContactSection protoContactSection;
-    protoContactSection.set_name(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER);
+    protoContactSection.set_name(ot::contact::internal::translate(
+        ot::contact::ContactSectionName::Identifier));
     protoContactSection.set_version(CONTACT_CONTACT_DATA_VERSION);
     //    ot::proto::ContactItem * item = protoContactSection.add_item();
 
@@ -142,9 +141,7 @@ TEST_F(Test_ContactSection, third_constructor)
         "deserializedContactSectionNym1",
         CONTACT_CONTACT_DATA_VERSION,
         protoContactSection);
-    ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        section1.Type());
+    ASSERT_EQ(ot::contact::ContactSectionName::Identifier, section1.Type());
     ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, section1.Version());
 }
 
@@ -178,10 +175,10 @@ TEST_F(Test_ContactSection, operator_plus)
         std::string("activeContactItem2"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
         std::string("activeContactItemValue2"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -190,7 +187,7 @@ TEST_F(Test_ContactSection, operator_plus)
         "testContactSectionNym2",
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         contactItem2);
 
     const auto& section3 = section1 + section2;
@@ -208,10 +205,10 @@ TEST_F(Test_ContactSection, operator_plus)
         std::string("activeContactItem3"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
         std::string("activeContactItemValue3"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -220,10 +217,10 @@ TEST_F(Test_ContactSection, operator_plus)
         std::string("activeContactItem4"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_SSL,
         std::string("activeContactItemValue4"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -232,7 +229,7 @@ TEST_F(Test_ContactSection, operator_plus)
         "testContactSectionNym4",
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         contactItem3);
     const auto& section5 = section4.AddItem(contactItem4);
 
@@ -256,7 +253,7 @@ TEST_F(Test_ContactSection, operator_plus_different_versions)
         "testContactSectionNym2",
         CONTACT_CONTACT_DATA_VERSION - 1,
         CONTACT_CONTACT_DATA_VERSION - 1,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::ContactSection::GroupMap{});
 
     const auto& section3 = contactSection_ + section2;
@@ -277,10 +274,10 @@ TEST_F(Test_ContactSection, AddItem)
         std::string("scopeContactItem"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_SCOPE,
+        ot::contact::ContactSectionName::Scope,
         ot::proto::ContactItemType::CITEMTYPE_INDIVIDUAL,
         std::string("scopeContactItemValue"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_LOCAL},
+        {ot::contact::ContactItemAttribute::Local},
         NULL_START,
         NULL_END,
         ""));
@@ -289,7 +286,7 @@ TEST_F(Test_ContactSection, AddItem)
         "testContactSectionNym2",
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_SCOPE,
+        ot::contact::ContactSectionName::Scope,
         ot::ContactSection::GroupMap{});
     const auto& section2 = section1.AddItem(scopeContactItem);
     ASSERT_EQ(section2.Size(), 1);
@@ -312,10 +309,10 @@ TEST_F(Test_ContactSection, AddItem)
         std::string("activeContactItem2"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
         std::string("activeContactItemValue2"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -332,10 +329,10 @@ TEST_F(Test_ContactSection, AddItem)
         std::string("activeContactItem3"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_SSL,
         std::string("activeContactItemValue3"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -355,10 +352,10 @@ TEST_F(Test_ContactSection, AddItem_different_versions)
         std::string("scopeContactItem"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_SCOPE,
+        ot::contact::ContactSectionName::Scope,
         ot::proto::ContactItemType::CITEMTYPE_BOT,
         std::string("scopeContactItemValue"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_LOCAL},
+        {ot::contact::ContactItemAttribute::Local},
         NULL_START,
         NULL_END,
         ""));
@@ -368,7 +365,7 @@ TEST_F(Test_ContactSection, AddItem_different_versions)
         3,  // version of CONTACTSECTION_SCOPE section before CITEMTYPE_BOT was
             // added
         3,
-        ot::proto::ContactSectionName::CONTACTSECTION_SCOPE,
+        ot::contact::ContactSectionName::Scope,
         ot::ContactSection::GroupMap{});
     const auto& section2 = section1.AddItem(scopeContactItem);
     ASSERT_EQ(section2.Size(), 1);
@@ -386,10 +383,10 @@ TEST_F(Test_ContactSection, AddItem_different_versions)
         std::string("contactItem2"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_RELATIONSHIP,
+        ot::contact::ContactSectionName::Relationship,
         ot::proto::ContactItemType::CITEMTYPE_OWNER,
         std::string("contactItem2Value"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_LOCAL},
+        {ot::contact::ContactItemAttribute::Local},
         NULL_START,
         NULL_END,
         ""));
@@ -399,7 +396,7 @@ TEST_F(Test_ContactSection, AddItem_different_versions)
         3,  // version of CONTACTSECTION_RELATIONSHIP section before
             // CITEMTYPE_OWNER was added
         3,
-        ot::proto::ContactSectionName::CONTACTSECTION_RELATIONSHIP,
+        ot::contact::ContactSectionName::Relationship,
         ot::ContactSection::GroupMap{});
     const auto& section4 = section3.AddItem(contactItem2);
     ASSERT_EQ(section4.Size(), 1);
@@ -441,10 +438,10 @@ TEST_F(Test_ContactSection, Claim_found)
         std::string("activeContactItem2"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_SSL,
         std::string("activeContactItemValue2"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -504,10 +501,10 @@ TEST_F(Test_ContactSection, HaveClaim_true)
         std::string("activeContactItem2"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_SSL,
         std::string("activeContactItemValue2"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -531,10 +528,10 @@ TEST_F(Test_ContactSection, Delete)
         std::string("activeContactItem2"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
         std::string("activeContactItemValue2"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -562,10 +559,10 @@ TEST_F(Test_ContactSection, Delete)
         std::string("activeContactItem3"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_SSL,
         std::string("activeContactItemValue3"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -594,8 +591,8 @@ TEST_F(Test_ContactSection, SerializeTo)
 
     ot::proto::ContactSection contactDataSection = contactData1.section(0);
     ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        contactDataSection.name());
+        ot::contact::ContactSectionName::Identifier,
+        ot::contact::internal::translate(contactDataSection.name()));
 
     ot::proto::ContactItem contactDataItem = contactDataSection.item(0);
     ASSERT_EQ(activeContactItem_->Value(), contactDataItem.value());
@@ -612,8 +609,8 @@ TEST_F(Test_ContactSection, SerializeTo)
 
     contactDataSection = contactData2.section(0);
     ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        contactDataSection.name());
+        ot::contact::ContactSectionName::Identifier,
+        ot::contact::internal::translate(contactDataSection.name()));
 
     contactDataItem = contactDataSection.item(0);
 
@@ -637,10 +634,10 @@ TEST_F(Test_ContactSection, Size)
         std::string("activeContactItem2"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_EMPLOYEE,
         std::string("activeContactItemValue2"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -654,10 +651,10 @@ TEST_F(Test_ContactSection, Size)
         std::string("activeContactItem3"),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
+        ot::contact::ContactSectionName::Identifier,
         ot::proto::ContactItemType::CITEMTYPE_SSL,
         std::string("activeContactItemValue3"),
-        {ot::proto::ContactItemAttribute::CITEMATTR_ACTIVE},
+        {ot::contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         ""));
@@ -679,8 +676,7 @@ TEST_F(Test_ContactSection, Size)
 TEST_F(Test_ContactSection, Type)
 {
     ASSERT_EQ(
-        ot::proto::ContactSectionName::CONTACTSECTION_IDENTIFIER,
-        contactSection_.Type());
+        ot::contact::ContactSectionName::Identifier, contactSection_.Type());
 }
 
 TEST_F(Test_ContactSection, Version)

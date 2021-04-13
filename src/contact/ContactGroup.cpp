@@ -7,9 +7,11 @@
 
 #include "0_stdafx.hpp"    // IWYU pragma: associated
 #include "1_Internal.hpp"  // IWYU pragma: associated
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/contact/ContactGroup.hpp"  // IWYU pragma: associated
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
@@ -23,7 +25,8 @@ namespace opentxs
 {
 struct ContactGroup::Imp {
     const std::string nym_{};
-    const proto::ContactSectionName section_{proto::CONTACTSECTION_ERROR};
+    const contact::ContactSectionName section_{
+        contact::ContactSectionName::Error};
     const proto::ContactItemType type_{proto::CITEMTYPE_ERROR};
     const OTIdentifier primary_;
     const ItemMap items_{};
@@ -48,7 +51,7 @@ struct ContactGroup::Imp {
     }
 
     Imp(const std::string& nym,
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItemType type,
         const ItemMap& items)
         : nym_(nym)
@@ -116,7 +119,7 @@ static auto create_item(const std::shared_ptr<ContactItem>& item)
 
 ContactGroup::ContactGroup(
     const std::string& nym,
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const proto::ContactItemType type,
     const ItemMap& items)
     : imp_(std::make_unique<Imp>(nym, section, type, items))
@@ -126,7 +129,7 @@ ContactGroup::ContactGroup(
 
 ContactGroup::ContactGroup(
     const std::string& nym,
-    const proto::ContactSectionName section,
+    const contact::ContactSectionName section,
     const std::shared_ptr<ContactItem>& item)
     : ContactGroup(nym, section, item->Type(), create_item(item))
 {
@@ -293,7 +296,7 @@ auto ContactGroup::SerializeTo(
     proto::ContactSection& section,
     const bool withIDs) const -> bool
 {
-    if (section.name() != imp_->section_) {
+    if (contact::internal::translate(section.name()) != imp_->section_) {
         LogOutput(OT_METHOD)(__FUNCTION__)(
             ": Trying to serialize to incorrect section.")
             .Flush();

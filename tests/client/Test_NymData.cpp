@@ -13,6 +13,7 @@
 #include "1_Internal.hpp"
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
 #include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
@@ -23,6 +24,8 @@
 #include "opentxs/client/NymData.hpp"
 #include "opentxs/contact/ContactData.hpp"
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactItemAttribute.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
@@ -73,12 +76,14 @@ TEST_F(Test_NymData, AddClaim)
 {
     ot::Claim claim = std::make_tuple(
         std::string(""),
-        ot::proto::CONTACTSECTION_CONTRACT,
+        ot::contact::internal::translate(
+            ot::contact::ContactSectionName::Contract),
         ot::proto::CITEMTYPE_USD,
         std::string("claimValue"),
         NULL_START,
         NULL_END,
-        std::set<std::uint32_t>{ot::proto::CITEMATTR_ACTIVE});
+        std::set<std::uint32_t>{
+            static_cast<uint32_t>(ot::contact::ContactItemAttribute::Active)});
 
     auto added = nymData_.AddClaim(claim, reason_);
     EXPECT_TRUE(added);
@@ -94,7 +99,7 @@ TEST_F(Test_NymData, AddContract)
         ot::identity::credential::Contact::ClaimID(
             client_,
             "testNym",
-            ot::proto::CONTACTSECTION_CONTRACT,
+            ot::contact::ContactSectionName::Contract,
             ot::proto::CITEMTYPE_USD,
             NULL_START,
             NULL_END,
@@ -148,7 +153,7 @@ TEST_F(Test_NymData, AddPreferredOTServer)
         ot::identity::credential::Contact::ClaimID(
             client_,
             "testNym",
-            ot::proto::CONTACTSECTION_COMMUNICATION,
+            ot::contact::ContactSectionName::Communication,
             ot::proto::CITEMTYPE_OPENTXS,
             NULL_START,
             NULL_END,
@@ -231,12 +236,14 @@ TEST_F(Test_NymData, DeleteClaim)
 {
     ot::Claim claim = std::make_tuple(
         std::string(""),
-        ot::proto::CONTACTSECTION_CONTRACT,
+        ot::contact::internal::translate(
+            ot::contact::ContactSectionName::Contract),
         ot::proto::CITEMTYPE_USD,
         std::string("claimValue"),
         NULL_START,
         NULL_END,
-        std::set<std::uint32_t>{ot::proto::CITEMATTR_ACTIVE});
+        std::set<std::uint32_t>{
+            static_cast<uint32_t>(ot::contact::ContactItemAttribute::Active)});
 
     auto added = nymData_.AddClaim(claim, reason_);
     ASSERT_TRUE(added);
@@ -245,7 +252,7 @@ TEST_F(Test_NymData, DeleteClaim)
         ot::identity::credential::Contact::ClaimID(
             client_,
             "testNym",
-            ot::proto::CONTACTSECTION_CONTRACT,
+            ot::contact::ContactSectionName::Contract,
             ot::proto::CITEMTYPE_USD,
             NULL_START,
             NULL_END,
@@ -286,7 +293,7 @@ TEST_F(Test_NymData, HaveContract)
         ot::identity::credential::Contact::ClaimID(
             client_,
             "testNym",
-            ot::proto::CONTACTSECTION_CONTRACT,
+            ot::contact::ContactSectionName::Contract,
             ot::proto::CITEMTYPE_USD,
             NULL_START,
             NULL_END,
@@ -317,7 +324,7 @@ TEST_F(Test_NymData, HaveContract)
         ot::identity::credential::Contact::ClaimID(
             client_,
             "testNym",
-            ot::proto::CONTACTSECTION_CONTRACT,
+            ot::contact::ContactSectionName::Contract,
             ot::proto::CITEMTYPE_USD,
             NULL_START,
             NULL_END,
@@ -400,7 +407,7 @@ TEST_F(Test_NymData, PreferredOTServer)
         ot::identity::credential::Contact::ClaimID(
             client_,
             "testNym",
-            ot::proto::CONTACTSECTION_COMMUNICATION,
+            ot::contact::ContactSectionName::Communication,
             ot::proto::CITEMTYPE_OPENTXS,
             NULL_START,
             NULL_END,
@@ -482,7 +489,9 @@ TEST_F(Test_NymData, SocialMediaProfileTypes)
 {
     std::set<ot::proto::ContactItemType> profileTypes =
         ot::proto::AllowedItemTypes().at(ot::proto::ContactSectionVersion(
-            CONTACT_CONTACT_DATA_VERSION, ot::proto::CONTACTSECTION_PROFILE));
+            CONTACT_CONTACT_DATA_VERSION,
+            ot::contact::internal::translate(
+                ot::contact::ContactSectionName::Profile)));
 
     EXPECT_EQ(profileTypes, nymData_.SocialMediaProfileTypes());
 }

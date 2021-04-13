@@ -14,6 +14,7 @@
 
 #include "internal/api/Api.hpp"
 #include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -26,7 +27,9 @@
 #include "opentxs/contact/ContactData.hpp"
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactItemAttribute.hpp"
 #include "opentxs/contact/ContactSection.hpp"  // IWYU pragma: keep
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
@@ -225,7 +228,8 @@ struct Contact::Imp {
             return false;
         }
 
-        const auto version = std::make_pair(item->Version(), item->Section());
+        const auto version = std::make_pair(
+            item->Version(), contact::internal::translate(item->Section()));
         const proto::ContactItem serialized(*item);
 
         if (false ==
@@ -278,10 +282,11 @@ struct Contact::Imp {
     {
         OT_ASSERT(verify_write_lock(lock));
 
-        std::set<proto::ContactItemAttribute> attr{
-            proto::CITEMATTR_LOCAL, proto::CITEMATTR_ACTIVE};
+        std::set<contact::ContactItemAttribute> attr{
+            contact::ContactItemAttribute::Local,
+            contact::ContactItemAttribute::Active};
 
-        if (primary) { attr.emplace(proto::CITEMATTR_PRIMARY); }
+        if (primary) { attr.emplace(contact::ContactItemAttribute::Primary); }
 
         std::shared_ptr<ContactItem> claim{nullptr};
         claim.reset(new ContactItem(
@@ -289,7 +294,7 @@ struct Contact::Imp {
             String::Factory(id_)->Get(),
             CONTACT_CONTACT_DATA_VERSION,
             CONTACT_CONTACT_DATA_VERSION,
-            proto::CONTACTSECTION_RELATIONSHIP,
+            contact::ContactSectionName::Relationship,
             proto::CITEMTYPE_CONTACT,
             String::Factory(nymID)->Get(),
             attr,
@@ -320,7 +325,8 @@ struct Contact::Imp {
         OT_ASSERT(contact_data_);
 
         const auto nyms = contact_data_->Group(
-            proto::CONTACTSECTION_RELATIONSHIP, proto::CITEMTYPE_CONTACT);
+            contact::ContactSectionName::Relationship,
+            proto::CITEMTYPE_CONTACT);
 
         if (false == bool(nyms)) { return; }
 
@@ -388,7 +394,7 @@ struct Contact::Imp {
 
         if (false == bool(data)) { return {}; }
 
-        return data->Group(proto::CONTACTSECTION_PROCEDURE, currency);
+        return data->Group(contact::ContactSectionName::Procedure, currency);
     }
 
     auto type(const Lock& lock) const -> proto::ContactItemType
@@ -560,10 +566,11 @@ auto Contact::AddBlockchainAddress(
         String::Factory(imp_->id_)->Get(),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        proto::CONTACTSECTION_ADDRESS,
+        contact::ContactSectionName::Address,
         Translate(chain),
         bytes.asHex(),
-        {proto::CITEMATTR_LOCAL, proto::CITEMATTR_ACTIVE},
+        {contact::ContactItemAttribute::Local,
+         contact::ContactItemAttribute::Active},
         NULL_START,
         NULL_END,
         translate_style(style)));
@@ -620,11 +627,12 @@ auto Contact::AddPaymentCode(
     const proto::ContactItemType currency,
     const bool active) -> bool
 {
-    std::set<proto::ContactItemAttribute> attr{proto::CITEMATTR_LOCAL};
+    std::set<contact::ContactItemAttribute> attr{
+        contact::ContactItemAttribute::Local};
 
-    if (active) { attr.emplace(proto::CITEMATTR_ACTIVE); }
+    if (active) { attr.emplace(contact::ContactItemAttribute::Active); }
 
-    if (primary) { attr.emplace(proto::CITEMATTR_PRIMARY); }
+    if (primary) { attr.emplace(contact::ContactItemAttribute::Primary); }
 
     const std::string value = code.asBase58();
     std::shared_ptr<ContactItem> claim{nullptr};
@@ -633,7 +641,7 @@ auto Contact::AddPaymentCode(
         String::Factory(imp_->id_)->Get(),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        proto::CONTACTSECTION_PROCEDURE,
+        contact::ContactSectionName::Procedure,
         currency,
         value,
         attr,
@@ -754,7 +762,7 @@ auto Contact::BlockchainAddresses() const
     if (false == bool(data)) { return {}; }
 
     const auto& version = data->Version();
-    const auto section = data->Section(proto::CONTACTSECTION_ADDRESS);
+    const auto section = data->Section(contact::ContactSectionName::Address);
 
     if (false == bool(section)) { return {}; }
 
@@ -765,7 +773,10 @@ auto Contact::BlockchainAddresses() const
         OT_ASSERT(group);
 
         const bool currency = proto::ValidContactItemType(
-            {version, proto::CONTACTSECTION_CONTRACT}, type);
+            {version,
+             contact::internal::translate(
+                 contact::ContactSectionName::Contract)},
+            type);
 
         if (false == currency) { continue; }
 
@@ -823,7 +834,7 @@ auto Contact::LastUpdated() const -> std::time_t
     OT_ASSERT(imp_->contact_data_);
 
     const auto group = imp_->contact_data_->Group(
-        proto::CONTACTSECTION_EVENT, proto::CITEMTYPE_REFRESHED);
+        contact::ContactSectionName::Event, proto::CITEMTYPE_REFRESHED);
 
     if (false == bool(group)) { return {}; }
 
@@ -864,7 +875,7 @@ auto opentxs::Contact::Nyms(const bool includeInactive) const
     if (false == bool(data)) { return {}; }
 
     const auto group = data->Group(
-        proto::CONTACTSECTION_RELATIONSHIP, proto::CITEMTYPE_CONTACT);
+        contact::ContactSectionName::Relationship, proto::CITEMTYPE_CONTACT);
 
     if (false == bool(group)) { return {}; }
 
@@ -896,7 +907,7 @@ auto Contact::PaymentCode(
     const ContactData& data,
     const proto::ContactItemType currency) -> std::string
 {
-    auto group = data.Group(proto::CONTACTSECTION_PROCEDURE, currency);
+    auto group = data.Group(contact::ContactSectionName::Procedure, currency);
 
     if (false == bool(group)) { return {}; }
 
@@ -1074,12 +1085,12 @@ void Contact::Update(const proto::Nym& serialized)
         String::Factory(imp_->id_)->Get(),
         CONTACT_CONTACT_DATA_VERSION,
         CONTACT_CONTACT_DATA_VERSION,
-        proto::CONTACTSECTION_EVENT,
+        contact::ContactSectionName::Event,
         proto::CITEMTYPE_REFRESHED,
         std::to_string(std::time(nullptr)),
-        {proto::CITEMATTR_PRIMARY,
-         proto::CITEMATTR_ACTIVE,
-         proto::CITEMATTR_LOCAL},
+        {contact::ContactItemAttribute::Primary,
+         contact::ContactItemAttribute::Active,
+         contact::ContactItemAttribute::Local},
         NULL_START,
         NULL_END,
         ""));

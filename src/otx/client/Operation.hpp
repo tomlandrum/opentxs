@@ -87,7 +87,7 @@ public:
     }
 
     auto AddClaim(
-        const proto::ContactSectionName section,
+        const contact::ContactSectionName section,
         const proto::ContactItemType type,
         const String& value,
         const bool primary) -> bool override;
@@ -209,7 +209,7 @@ private:
     Amount amount_;
     OTString memo_;
     bool bool_;
-    proto::ContactSectionName claim_section_;
+    contact::ContactSectionName claim_section_;
     proto::ContactItemType claim_type_;
     std::shared_ptr<Cheque> cheque_;
     std::shared_ptr<const OTPayment> payment_;

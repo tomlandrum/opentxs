@@ -16,6 +16,7 @@
 
 #include "core/OTStorage.hpp"
 #include "internal/api/Api.hpp"
+#include "internal/contact/Contact.hpp"
 #include "internal/core/contract/Contract.hpp"
 #include "internal/api/server/Server.hpp"
 #include "opentxs/Exclusive.hpp"
@@ -30,6 +31,7 @@
 #include "opentxs/blind/Mint.hpp"  // IWYU pragma: keep
 #endif                             // OT_CASH
 #include "opentxs/client/NymData.hpp"
+#include "opentxs/contact/ContactItemAttribute.hpp"
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/Armored.hpp"
 #include "opentxs/core/Data.hpp"
@@ -504,9 +506,13 @@ auto UserCommandProcessor::cmd_add_claim(ReplyMessage& reply) const -> bool
     const bool primary = msgIn.m_bBool;
     std::set<std::uint32_t> attributes;
 
-    if (primary) { attributes.insert(proto::CITEMATTR_PRIMARY); }
+    if (primary) {
+        attributes.insert(contact::internal::translate(
+            contact::ContactItemAttribute::Primary));
+    }
 
-    attributes.insert(proto::CITEMATTR_ACTIVE);
+    attributes.insert(
+        contact::internal::translate(contact::ContactItemAttribute::Active));
 
     Claim claim{"", section, type, value, 0, 0, attributes};
 

@@ -19,6 +19,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/protobuf/ContactData.pb.h"
@@ -41,7 +42,7 @@ class ContactData
 {
 public:
     using SectionMap =
-        std::map<proto::ContactSectionName, std::shared_ptr<ContactSection>>;
+        std::map<contact::ContactSectionName, std::shared_ptr<ContactSection>>;
 
     OPENTXS_EXPORT static std::string PrintContactData(
         const proto::ContactData& data);
@@ -105,18 +106,18 @@ public:
     OPENTXS_EXPORT std::string EmailAddresses(bool active = true) const;
     OPENTXS_EXPORT SectionMap::const_iterator end() const;
     OPENTXS_EXPORT std::shared_ptr<ContactGroup> Group(
-        const proto::ContactSectionName& section,
+        const contact::ContactSectionName& section,
         const proto::ContactItemType& type) const;
     OPENTXS_EXPORT bool HaveClaim(const Identifier& item) const;
     OPENTXS_EXPORT bool HaveClaim(
-        const proto::ContactSectionName& section,
+        const contact::ContactSectionName& section,
         const proto::ContactItemType& type,
         const std::string& value) const;
     OPENTXS_EXPORT std::string Name() const;
     OPENTXS_EXPORT std::string PhoneNumbers(bool active = true) const;
     OPENTXS_EXPORT OTServerID PreferredOTServer() const;
     OPENTXS_EXPORT std::shared_ptr<ContactSection> Section(
-        const proto::ContactSectionName& section) const;
+        const contact::ContactSectionName& section) const;
     OPENTXS_EXPORT proto::ContactData Serialize(
         const bool withID = false) const;
     OPENTXS_EXPORT ContactData SetCommonName(const std::string& name) const;

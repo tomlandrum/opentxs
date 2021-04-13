@@ -10,6 +10,7 @@ add_library(
   "ContactGroup.cpp"
   "ContactItem.cpp"
   "ContactSection.cpp"
+  "Internal.cpp"
 )
 set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/contact/Contact.hpp"
