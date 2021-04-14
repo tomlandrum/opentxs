@@ -14,9 +14,13 @@ add_library(
   "Token.hpp"
 )
 set(cxx-install-headers
+    "${opentxs_SOURCE_DIR}/include/opentxs/blind/CashType.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/blind/Mint.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/blind/Purse.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/blind/PurseType.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/blind/Token.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/blind/TokenState.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/blind/Types.hpp"
 )
 
 target_link_libraries(

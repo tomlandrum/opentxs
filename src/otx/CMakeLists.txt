@@ -14,8 +14,14 @@ add_library(
   "Request.cpp"
   "Request.hpp"
 )
-set(cxx-install-headers "${opentxs_SOURCE_DIR}/include/opentxs/otx/Reply.hpp"
-                        "${opentxs_SOURCE_DIR}/include/opentxs/otx/Request.hpp"
+set(cxx-install-headers 
+	"${opentxs_SOURCE_DIR}/include/opentxs/otx/ConsensusType.hpp"
+	"${opentxs_SOURCE_DIR}/include/opentxs/otx/LastReplyStatus.hpp"
+	"${opentxs_SOURCE_DIR}/include/opentxs/otx/Reply.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/otx/Request.hpp"
+	"${opentxs_SOURCE_DIR}/include/opentxs/otx/ServerReplyType.hpp"
+	"${opentxs_SOURCE_DIR}/include/opentxs/otx/ServerRequestType.hpp"
+	"${opentxs_SOURCE_DIR}/include/opentxs/otx/Types.hpp"
 )
 target_link_libraries(opentxs-otx PRIVATE opentxs::messages)
 target_include_directories(

@@ -17,7 +17,11 @@ set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/contact/ContactData.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/contact/ContactGroup.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/contact/ContactItem.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/contact/ContactItemAttribute.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/contact/ContactItemType.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/contact/ContactSection.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/contact/ContactSectionName.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/contact/Types.hpp"
 )
 target_link_libraries(opentxs-contact PRIVATE opentxs::messages)
 target_include_directories(

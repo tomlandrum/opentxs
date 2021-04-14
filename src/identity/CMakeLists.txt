@@ -16,8 +16,13 @@ add_library(
 )
 set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/identity/Authority.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/identity/CredentialRole.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/identity/CredentialType.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/identity/Nym.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/identity/Source.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/identity/SourceProofType.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/identity/SourceType.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/identity/Types.hpp"
 )
 target_link_libraries(
   opentxs-identity PRIVATE opentxs::messages unofficial-sodium::sodium

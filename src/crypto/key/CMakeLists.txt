@@ -3,6 +3,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+add_subdirectory(asymmetric)
+add_subdirectory(symmetric)
+
 add_library(
   opentxs-crypto-key OBJECT
   "${opentxs_SOURCE_DIR}/src/internal/crypto/key/Factory.hpp"
@@ -29,6 +32,7 @@ set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/crypto/key/RSA.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/crypto/key/Secp256k1.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/crypto/key/Symmetric.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/crypto/key/Types.hpp"
 )
 target_link_libraries(
   opentxs-crypto-key PRIVATE opentxs::messages unofficial-sodium::sodium

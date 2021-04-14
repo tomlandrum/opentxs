@@ -43,7 +43,10 @@ set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/api/client/Manager.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/api/client/OTX.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/api/client/Pair.hpp"
-    "${opentxs_SOURCE_DIR}/include/opentxs/api/client/ServerAction.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/api/client/PaymentWorkflowState.hpp"    
+    "${opentxs_SOURCE_DIR}/include/opentxs/api/client/PaymentWorkflowType.hpp"
+	"${opentxs_SOURCE_DIR}/include/opentxs/api/client/ServerAction.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/api/client/Types.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/api/client/UI.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/api/client/Workflow.hpp"
 )

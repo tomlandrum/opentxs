@@ -63,6 +63,7 @@ set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/core/Account.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/AccountList.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/AccountVisitor.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/core/AddressType.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/Armored.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/Cheque.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/Contract.hpp"
@@ -86,6 +87,7 @@ set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/core/Secret.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/String.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/StringXML.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/core/Types.hpp"
 )
 target_link_libraries(
   opentxs-core

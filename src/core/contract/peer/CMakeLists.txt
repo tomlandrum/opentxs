@@ -35,15 +35,20 @@ set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/BailmentNotice.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/BailmentReply.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/BailmentRequest.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/ConnectionInfoType.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/ConnectionReply.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/ConnectionRequest.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/NoticeAcknowledgement.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/OutBailmentReply.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/OutBailmentRequest.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/PeerObject.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/PeerObjectType.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/PeerReply.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/PeerRequest.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/PeerRequestType.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/SecretType.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/StoreSecret.hpp"
+    "${opentxs_SOURCE_DIR}/include/opentxs/core/contract/peer/Types.hpp"
 )
 target_link_libraries(opentxs-core-contract-peer PRIVATE opentxs::messages)
 target_include_directories(
