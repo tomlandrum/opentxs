@@ -30,6 +30,8 @@
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/Manager.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/client/OTX.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/server/Manager.hpp"

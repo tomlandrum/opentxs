@@ -18,6 +18,7 @@
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/LogSource.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 #include "opentxs/protobuf/Enums.pb.h"
@@ -44,7 +45,7 @@ auto RSAKey(
 auto RSAKey(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& engine,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     const NymParameters& options,
     const opentxs::PasswordPrompt& reason) noexcept
@@ -83,7 +84,7 @@ RSA::RSA(
 RSA::RSA(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& engine,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     const NymParameters& options,
     Space& params,
@@ -91,7 +92,7 @@ RSA::RSA(
     : Asymmetric(
           api,
           engine,
-          proto::AKEYTYPE_LEGACY,
+          crypto::key::asymmetric::Algorithm::Legacy,
           role,
           version,
           [&](auto& pub, auto& prv) -> EncryptedKey {
@@ -157,7 +158,7 @@ auto RSA::Serialize() const noexcept -> std::shared_ptr<proto::AsymmetricKey>
 
     OT_ASSERT(output)
 
-    if (proto::KEYROLE_ENCRYPT == role_) {
+    if (crypto::key::asymmetric::Role::Encrypt == role_) {
         output->set_params(params_->data(), params_->size());
     }
 

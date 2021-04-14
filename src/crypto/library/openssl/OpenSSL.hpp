@@ -115,7 +115,7 @@ public:
     auto RandomKeypair(
         const AllocateOutput privateKey,
         const AllocateOutput publicKey,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const NymParameters& options,
         const AllocateOutput params) const noexcept -> bool final;
     auto SharedSecret(

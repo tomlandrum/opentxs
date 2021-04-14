@@ -1000,7 +1000,7 @@ auto Factory::instantiate_secp256k1(
         Data(key),
         path,
         {},
-        proto::KEYROLE_SIGN,
+        opentxs::crypto::key::asymmetric::Role::Sign,
         opentxs::crypto::key::EllipticCurve::DefaultVersion);
 #else
     using ReturnType = opentxs::crypto::key::Secp256k1;

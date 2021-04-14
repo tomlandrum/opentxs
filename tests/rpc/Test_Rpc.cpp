@@ -15,6 +15,8 @@
 #include <vector>
 
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
+#include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Shared.hpp"
@@ -28,12 +30,15 @@
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/Manager.hpp"
 #include "opentxs/api/client/OTX.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/server/Manager.hpp"
 #include "opentxs/api/storage/Storage.hpp"
 #include "opentxs/contact/ContactData.hpp"
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
+#include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/Log.hpp"
@@ -632,7 +637,8 @@ TEST_F(Test_Rpc, Create_Nym)
     EXPECT_NE(nullptr, createnym);
 
     createnym->set_version(CREATENYM_VERSION);
-    createnym->set_type(contact::ContactItemType::Individual);
+    createnym->set_type(
+        contact::internal::translate(contact::ContactItemType::Individual));
     createnym->set_name("testNym1");
     createnym->set_index(-1);
 
@@ -659,7 +665,8 @@ TEST_F(Test_Rpc, Create_Nym)
     EXPECT_NE(nullptr, createnym);
 
     createnym->set_version(CREATENYM_VERSION);
-    createnym->set_type(contact::ContactItemType::Individual);
+    createnym->set_type(
+        contact::internal::translate(contact::ContactItemType::Individual));
     createnym->set_name("testNym2");
     createnym->set_index(-1);
 
@@ -682,7 +689,8 @@ TEST_F(Test_Rpc, Create_Nym)
     EXPECT_NE(nullptr, createnym);
 
     createnym->set_version(CREATENYM_VERSION);
-    createnym->set_type(contact::ContactItemType::Individual);
+    createnym->set_type(
+        contact::internal::translate(contact::ContactItemType::Individual));
     createnym->set_name("testNym3");
     createnym->set_index(-1);
 
@@ -813,7 +821,8 @@ TEST_F(Test_Rpc, Create_Unit_Definition)
     def->set_tla("GTD");
     def->set_power(2);
     def->set_terms("Google Test Dollars");
-    def->set_unitofaccount(contact::ContactItemType::USD);
+    def->set_unitofaccount(
+        contact::internal::translate(contact::ContactItemType::USD));
     auto response = ot_.RPC(command);
 
     EXPECT_TRUE(proto::Validate(response, VERBOSE));
@@ -921,7 +930,8 @@ TEST_F(Test_Rpc, Delete_Claim_No_Nym)
     auto nym = client.Wallet().Nym(ot::identifier::Nym::Factory(nym1_id_));
     auto& claims = nym->Claims();
     auto group = claims.Group(
-        proto::CONTACTSECTION_RELATIONSHIP, proto::CITEMTYPE_ALIAS);
+        opentxs::contact::ContactSectionName::Relationship,
+        opentxs::contact::ContactItemType::Alias);
     const auto claim = group->Best();
     claim_id_ = claim->ID().str();
     command.add_identifier(claim_id_);
@@ -1392,9 +1402,10 @@ TEST_F(Test_Rpc, Get_Workflow)
     EXPECT_STREQ(workflowid->str().c_str(), paymentworkflow.id().c_str());
     EXPECT_EQ(
         api::client::PaymentWorkflowType::InternalTransfer,
-        paymentworkflow.type());
+        api::client::internal::translate(paymentworkflow.type()));
     EXPECT_EQ(
-        api::client::PaymentWorkflowState::Completed, paymentworkflow.state());
+        api::client::PaymentWorkflowState::Completed,
+        api::client::internal::translate(paymentworkflow.state()));
 
     workflow_id_ = workflowid->str();
 }

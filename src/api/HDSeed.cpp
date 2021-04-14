@@ -319,7 +319,7 @@ auto HDSeed::GetPaymentCode(
         api.Factory().Data(key.PublicKey()),
         path,
         key.Parent(),
-        opentxs::crypto::key::internal::translate(key.Role()),
+        key.Role(),
         key.Version(),
         reason);
 #else

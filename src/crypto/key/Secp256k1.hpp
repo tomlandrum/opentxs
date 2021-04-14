@@ -68,7 +68,7 @@ public:
     Secp256k1(
         const api::internal::Core& api,
         const crypto::EcdsaProvider& ecdsa,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version,
         const PasswordPrompt& reason) noexcept(false);
     Secp256k1(
@@ -76,7 +76,7 @@ public:
         const crypto::EcdsaProvider& ecdsa,
         const Secret& privateKey,
         const Data& publicKey,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version,
         key::Symmetric& sessionKey,
         const PasswordPrompt& reason) noexcept(false);
@@ -89,7 +89,7 @@ public:
         const Data& publicKey,
         const proto::HDPath& path,
         const Bip32Fingerprint parent,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version,
         key::Symmetric& sessionKey,
         const PasswordPrompt& reason) noexcept(false);
@@ -101,7 +101,7 @@ public:
         const Data& publicKey,
         const proto::HDPath& path,
         const Bip32Fingerprint parent,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version) noexcept(false);
 #endif  // OT_CRYPTO_WITH_BIP32
     Secp256k1(const Secp256k1& rhs, const ReadView newPublic) noexcept;

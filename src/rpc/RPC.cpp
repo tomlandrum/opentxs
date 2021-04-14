@@ -24,6 +24,7 @@
 
 #include "2_Factory.hpp"
 #include "internal/api/client/Client.hpp"
+#include "internal/contact/Contact.hpp"
 #include "opentxs/Exclusive.hpp"
 #include "opentxs/Shared.hpp"
 #include "opentxs/SharedPimpl.hpp"
@@ -38,6 +39,8 @@
 #include "opentxs/api/client/Contacts.hpp"
 #include "opentxs/api/client/Manager.hpp"
 #include "opentxs/api/client/OTX.hpp"
+#include "opentxs/api/client/PaymentWorkflowState.hpp"
+#include "opentxs/api/client/PaymentWorkflowType.hpp"
 #include "opentxs/api/client/UI.hpp"
 #include "opentxs/api/client/Workflow.hpp"
 #include "opentxs/api/server/Manager.hpp"
@@ -252,7 +255,7 @@ auto RPC::accept_pending_payments(const proto::RPCCommand& command) const
 
         std::shared_ptr<const OTPayment> payment{};
 
-        switch (paymentWorkflow->type()) {
+        switch (api::client::internal::translate(paymentWorkflow->type())) {
             case api::client::PaymentWorkflowType::IncomingCheque:
             case api::client::PaymentWorkflowType::IncomingInvoice: {
                 auto chequeState =
@@ -474,7 +477,7 @@ auto RPC::create_compatible_account(const proto::RPCCommand& command) const
     auto notaryID = identifier::Server::Factory();
     auto unitID = identifier::UnitDefinition::Factory();
 
-    switch (workflow.type()) {
+    switch (api::client::internal::translate(workflow.type())) {
         case api::client::PaymentWorkflowType::IncomingCheque: {
             auto chequeState =
                 opentxs::api::client::Workflow::InstantiateCheque(
@@ -596,7 +599,7 @@ auto RPC::create_nym(const proto::RPCCommand& command) const
         reason,
         createnym.name(),
         {createnym.seedid(), createnym.index()},
-        createnym.type());
+        contact::internal::translate(createnym.type()));
 
     if (false == bool(pNym)) {
         add_output_status(output, proto::RPCRESPONSE_CREATE_NYM_FAILED);
@@ -649,7 +652,7 @@ auto RPC::create_unit_definition(const proto::RPCCommand& command) const
             createunit.tla(),
             createunit.power(),
             createunit.fractionalunitname(),
-            createunit.unitofaccount(),
+            contact::internal::translate(createunit.unitofaccount()),
             reason);
 
         output.add_identifier(unitdefinition->ID()->str());
@@ -946,7 +949,7 @@ auto RPC::get_compatible_accounts(const proto::RPCCommand& command) const
     const auto& workflow = *pWorkflow;
     auto unitID = identifier::UnitDefinition::Factory();
 
-    switch (workflow.type()) {
+    switch (api::client::internal::translate(workflow.type())) {
         case api::client::PaymentWorkflowType::IncomingCheque:
         case api::client::PaymentWorkflowType::IncomingInvoice: {
             auto chequeState =
@@ -1057,7 +1060,7 @@ auto RPC::get_pending_payments(const proto::RPCCommand& command) const
         auto accountEventType = proto::ACCOUNTEVENT_INCOMINGCHEQUE;
 
         if (api::client::PaymentWorkflowType::IncomingInvoice ==
-            paymentWorkflow->type()) {
+            api::client::internal::translate(paymentWorkflow->type())) {
             accountEventType = proto::ACCOUNTEVENT_INCOMINGINVOICE;
         }
 

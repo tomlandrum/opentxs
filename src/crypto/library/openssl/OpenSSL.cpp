@@ -28,6 +28,7 @@ extern "C" {
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/crypto/SecretStyle.hpp"
 #include "opentxs/crypto/key/Asymmetric.hpp"
+#include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/crypto/library/HashingProvider.hpp"
 
 #define OT_METHOD "opentxs::OpenSSL::"
@@ -672,11 +673,11 @@ auto OpenSSL::primes(const int bits) -> int
 auto OpenSSL::RandomKeypair(
     const AllocateOutput privateKey,
     const AllocateOutput publicKey,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const NymParameters& options,
     const AllocateOutput params) const noexcept -> bool
 {
-    if (proto::KEYROLE_ENCRYPT == role) {
+    if (crypto::key::asymmetric::Role::Encrypt == role) {
 
         return make_dh_key(privateKey, publicKey, params, options);
     } else {
@@ -699,26 +700,26 @@ auto OpenSSL::SharedSecret(
         return false;
     }
 
-    if (proto::AKEYTYPE_LEGACY != publicKey.keyType()) {
+    if (crypto::key::asymmetric::Algorithm::Legacy != publicKey.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid public key type").Flush();
 
         return false;
     }
 
-    if (proto::KEYROLE_ENCRYPT != publicKey.Role()) {
+    if (crypto::key::asymmetric::Role::Encrypt != publicKey.Role()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid public key role").Flush();
 
         return false;
     }
 
-    if (proto::AKEYTYPE_LEGACY != privateKey.keyType()) {
+    if (crypto::key::asymmetric::Algorithm::Legacy != privateKey.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid private key type")
             .Flush();
 
         return false;
     }
 
-    if (proto::KEYROLE_ENCRYPT != publicKey.Role()) {
+    if (crypto::key::asymmetric::Role::Encrypt != privateKey.Role()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid private key role")
             .Flush();
 
@@ -790,7 +791,7 @@ auto OpenSSL::Sign(
     const AllocateOutput signature,
     const PasswordPrompt& reason) const -> bool
 {
-    if (proto::AKEYTYPE_LEGACY != key.keyType()) {
+    if (crypto::key::asymmetric::Algorithm::Legacy != key.keyType()) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid key type").Flush();
 
         return false;

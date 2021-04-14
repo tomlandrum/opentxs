@@ -64,7 +64,7 @@ public:
 
     RSA(const api::internal::Core& api,
         const crypto::AsymmetricProvider& engine,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version,
         const NymParameters& options,
         Space& params,

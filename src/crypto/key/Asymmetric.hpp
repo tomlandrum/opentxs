@@ -166,7 +166,7 @@ protected:
         const api::internal::Core& api,
         const crypto::AsymmetricProvider& provider,
         const NymParameters& options,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const AllocateOutput publicKey,
         const AllocateOutput privateKey,
         const Secret& prv,
@@ -193,7 +193,7 @@ protected:
     static auto generate_key(
         const crypto::AsymmetricProvider& provider,
         const NymParameters& options,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const AllocateOutput publicKey,
         const AllocateOutput privateKey,
         const AllocateOutput params) noexcept(false) -> void;
@@ -216,7 +216,7 @@ protected:
         const api::internal::Core& api,
         const crypto::AsymmetricProvider& engine,
         const crypto::key::asymmetric::Algorithm keyType,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const bool hasPublic,
         const bool hasPrivate,
         const VersionNumber version,
@@ -226,7 +226,7 @@ protected:
         const api::internal::Core& api,
         const crypto::AsymmetricProvider& engine,
         const crypto::key::asymmetric::Algorithm keyType,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version,
         EncryptedExtractor) noexcept(false);
     Asymmetric(

@@ -45,7 +45,7 @@ auto Ed25519Key(
 auto Ed25519Key(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const proto::KeyRole input,
+    const crypto::key::asymmetric::Role input,
     const VersionNumber version,
     const opentxs::PasswordPrompt& reason) noexcept
     -> std::unique_ptr<crypto::key::Ed25519>
@@ -71,7 +71,7 @@ auto Ed25519Key(
     const Data& publicKey,
     const proto::HDPath& path,
     const Bip32Fingerprint parent,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     const opentxs::PasswordPrompt& reason) noexcept
     -> std::unique_ptr<crypto::key::Ed25519>
@@ -107,7 +107,7 @@ Ed25519::Ed25519(
 Ed25519::Ed25519(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     const PasswordPrompt& reason) noexcept(false)
     : ot_super(
@@ -129,7 +129,7 @@ Ed25519::Ed25519(
     const Data& publicKey,
     const proto::HDPath& path,
     const Bip32Fingerprint parent,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     key::Symmetric& sessionKey,
     const PasswordPrompt& reason) noexcept(false)

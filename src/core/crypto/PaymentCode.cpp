@@ -1096,7 +1096,7 @@ auto PaymentCode::Unblind(
                 api_.Factory().Data(pre.xpub_.Key()),
                 proto::HDPath{},
                 Bip32Fingerprint{},
-                proto::KEYROLE_SIGN,
+                crypto::key::asymmetric::Role::Sign,
                 crypto::key::EllipticCurve::DefaultVersion,
                 reason));
 #else
@@ -1191,7 +1191,7 @@ auto PaymentCode::unblind_v1(
             api_.Factory().Data(pre.xpub_.Key()),
             proto::HDPath{},
             Bip32Fingerprint{},
-            proto::KEYROLE_SIGN,
+            crypto::key::asymmetric::Role::Sign,
             crypto::key::EllipticCurve::DefaultVersion,
             reason));
 }
@@ -1245,7 +1245,7 @@ auto PaymentCode::unblind_v3(
             api_.Factory().Data(pre.Key()),
             proto::HDPath{},
             Bip32Fingerprint{},
-            proto::KEYROLE_SIGN,
+            crypto::key::asymmetric::Role::Sign,
             crypto::key::EllipticCurve::DefaultVersion,
             reason));
 }

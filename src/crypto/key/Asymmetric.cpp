@@ -81,7 +81,7 @@ Asymmetric::Asymmetric(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& engine,
     const crypto::key::asymmetric::Algorithm keyType,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const bool hasPublic,
     const bool hasPrivate,
     const VersionNumber version,
@@ -91,7 +91,7 @@ Asymmetric::Asymmetric(
     , provider_(engine)
     , version_(version)
     , type_(keyType)
-    , role_(opentxs::crypto::key::internal::translate(role))
+    , role_(role)
     , has_public_(hasPublic)
     , has_private_(hasPrivate)
     , m_pMetadata(new OTSignatureMetadata(api_))
@@ -115,7 +115,7 @@ Asymmetric::Asymmetric(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& engine,
     const crypto::key::asymmetric::Algorithm keyType,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     EncryptedExtractor getEncrypted) noexcept(false)
     : Asymmetric(
@@ -140,7 +140,7 @@ Asymmetric::Asymmetric(
           api,
           engine,
           opentxs::crypto::key::internal::translate(serialized.type()),
-          serialized.role(),
+          opentxs::crypto::key::internal::translate(serialized.role()),
           true,
           proto::KEYMODE_PRIVATE == serialized.mode(),
           serialized.version(),
@@ -155,7 +155,7 @@ Asymmetric::Asymmetric(const Asymmetric& rhs) noexcept
           rhs.api_,
           rhs.provider_,
           rhs.type_,
-          opentxs::crypto::key::internal::translate(rhs.role_),
+          rhs.role_,
           rhs.has_public_,
           rhs.has_private_,
           rhs.version_,
@@ -177,7 +177,7 @@ Asymmetric::Asymmetric(const Asymmetric& rhs, const ReadView newPublic) noexcept
           rhs.api_,
           rhs.provider_,
           rhs.type_,
-          opentxs::crypto::key::internal::translate(rhs.role_),
+          rhs.role_,
           true,
           false,
           rhs.version_,
@@ -328,7 +328,7 @@ auto Asymmetric::create_key(
     const api::internal::Core& api,
     const crypto::AsymmetricProvider& provider,
     const NymParameters& options,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const AllocateOutput publicKey,
     const AllocateOutput privateKey,
     const Secret& prv,
@@ -415,17 +415,13 @@ auto Asymmetric::erase_private_data() -> void
 auto Asymmetric::generate_key(
     const crypto::AsymmetricProvider& provider,
     const NymParameters& options,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const AllocateOutput publicKey,
     const AllocateOutput privateKey,
     const AllocateOutput params) noexcept(false) -> void
 {
-    const auto generated = provider.RandomKeypair(
-        privateKey,
-        publicKey,
-        opentxs::crypto::key::internal::translate(role),
-        options,
-        params);
+    const auto generated =
+        provider.RandomKeypair(privateKey, publicKey, role, options, params);
 
     if (false == generated) {
         throw std::runtime_error("Failed to generate key");

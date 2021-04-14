@@ -111,7 +111,7 @@ HD::HD(
     const api::internal::Core& api,
     const crypto::EcdsaProvider& ecdsa,
     const crypto::key::asymmetric::Algorithm keyType,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     const PasswordPrompt& reason) noexcept(false)
     : EllipticCurve(api, ecdsa, keyType, role, version, reason)
@@ -128,7 +128,7 @@ HD::HD(
     const crypto::key::asymmetric::Algorithm keyType,
     const Secret& privateKey,
     const Data& publicKey,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     key::Symmetric& sessionKey,
     const PasswordPrompt& reason) noexcept(false)
@@ -159,7 +159,7 @@ HD::HD(
     const Data& publicKey,
     const proto::HDPath& path,
     const Bip32Fingerprint parent,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version,
     key::Symmetric& sessionKey,
     const PasswordPrompt& reason) noexcept(false)
@@ -191,7 +191,7 @@ HD::HD(
     const Data& publicKey,
     const proto::HDPath& path,
     const Bip32Fingerprint parent,
-    const proto::KeyRole role,
+    const crypto::key::asymmetric::Role role,
     const VersionNumber version) noexcept(false)
     : EllipticCurve(api, ecdsa, keyType, privateKey, publicKey, role, version)
     , path_(std::make_shared<proto::HDPath>(path))
@@ -295,7 +295,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     pubkey,
                     path,
                     parent,
-                    opentxs::crypto::key::internal::translate(role_),
+                    role_,
                     version_,
                     reason);
             }
@@ -310,7 +310,7 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     pubkey,
                     path,
                     parent,
-                    opentxs::crypto::key::internal::translate(role_),
+                    role_,
                     version_,
                     reason);
             }

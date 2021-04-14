@@ -97,7 +97,7 @@ auto Asymmetric::instantiate_hd_key(
                 pubkey,
                 serialize_path(seedID, path),
                 parent,
-                opentxs::crypto::key::internal::translate(role),
+                role,
                 version,
                 reason);
         }
@@ -115,7 +115,7 @@ auto Asymmetric::instantiate_hd_key(
                 pubkey,
                 serialize_path(seedID, path),
                 parent,
-                opentxs::crypto::key::internal::translate(role),
+                role,
                 version,
                 reason);
         }
@@ -138,8 +138,8 @@ auto Asymmetric::instantiate_serialized_key(
     -> std::unique_ptr<ReturnType>
 
 {
-    switch (serialized.type()) {
-        case proto::AKEYTYPE_ED25519:
+    switch (opentxs::crypto::key::internal::translate(serialized.type())) {
+        case opentxs::crypto::key::asymmetric::Algorithm::ED25519:
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
         {
             return opentxs::factory::Ed25519Key(
@@ -148,7 +148,7 @@ auto Asymmetric::instantiate_serialized_key(
 #else
             break;
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
-        case proto::AKEYTYPE_SECP256K1:
+        case opentxs::crypto::key::asymmetric::Algorithm::Secp256k1:
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
         {
             return opentxs::factory::Secp256k1Key(
@@ -290,7 +290,7 @@ auto Asymmetric::InstantiateSecp256k1Key(
         api_.Crypto().SECP256K1(),
         blank,
         api_.Factory().Data(publicKey),
-        opentxs::crypto::key::internal::translate(role),
+        role,
         version,
         reason);
 }
@@ -311,14 +311,7 @@ auto Asymmetric::InstantiateSecp256k1Key(
         return {};
     }
 
-    return factory::Secp256k1Key(
-        api_,
-        ecdsa,
-        priv,
-        pub,
-        opentxs::crypto::key::internal::translate(role),
-        version,
-        reason);
+    return factory::Secp256k1Key(api_, ecdsa, priv, pub, role, version, reason);
 }
 
 auto Asymmetric::NewSecp256k1Key(
@@ -341,7 +334,7 @@ auto Asymmetric::NewSecp256k1Key(
         pubkey,
         serialize_path(seedID, path),
         parent,
-        opentxs::crypto::key::internal::translate(role),
+        role,
         version,
         reason);
 }
@@ -358,21 +351,13 @@ auto Asymmetric::NewKey(
 #if OT_CRYPTO_SUPPORTED_KEY_ED25519
         case (opentxs::crypto::key::asymmetric::Algorithm::ED25519): {
             return opentxs::factory::Ed25519Key(
-                api_,
-                api_.Crypto().ED25519(),
-                opentxs::crypto::key::internal::translate(role),
-                version,
-                reason);
+                api_, api_.Crypto().ED25519(), role, version, reason);
         }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_ED25519
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
         case (opentxs::crypto::key::asymmetric::Algorithm::Secp256k1): {
             return opentxs::factory::Secp256k1Key(
-                api_,
-                api_.Crypto().SECP256K1(),
-                opentxs::crypto::key::internal::translate(role),
-                version,
-                reason);
+                api_, api_.Crypto().SECP256K1(), role, version, reason);
         }
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #if OT_CRYPTO_SUPPORTED_KEY_RSA

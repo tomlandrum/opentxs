@@ -276,11 +276,11 @@ auto Envelope::get_dh_key(
         params.SetDHParams(nym.Params(type));
         auto& set = dh_keys_[type];
         set.emplace_back(api_.Factory().AsymmetricKey(
-            params, reason, proto::KEYROLE_ENCRYPT));
+            params, reason, crypto::key::asymmetric::Role::Encrypt));
         const auto& key = set.crbegin()->get();
 
         OT_ASSERT(key.keyType() == type);
-        OT_ASSERT(key.Role() == proto::KEYROLE_ENCRYPT);
+        OT_ASSERT(key.Role() == crypto::key::asymmetric::Role::Encrypt);
         OT_ASSERT(0 < key.Params().size());
 
         return key;

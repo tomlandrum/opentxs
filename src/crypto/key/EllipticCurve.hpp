@@ -106,7 +106,7 @@ protected:
         const api::internal::Core& api,
         const crypto::EcdsaProvider& ecdsa,
         const crypto::key::asymmetric::Algorithm keyType,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version,
         const PasswordPrompt& reason) noexcept(false);
     EllipticCurve(
@@ -115,7 +115,7 @@ protected:
         const crypto::key::asymmetric::Algorithm keyType,
         const Secret& privateKey,
         const Data& publicKey,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version,
         key::Symmetric& sessionKey,
         const PasswordPrompt& reason) noexcept(false);
@@ -125,7 +125,7 @@ protected:
         const crypto::key::asymmetric::Algorithm keyType,
         const Secret& privateKey,
         const Data& publicKey,
-        const proto::KeyRole role,
+        const crypto::key::asymmetric::Role role,
         const VersionNumber version) noexcept(false);
     EllipticCurve(const EllipticCurve&) noexcept;
     EllipticCurve(const EllipticCurve& rhs, const ReadView newPublic) noexcept;
