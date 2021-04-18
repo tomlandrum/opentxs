@@ -9,8 +9,6 @@
 // IWYU pragma: no_include "opentxs/Proto.hpp"
 // IWYU pragma: no_include "opentxs/blockchain/BlockchainType.hpp"
 
-#include "opentxs/Version.hpp"  // IWYU pragma: associated
-
 #include <atomic>
 #include <cstdint>
 #include <ctime>
@@ -24,6 +22,7 @@
 
 #include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/Version.hpp"  // IWYU pragma: associated
 #include "opentxs/api/client/blockchain/AddressStyle.hpp"
 #include "opentxs/api/client/blockchain/Types.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -34,7 +33,6 @@
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/Contact.pb.h"
 
 namespace opentxs
 {
@@ -59,6 +57,11 @@ class ContactGroup;
 class ContactItem;
 class Identifier;
 class PaymentCode;
+
+namespace proto
+{
+class Contact;
+}  // namespace proto
 }  // namespace opentxs
 
 namespace opentxs

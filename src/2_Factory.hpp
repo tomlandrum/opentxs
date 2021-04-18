@@ -7,7 +7,6 @@
 
 #include "opentxs/blind/Types.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
-//#include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/contract/peer/Types.hpp"
@@ -729,6 +728,9 @@ public:
     OPENTXS_EXPORT static auto Purse(
         const api::internal::Core& api,
         const proto::Purse& serialized) -> blind::Purse*;
+    OPENTXS_EXPORT static auto Purse(
+        const api::internal::Core& api,
+        const Space& serialized) -> blind::Purse*;
     OPENTXS_EXPORT static auto Purse(
         const api::internal::Core& api,
         const otx::context::Server&,

@@ -24,7 +24,6 @@
 #include "opentxs/Types.hpp"
 #include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactItem.pb.h"
 
 namespace opentxs
 {
@@ -37,6 +36,11 @@ struct Core;
 }  // namespace api
 
 class Identifier;
+
+namespace proto
+{
+class ContactItem;
+}  // namespace proto
 }  // namespace opentxs
 
 namespace opentxs

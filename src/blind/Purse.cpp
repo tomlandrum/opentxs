@@ -22,6 +22,7 @@
 #include "internal/api/server/Server.hpp"
 #include "internal/blind/Blind.hpp"
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/crypto/Symmetric.hpp"
 #include "opentxs/blind/Mint.hpp"
@@ -130,6 +131,12 @@ auto Factory::Purse(
 auto Factory::Purse(
     const api::internal::Core& api,
     const proto::Purse& serialized) -> blind::Purse*
+{
+    return new blind::implementation::Purse(api, serialized);
+}
+
+auto Factory::Purse(const api::internal::Core& api, const Space& serialized)
+    -> blind::Purse*
 {
     return new blind::implementation::Purse(api, serialized);
 }
@@ -334,6 +341,11 @@ Purse::Purse(const api::internal::Core& api, const proto::Purse& in)
     for (const auto& serialized : in.token()) {
         tokens_.emplace_back(Factory::Token(api_, *this, serialized).release());
     }
+}
+
+Purse::Purse(const api::internal::Core& api, const Space& in)
+    : Purse(api, opentxs::proto::Factory<proto::Purse>(in.data(), in.size()))
+{
 }
 
 Purse::Purse(const api::internal::Core& api, const Purse& owner)
@@ -742,6 +754,16 @@ auto Purse::Serialize() const -> proto::Purse
     }
 
     return output;
+}
+
+auto Purse::Serialize(AllocateOutput destination) const noexcept -> void
+{
+    auto purse = Serialize();
+    auto view = destination(purse.ByteSizeLong());
+    if (!purse.SerializeToArray(view.data(), static_cast<int>(view.size()))) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize the purse.")
+            .Flush();
+    }
 }
 
 auto Purse::Unlock(

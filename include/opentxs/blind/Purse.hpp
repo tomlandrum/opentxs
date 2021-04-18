@@ -14,6 +14,7 @@
 #include <cstdint>
 
 #if OT_CASH
+#include "opentxs/Bytes.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/blind/Types.hpp"
@@ -87,6 +88,8 @@ public:
     OPENTXS_EXPORT virtual Time LatestValidFrom() const = 0;
     OPENTXS_EXPORT virtual const identifier::Server& Notary() const = 0;
     OPENTXS_EXPORT virtual proto::Purse Serialize() const = 0;
+    OPENTXS_EXPORT virtual auto Serialize(
+        AllocateOutput destination) const noexcept -> void = 0;
     OPENTXS_EXPORT virtual std::size_t size() const noexcept = 0;
     OPENTXS_EXPORT virtual blind::PurseType State() const = 0;
     OPENTXS_EXPORT virtual blind::CashType Type() const = 0;

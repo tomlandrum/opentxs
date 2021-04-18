@@ -102,6 +102,7 @@
 #include "opentxs/ext/OTPayment.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/protobuf/AsymmetricKey.pb.h"
+#include "opentxs/protobuf/BlockchainPeerAddress.pb.h"
 #include "opentxs/protobuf/Check.hpp"
 #include "opentxs/protobuf/Ciphertext.pb.h"
 #include "opentxs/protobuf/Envelope.pb.h"  // IWYU pragma: keep

@@ -23,7 +23,6 @@
 #include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/core/identifier/Server.hpp"
-#include "opentxs/protobuf/ContactData.pb.h"
 
 namespace opentxs
 {
@@ -34,7 +33,10 @@ namespace internal
 struct Core;
 }  // namespace internal
 }  // namespace api
-
+namespace proto
+{
+class ContactData;
+}  // namespace proto
 class ContactGroup;
 class ContactItem;
 class ContactSection;

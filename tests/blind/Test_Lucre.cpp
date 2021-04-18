@@ -34,10 +34,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/Purse.pb.h"
-#include "opentxs/protobuf/Token.pb.h"
-#include "opentxs/protobuf/verify/Purse.hpp"
 
 #define MINT_EXPIRE_MONTHS 6
 #define MINT_VALID_MONTHS 12
@@ -57,7 +53,7 @@ public:
     static std::shared_ptr<ot::blind::Mint> mint_;
     static std::shared_ptr<ot::blind::Purse> request_purse_;
     static std::shared_ptr<ot::blind::Purse> issue_purse_;
-    static ot::proto::Purse serialized_;
+    static ot::Space serialized_bytes_;
     static ot::Time valid_from_;
     static ot::Time valid_to_;
 
@@ -109,7 +105,7 @@ const ot::OTUnitID Test_Basic::unit_id_{
 std::shared_ptr<ot::blind::Mint> Test_Basic::mint_{};
 std::shared_ptr<ot::blind::Purse> Test_Basic::request_purse_{};
 std::shared_ptr<ot::blind::Purse> Test_Basic::issue_purse_{};
-ot::proto::Purse Test_Basic::serialized_{};
+ot::Space Test_Basic::serialized_bytes_{};
 ot::Time Test_Basic::valid_from_;
 ot::Time Test_Basic::valid_to_;
 
@@ -221,118 +217,54 @@ TEST_F(Test_Basic, requestPurse)
     EXPECT_EQ(token2.Value(), 10000);
 }
 
-TEST_F(Test_Basic, serialize)
+TEST_F(Test_Basic, serialize_deserialize)
 {
     ASSERT_TRUE(request_purse_);
 
-    serialized_ = request_purse_->Serialize();
+    request_purse_->Serialize(opentxs::writer(serialized_bytes_));
 
-    EXPECT_TRUE(ot::proto::Validate(serialized_, false));
-    EXPECT_EQ(serialized_.version(), 1);
-    EXPECT_EQ(
-        ot::blind::internal::translate(serialized_.type()),
-        ot::blind::CashType::Lucre);
-    EXPECT_EQ(
-        ot::blind::internal::translate(serialized_.state()),
-        ot::blind::PurseType::Request);
-    EXPECT_EQ(serialized_.notary(), server_id_->str());
-    EXPECT_EQ(serialized_.mint(), unit_id_->str());
-    EXPECT_EQ(serialized_.totalvalue(), REQUEST_PURSE_VALUE);
-    EXPECT_EQ(serialized_.latestvalidfrom(), ot::Clock::to_time_t(valid_from_));
-    EXPECT_EQ(serialized_.earliestvalidto(), ot::Clock::to_time_t(valid_to_));
-    ASSERT_EQ(serialized_.token_size(), 2);
-
-    auto& token1 = serialized_.token(0);
-
-    EXPECT_EQ(token1.version(), 1);
-    EXPECT_EQ(
-        ot::blind::internal::translate(token1.type()),
-        ot::blind::CashType::Lucre);
-    EXPECT_EQ(
-        opentxs::blind::internal::translate(token1.state()),
-        ot::blind::TokenState::Blinded);
-    EXPECT_EQ(token1.notary(), server_id_->str());
-    EXPECT_EQ(token1.mint(), unit_id_->str());
-    EXPECT_EQ(token1.series(), 0);
-    EXPECT_EQ(token1.denomination(), 10000);
-    EXPECT_EQ(token1.validfrom(), ot::Clock::to_time_t(valid_from_));
-    EXPECT_EQ(token1.validto(), ot::Clock::to_time_t(valid_to_));
-
-    auto& token2 = serialized_.token(1);
-
-    EXPECT_EQ(token2.version(), 1);
-    EXPECT_EQ(
-        ot::blind::internal::translate(token2.type()),
-        ot::blind::CashType::Lucre);
-    EXPECT_EQ(
-        opentxs::blind::internal::translate(token2.state()),
-        ot::blind::TokenState::Blinded);
-    EXPECT_EQ(token2.notary(), server_id_->str());
-    EXPECT_EQ(token2.mint(), unit_id_->str());
-    EXPECT_EQ(token2.series(), 0);
-    EXPECT_EQ(token2.denomination(), 10000);
-    EXPECT_EQ(token2.validfrom(), ot::Clock::to_time_t(valid_from_));
-    EXPECT_EQ(token2.validto(), ot::Clock::to_time_t(valid_to_));
-}
-
-TEST_F(Test_Basic, deserialize)
-{
     std::unique_ptr<ot::blind::Purse> restored{
-        ot::Factory::Purse(api_, serialized_)};
+        ot::Factory::Purse(api_, serialized_bytes_)};
 
     ASSERT_TRUE(restored);
 
-    auto& purse = *restored;
+    EXPECT_EQ(
+        ot::Clock::to_time_t(request_purse_->EarliestValidTo()),
+        ot::Clock::to_time_t(restored->EarliestValidTo()));
+    EXPECT_EQ(
+        ot::Clock::to_time_t(request_purse_->LatestValidFrom()),
+        ot::Clock::to_time_t(restored->LatestValidFrom()));
+    EXPECT_EQ(request_purse_->Notary(), restored->Notary());
+    EXPECT_EQ(request_purse_->State(), restored->State());
+    EXPECT_EQ(request_purse_->Type(), restored->Type());
+    EXPECT_EQ(request_purse_->Unit(), restored->Unit());
+    EXPECT_EQ(request_purse_->Value(), restored->Value());
 
-    EXPECT_FALSE(purse.IsUnlocked());
-    EXPECT_EQ(
-        ot::Clock::to_time_t(purse.EarliestValidTo()),
-        ot::Clock::to_time_t(valid_to_));
-    EXPECT_EQ(
-        ot::Clock::to_time_t(purse.LatestValidFrom()),
-        ot::Clock::to_time_t(valid_from_));
-    EXPECT_EQ(server_id_, purse.Notary());
-    EXPECT_EQ(purse.State(), ot::blind::PurseType::Request);
-    EXPECT_EQ(purse.Type(), ot::blind::CashType::Lucre);
-    EXPECT_EQ(unit_id_, purse.Unit());
-    EXPECT_EQ(purse.Value(), REQUEST_PURSE_VALUE);
-    ASSERT_EQ(purse.size(), 2);
+    EXPECT_EQ(2, restored->size());
 
-    auto& token1 = purse.at(0);
+    for (std::size_t i = 0; i < restored->size(); ++i) {
+        auto& token_a = request_purse_->at(i);
+        auto& token_b = restored->at(i);
 
-    EXPECT_EQ(server_id_, token1.Notary());
-    EXPECT_EQ(token1.Series(), 0);
-    EXPECT_EQ(token1.State(), ot::blind::TokenState::Blinded);
-    EXPECT_EQ(token1.Type(), ot::blind::CashType::Lucre);
-    EXPECT_EQ(unit_id_, token1.Unit());
-    EXPECT_EQ(
-        ot::Clock::to_time_t(token1.ValidFrom()),
-        ot::Clock::to_time_t(valid_from_));
-    EXPECT_EQ(
-        ot::Clock::to_time_t(token1.ValidTo()),
-        ot::Clock::to_time_t(valid_to_));
-    EXPECT_EQ(token1.Value(), 10000);
-
-    auto& token2 = purse.at(1);
-
-    EXPECT_EQ(server_id_, token2.Notary());
-    EXPECT_EQ(token2.Series(), 0);
-    EXPECT_EQ(token2.State(), ot::blind::TokenState::Blinded);
-    EXPECT_EQ(token2.Type(), ot::blind::CashType::Lucre);
-    EXPECT_EQ(unit_id_, token2.Unit());
-    EXPECT_EQ(
-        ot::Clock::to_time_t(token2.ValidFrom()),
-        ot::Clock::to_time_t(valid_from_));
-    EXPECT_EQ(
-        ot::Clock::to_time_t(token2.ValidTo()),
-        ot::Clock::to_time_t(valid_to_));
-    EXPECT_EQ(token2.Value(), 10000);
+        EXPECT_EQ(token_a.Notary(), token_b.Notary());
+        EXPECT_EQ(token_a.Series(), token_b.Series());
+        EXPECT_EQ(token_a.State(), token_b.State());
+        EXPECT_EQ(token_a.Type(), token_b.Type());
+        EXPECT_EQ(token_a.Unit(), token_b.Unit());
+        EXPECT_EQ(
+            ot::Clock::to_time_t(token_a.ValidFrom()),
+            ot::Clock::to_time_t(token_b.ValidFrom()));
+        EXPECT_EQ(
+            ot::Clock::to_time_t(token_a.ValidTo()),
+            ot::Clock::to_time_t(token_b.ValidTo()));
+        EXPECT_EQ(token_a.Value(), token_b.Value());
+    }
 }
 
 TEST_F(Test_Basic, sign)
 {
     std::unique_ptr<ot::blind::Purse> restored{
-        ot::Factory::Purse(api_, serialized_)};
+        ot::Factory::Purse(api_, serialized_bytes_)};
 
     ASSERT_TRUE(restored);
 
@@ -390,8 +322,10 @@ TEST_F(Test_Basic, process)
     ASSERT_TRUE(alice_);
 
     auto& issuePurse = *issue_purse_;
-    std::unique_ptr<ot::blind::Purse> restored{
-        ot::Factory::Purse(api_, issuePurse.Serialize())};
+
+    opentxs::Space space;
+    issuePurse.Serialize(opentxs::writer(space));
+    std::unique_ptr<ot::blind::Purse> restored{ot::Factory::Purse(api_, space)};
 
     ASSERT_TRUE(restored);
 
@@ -419,8 +353,9 @@ TEST_F(Test_Basic, verify)
     EXPECT_TRUE(issuePurse.Unlock(bob, reason_));
     ASSERT_TRUE(issuePurse.IsUnlocked());
 
-    std::unique_ptr<ot::blind::Purse> restored{
-        ot::Factory::Purse(api_, issuePurse.Serialize())};
+    opentxs::Space space;
+    issuePurse.Serialize(opentxs::writer(space));
+    std::unique_ptr<ot::blind::Purse> restored{ot::Factory::Purse(api_, space)};
 
     ASSERT_TRUE(restored);
 

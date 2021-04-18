@@ -96,6 +96,7 @@ public:
         const Mint& mint,
         const PasswordPrompt& reason) -> bool final;
     auto Serialize() const -> proto::Purse final;
+    auto Serialize(AllocateOutput destination) const noexcept -> void final;
     auto size() const noexcept -> std::size_t final { return tokens_.size(); }
     auto State() const -> blind::PurseType final { return state_; }
     auto Type() const -> blind::CashType final { return type_; }
@@ -207,6 +208,7 @@ private:
         std::optional<OTSecret> secondaryKeyPassword);
     Purse(const api::internal::Core& api, const Purse& owner);
     Purse(const api::internal::Core& api, const proto::Purse& serialized);
+    Purse(const api::internal::Core& api, const Space& serialized);
     Purse() = delete;
     Purse(const Purse&);
     Purse(Purse&&) = delete;

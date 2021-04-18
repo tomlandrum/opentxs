@@ -32,6 +32,7 @@
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Message.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
+#include "opentxs/protobuf/Contact.pb.h"
 #include "opentxs/util/WorkType.hpp"
 
 #define OT_METHOD "opentxs::api::implementation::Contacts::"
