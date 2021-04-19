@@ -12,7 +12,6 @@
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/core/Data.hpp"
-#include "opentxs/protobuf/BlockchainBlockHeader.pb.h"
 
 TEST_F(Test_HeaderOracle, test_block_serialization)
 {
@@ -30,8 +29,10 @@ TEST_F(Test_HeaderOracle, test_block_serialization)
     EXPECT_EQ(header->Hash(), hash1);
     EXPECT_EQ(header->ParentHash(), empty);
 
-    auto serialized = header->Serialize();
-    header = api_.Factory().BlockHeader(serialized);
+    auto space = ot::Space{};
+    auto const bitcoinformat{false};
+    ASSERT_TRUE(header->Serialize(ot::writer(space), bitcoinformat));
+    header = api_.Factory().BlockHeader(space);
 
     ASSERT_TRUE(header);
     EXPECT_EQ(header->Hash(), hash1);
@@ -48,8 +49,8 @@ TEST_F(Test_HeaderOracle, test_block_serialization)
     EXPECT_EQ(header->Hash(), hash2);
     EXPECT_EQ(header->ParentHash(), hash1);
 
-    serialized = header->Serialize();
-    header = api_.Factory().BlockHeader(serialized);
+    ASSERT_TRUE(header->Serialize(ot::writer(space), bitcoinformat));
+    header = api_.Factory().BlockHeader(space);
 
     ASSERT_TRUE(header);
     EXPECT_EQ(header->Hash(), hash2);

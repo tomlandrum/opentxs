@@ -16,6 +16,7 @@
 #include <utility>
 
 #include "2_Factory.hpp"
+#include "opentxs/Proto.tpp"
 #if OT_BLOCKCHAIN
 #include "blockchain/bitcoin/CompactSize.hpp"
 #endif  // OT_BLOCKCHAIN
@@ -210,6 +211,11 @@ auto Factory::BlockHeader(const proto::BlockchainBlockHeader& serialized) const
             return {};
         }
     }
+}
+
+auto Factory::BlockHeader(const Space& bytes) const -> BlockHeaderP
+{
+    return BlockHeader(proto::Factory<proto::BlockchainBlockHeader>(bytes));
 }
 
 auto Factory::BlockHeader(

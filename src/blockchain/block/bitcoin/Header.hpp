@@ -111,8 +111,9 @@ public:
     auto nBits() const noexcept -> std::uint32_t final { return nbits_; }
     auto Print() const noexcept -> std::string final;
     auto Serialize() const noexcept -> SerializedType final;
-    auto Serialize(const AllocateOutput destination) const noexcept
-        -> bool final;
+    auto Serialize(
+        const AllocateOutput destination,
+        const bool bitcoinformat = true) const noexcept -> bool final;
     auto Target() const noexcept -> OTNumericHash final;
     auto Timestamp() const noexcept -> Time final { return timestamp_; }
     auto Version() const noexcept -> std::uint32_t final

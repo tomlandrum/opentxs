@@ -154,6 +154,7 @@ public:
             const opentxs::blockchain::block::bitcoin::Transaction> final;
     auto BlockHeader(const proto::BlockchainBlockHeader& serialized) const
         -> BlockHeaderP final;
+    auto BlockHeader(const Space& serialized) const -> BlockHeaderP final;
     auto BlockHeader(
         const opentxs::blockchain::Type type,
         const opentxs::Data& raw) const -> BlockHeaderP final;

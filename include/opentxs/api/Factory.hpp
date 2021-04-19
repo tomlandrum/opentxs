@@ -286,6 +286,8 @@ public:
     OPENTXS_EXPORT virtual BlockHeaderP BlockHeader(
         const proto::BlockchainBlockHeader& serialized) const = 0;
     OPENTXS_EXPORT virtual BlockHeaderP BlockHeader(
+        const Space& serialized) const = 0;
+    OPENTXS_EXPORT virtual BlockHeaderP BlockHeader(
         const opentxs::blockchain::Type type,
         const Data& raw) const = 0;
     OPENTXS_EXPORT virtual BlockHeaderP BlockHeader(

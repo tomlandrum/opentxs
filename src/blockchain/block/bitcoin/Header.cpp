@@ -579,35 +579,50 @@ auto Header::Serialize() const noexcept -> Header::SerializedType
     return output;
 }
 
-auto Header::Serialize(const AllocateOutput destination) const noexcept -> bool
+auto Header::Serialize(
+    const AllocateOutput destination,
+    const bool bitcoinformat) const noexcept -> bool
 {
-    const auto raw = BitcoinFormat{
-        block_version_,
-        parent_hash_->str(),
-        merkle_root_->str(),
-        static_cast<std::uint32_t>(Clock::to_time_t(timestamp_)),
-        nbits_,
-        nonce_};
+    if (bitcoinformat) {
+        const auto raw = BitcoinFormat{
+            block_version_,
+            parent_hash_->str(),
+            merkle_root_->str(),
+            static_cast<std::uint32_t>(Clock::to_time_t(timestamp_)),
+            nbits_,
+            nonce_};
 
-    if (false == bool(destination)) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid output allocator")
-            .Flush();
+        if (false == bool(destination)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Invalid output allocator")
+                .Flush();
 
-        return false;
+            return false;
+        }
+
+        const auto out = destination(sizeof(raw));
+
+        if (false == out.valid(sizeof(raw))) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to allocate output")
+                .Flush();
+
+            return false;
+        }
+
+        std::memcpy(out.data(), &raw, sizeof(raw));
+
+        return true;
+    } else {
+        auto serialized = Serialize();
+        auto view = destination(serialized.ByteSizeLong());
+        if (!serialized.SerializeToArray(
+                view.data(), static_cast<int>(view.size()))) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Failed to serialize the header.")
+                .Flush();
+            return false;
+        }
+        return true;
     }
-
-    const auto out = destination(sizeof(raw));
-
-    if (false == out.valid(sizeof(raw))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to allocate output")
-            .Flush();
-
-        return false;
-    }
-
-    std::memcpy(out.data(), &raw, sizeof(raw));
-
-    return true;
 }
 
 auto Header::Target() const noexcept -> OTNumericHash

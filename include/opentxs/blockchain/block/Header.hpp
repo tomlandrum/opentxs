@@ -76,7 +76,8 @@ public:
     OPENTXS_EXPORT virtual std::string Print() const noexcept = 0;
     OPENTXS_EXPORT virtual SerializedType Serialize() const noexcept = 0;
     OPENTXS_EXPORT virtual auto Serialize(
-        const AllocateOutput destination) const noexcept -> bool = 0;
+        const AllocateOutput destination,
+        const bool bitcoinformat = true) const noexcept -> bool = 0;
     OPENTXS_EXPORT virtual OTNumericHash Target() const noexcept = 0;
     OPENTXS_EXPORT virtual blockchain::Type Type() const noexcept = 0;
     OPENTXS_EXPORT virtual bool Valid() const noexcept = 0;

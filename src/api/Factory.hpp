@@ -328,6 +328,10 @@ public:
     {
         return {};
     }
+    auto BlockHeader(const Space& serialized) const -> BlockHeaderP override
+    {
+        return {};
+    }
     auto BlockHeader(
         const opentxs::blockchain::Type type,
         const opentxs::Data& raw) const -> BlockHeaderP override
