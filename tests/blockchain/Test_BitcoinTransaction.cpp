@@ -33,8 +33,6 @@
 #include "opentxs/blockchain/block/bitcoin/Outputs.hpp"
 #include "opentxs/blockchain/block/bitcoin/Script.hpp"
 #include "opentxs/core/Data.hpp"
-#include "opentxs/protobuf/BlockchainTransaction.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace
 {
@@ -273,12 +271,15 @@ TEST_F(Test_BitcoinTransaction, serialization)
     EXPECT_EQ(tx_bytes_->size(), raw->size());
     EXPECT_EQ(tx_bytes_.get(), raw.get());
 
-    const auto serialized = transaction->Serialize(api_.Blockchain());
+    auto bytes = ot::Space{};
 
-    ASSERT_TRUE(serialized.has_value());
+    ASSERT_TRUE(transaction->Serialize(ot::writer(bytes)));
+    ASSERT_EQ(bytes.size(), tx_bytes_->size());
+    EXPECT_EQ(
+        std::memcmp(bytes.data(), tx_bytes_->data(), tx_bytes_->size()), 0);
 
-    auto transaction2 = ot::factory::BitcoinTransaction(
-        api_, api_.Blockchain(), serialized.value());
+    auto transaction2 = api_.Factory().BitcoinTransaction(
+        ot::blockchain::Type::UnitTest, ot::reader(bytes), true);
 
     ASSERT_TRUE(transaction2);
     EXPECT_EQ(transaction2->Locktime(), 0);
@@ -399,23 +400,6 @@ TEST_F(Test_BitcoinTransaction, serialization)
             EXPECT_EQ(Position::Output, script5.Role());
             EXPECT_TRUE(script5.PubkeyHash().has_value());
         }
-    }
-
-    {
-        const auto& bytes = serialized->serialized();
-
-        ASSERT_EQ(bytes.size(), tx_bytes_->size());
-        EXPECT_EQ(
-            std::memcmp(bytes.data(), tx_bytes_->data(), tx_bytes_->size()), 0);
-    }
-
-    {
-        auto bytes = ot::Space{};
-
-        ASSERT_TRUE(transaction2->Serialize(ot::writer(bytes)));
-        ASSERT_EQ(bytes.size(), tx_bytes_->size());
-        EXPECT_EQ(
-            std::memcmp(bytes.data(), tx_bytes_->data(), tx_bytes_->size()), 0);
     }
 }
 
