@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/contact/Contact.hpp"
 #include "opentxs/contact/ContactData.hpp"
@@ -284,6 +285,13 @@ auto NymData::SetContactData(
     const PasswordPrompt& reason) -> bool
 {
     return nym().SetContactData(data, reason);
+}
+
+auto NymData::SetContactData(const Space& bytes, const PasswordPrompt& reason)
+    -> bool
+{
+    auto data = proto::Factory<proto::ContactData>(bytes);
+    return SetContactData(data, reason);
 }
 
 auto NymData::SetScope(

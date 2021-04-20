@@ -1052,6 +1052,19 @@ auto ContactData::SetScope(
     }
 }
 
+auto ContactData::Serialize(AllocateOutput destination) const -> bool
+{
+    auto data = Serialize();
+    auto view = destination(data.ByteSizeLong());
+    if (!data.SerializeToArray(view.data(), static_cast<int>(view.size()))) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Failed to serialize the contactdata.")
+            .Flush();
+        return false;
+    }
+    return true;
+}
+
 auto ContactData::Serialize(const bool withID) const -> proto::ContactData
 {
     proto::ContactData output;

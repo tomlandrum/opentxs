@@ -124,6 +124,7 @@ public:
     OPENTXS_EXPORT OTServerID PreferredOTServer() const;
     OPENTXS_EXPORT std::shared_ptr<ContactSection> Section(
         const contact::ContactSectionName& section) const;
+    OPENTXS_EXPORT bool Serialize(AllocateOutput destination) const;
     OPENTXS_EXPORT proto::ContactData Serialize(
         const bool withID = false) const;
     OPENTXS_EXPORT ContactData SetCommonName(const std::string& name) const;

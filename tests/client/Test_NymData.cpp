@@ -32,7 +32,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/identity/credential/Contact.hpp"
 #include "opentxs/protobuf/Contact.hpp"
-#include "opentxs/protobuf/Nym.pb.h"
 
 namespace
 {
@@ -122,13 +121,6 @@ TEST_F(Test_NymData, AddEmail)
 
     added = nymData_.AddEmail("", false, false, reason_);
     EXPECT_FALSE(added);
-}
-
-TEST_F(Test_NymData, asPublicNym)
-{
-    auto credentialIndex = nymData_.asPublicNym();
-
-    EXPECT_TRUE(credentialIndex.IsInitialized());
 }
 
 TEST_F(Test_NymData, AddPaymentCode)
@@ -456,8 +448,9 @@ TEST_F(Test_NymData, SetContactData)
         nymData_.Nym().ContactDataVersion(),
         {});
 
-    auto data = contactData.Serialize(true);
-    auto set = nymData_.SetContactData(data, reason_);
+    auto bytes = ot::Space{};
+    EXPECT_TRUE(contactData.Serialize(ot::writer(bytes)));
+    auto set = nymData_.SetContactData(bytes, reason_);
     EXPECT_TRUE(set);
 }
 
