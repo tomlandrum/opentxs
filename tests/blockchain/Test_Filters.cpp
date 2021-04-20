@@ -38,7 +38,6 @@
 #include "opentxs/blockchain/client/FilterOracle.hpp"
 #include "opentxs/blockchain/client/HeaderOracle.hpp"
 #include "opentxs/core/Data.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 
 namespace
 {

@@ -25,9 +25,6 @@
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/client/HeaderOracle.hpp"
 #include "opentxs/core/Data.hpp"
-#include "opentxs/protobuf/BitcoinBlockHeaderFields.pb.h"
-#include "opentxs/protobuf/BlockchainBlockHeader.pb.h"
-#include "opentxs/protobuf/BlockchainBlockLocalData.pb.h"
 
 namespace b = ot::blockchain;
 namespace bb = b::block;
@@ -129,31 +126,7 @@ TEST_F(Test_BlockHeader, ltc_genesis_block_header)
     EXPECT_EQ(header.Height(), height);
 }
 
-TEST_F(Test_BlockHeader, Serialize)
-{
-    std::unique_ptr<const bb::Header> pHeader{
-        ot::factory::GenesisBlockHeader(api_, b::Type::Bitcoin)};
-
-    ASSERT_TRUE(pHeader);
-
-    const auto& header = *pHeader;
-    const auto serialized = header.Serialize();
-    const auto& local = serialized.local();
-    const auto& bitcoin = serialized.bitcoin();
-
-    EXPECT_EQ(serialized.version(), 1);
-    EXPECT_EQ(serialized.type(), static_cast<std::uint32_t>(b::Type::Bitcoin));
-    EXPECT_EQ(local.version(), 1);
-    EXPECT_EQ(local.height(), header.Height());
-    EXPECT_EQ(local.status(), static_cast<std::uint32_t>(header.LocalState()));
-    EXPECT_EQ(
-        local.inherit_status(),
-        static_cast<std::uint32_t>(header.InheritedState()));
-    EXPECT_EQ(bitcoin.version(), 1);
-    EXPECT_EQ(bitcoin.previous_header(), header.ParentHash().str());
-}
-
-TEST_F(Test_BlockHeader, Deserialize)
+TEST_F(Test_BlockHeader, serialize_deserialize)
 {
     const auto expectedHash =
         ot::Data::Factory(btc_genesis_hash_, ot::Data::Mode::Hex);
@@ -162,11 +135,32 @@ TEST_F(Test_BlockHeader, Deserialize)
 
     ASSERT_TRUE(pHeader);
 
-    const auto serialized = pHeader->Serialize();
+    const auto& header = *pHeader;
 
-    pHeader = api_.Factory().BlockHeader(serialized);
+    auto bytes = ot::Space{};
+    EXPECT_TRUE(header.Serialize(ot::writer(bytes), false));
+    auto restored = api_.Factory().BlockHeader(bytes);
 
-    ASSERT_TRUE(pHeader);
-    EXPECT_EQ(expectedHash.get(), pHeader->Hash());
+    ASSERT_TRUE(restored);
+    EXPECT_EQ(expectedHash.get(), restored->Hash());
+
+    EXPECT_EQ(restored->Difficulty(), header.Difficulty());
+    EXPECT_EQ(restored->EffectiveState(), header.EffectiveState());
+    EXPECT_EQ(restored->Hash(), header.Hash());
+    EXPECT_EQ(restored->Height(), header.Height());
+    EXPECT_EQ(restored->IncrementalWork(), header.IncrementalWork());
+    EXPECT_EQ(restored->InheritedState(), header.InheritedState());
+    EXPECT_EQ(restored->IsBlacklisted(), header.IsBlacklisted());
+    EXPECT_EQ(restored->IsDisconnected(), header.IsDisconnected());
+    EXPECT_EQ(restored->LocalState(), header.LocalState());
+    EXPECT_EQ(restored->NumericHash(), header.NumericHash());
+    EXPECT_EQ(restored->ParentHash(), header.ParentHash());
+    EXPECT_EQ(restored->ParentWork(), header.ParentWork());
+    EXPECT_EQ(restored->Position(), header.Position());
+    EXPECT_EQ(restored->Print(), header.Print());
+    EXPECT_EQ(restored->Target(), header.Target());
+    EXPECT_EQ(restored->Type(), header.Type());
+    EXPECT_EQ(restored->Valid(), header.Valid());
+    EXPECT_EQ(restored->Work(), header.Work());
 }
 }  // namespace
