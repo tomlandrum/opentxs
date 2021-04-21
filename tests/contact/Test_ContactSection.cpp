@@ -22,9 +22,6 @@
 #include "opentxs/contact/ContactSection.hpp"
 #include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactData.pb.h"
-#include "opentxs/protobuf/ContactItem.pb.h"
-#include "opentxs/protobuf/ContactSection.pb.h"
 
 namespace
 {
@@ -122,23 +119,6 @@ TEST_F(Test_ContactSection, second_constructor)
     ASSERT_EQ(
         section1.Group(ot::contact::ContactItemType::Employee)->Size(), 1);
     ASSERT_NE(section1.end(), section1.begin());
-}
-
-TEST_F(Test_ContactSection, third_constructor)
-{
-    ot::proto::ContactSection protoContactSection;
-    protoContactSection.set_name(ot::contact::internal::translate(
-        ot::contact::ContactSectionName::Identifier));
-    protoContactSection.set_version(CONTACT_CONTACT_DATA_VERSION);
-    //    ot::proto::ContactItem * item = protoContactSection.add_item();
-
-    const ot::ContactSection section1(
-        api_,
-        "deserializedContactSectionNym1",
-        CONTACT_CONTACT_DATA_VERSION,
-        protoContactSection);
-    ASSERT_EQ(ot::contact::ContactSectionName::Identifier, section1.Type());
-    ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, section1.Version());
 }
 
 TEST_F(Test_ContactSection, copy_constructor)
@@ -560,47 +540,46 @@ TEST_F(Test_ContactSection, Delete)
 TEST_F(Test_ContactSection, SerializeTo)
 {
     // Serialize without ids.
-    ot::proto::ContactData contactData1;
-
     const auto& section1 = contactSection_.AddItem(activeContactItem_);
-    ASSERT_TRUE(section1.SerializeTo(contactData1, false));
-    ASSERT_EQ(section1.Size(), contactData1.section_size());
+    auto bytes = ot::Space{};
+    ASSERT_TRUE(section1.Serialize(ot::writer(bytes), false));
 
-    ot::proto::ContactSection contactDataSection = contactData1.section(0);
-    ASSERT_EQ(
-        ot::contact::ContactSectionName::Identifier,
-        ot::contact::internal::translate(contactDataSection.name()));
+    auto restored1 =
+        ot::ContactSection{api_, "ContactDataNym1", section1.Version(), bytes};
 
-    ot::proto::ContactItem contactDataItem = contactDataSection.item(0);
-    ASSERT_EQ(activeContactItem_->Value(), contactDataItem.value());
-    ASSERT_EQ(activeContactItem_->Version(), contactDataItem.version());
-    ASSERT_EQ(
-        activeContactItem_->Type(),
-        ot::contact::internal::translate(contactDataItem.type()));
-    ASSERT_EQ(activeContactItem_->Start(), contactDataItem.start());
-    ASSERT_EQ(activeContactItem_->End(), contactDataItem.end());
+    ASSERT_EQ(restored1.Size(), section1.Size());
+    ASSERT_EQ(restored1.Type(), section1.Type());
+    auto group_iterator = restored1.begin();
+    ASSERT_EQ(group_iterator->first, ot::contact::ContactItemType::Employee);
+    auto group1 = group_iterator->second;
+    ASSERT_TRUE(group1);
+    auto item_iterator = group1->begin();
+    auto contact_item = item_iterator->second;
+    ASSERT_TRUE(contact_item);
+    ASSERT_EQ(activeContactItem_->Value(), contact_item->Value());
+    ASSERT_EQ(activeContactItem_->Version(), contact_item->Version());
+    ASSERT_EQ(activeContactItem_->Type(), contact_item->Type());
+    ASSERT_EQ(activeContactItem_->Start(), contact_item->Start());
+    ASSERT_EQ(activeContactItem_->End(), contact_item->End());
 
-    // Serialize with ids.
-    ot::proto::ContactData contactData2;
+    //    // Serialize with ids.
+    auto restored2 =
+        ot::ContactSection{api_, "ContactDataNym1", section1.Version(), bytes};
 
-    ASSERT_TRUE(section1.SerializeTo(contactData2, true));
-    ASSERT_EQ(section1.Size(), contactData2.section_size());
-
-    contactDataSection = contactData2.section(0);
-    ASSERT_EQ(
-        ot::contact::ContactSectionName::Identifier,
-        ot::contact::internal::translate(contactDataSection.name()));
-
-    contactDataItem = contactDataSection.item(0);
-
-    ASSERT_EQ(activeContactItem_->ID().str(), contactDataItem.id());
-    ASSERT_EQ(activeContactItem_->Value(), contactDataItem.value());
-    ASSERT_EQ(activeContactItem_->Version(), contactDataItem.version());
-    ASSERT_EQ(
-        activeContactItem_->Type(),
-        ot::contact::internal::translate(contactDataItem.type()));
-    ASSERT_EQ(activeContactItem_->Start(), contactDataItem.start());
-    ASSERT_EQ(activeContactItem_->End(), contactDataItem.end());
+    ASSERT_EQ(restored2.Size(), section1.Size());
+    ASSERT_EQ(restored2.Type(), section1.Type());
+    group_iterator = restored2.begin();
+    ASSERT_EQ(group_iterator->first, ot::contact::ContactItemType::Employee);
+    group1 = group_iterator->second;
+    ASSERT_TRUE(group1);
+    item_iterator = group1->begin();
+    contact_item = item_iterator->second;
+    ASSERT_TRUE(contact_item);
+    ASSERT_EQ(activeContactItem_->Value(), contact_item->Value());
+    ASSERT_EQ(activeContactItem_->Version(), contact_item->Version());
+    ASSERT_EQ(activeContactItem_->Type(), contact_item->Type());
+    ASSERT_EQ(activeContactItem_->Start(), contact_item->Start());
+    ASSERT_EQ(activeContactItem_->End(), contact_item->End());
 }
 
 TEST_F(Test_ContactSection, Size)

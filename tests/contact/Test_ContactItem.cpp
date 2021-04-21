@@ -21,7 +21,6 @@
 #include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/identity/credential/Contact.hpp"
-#include "opentxs/protobuf/ContactItem.pb.h"
 
 namespace
 {
@@ -152,49 +151,6 @@ TEST_F(Test_ContactItem, second_constructor)
     ASSERT_FALSE(contactItem1.isPrimary());
 }
 
-TEST_F(Test_ContactItem, third_constructor)
-{
-    ot::proto::ContactItem data;
-    data.set_version(CONTACT_CONTACT_DATA_VERSION);
-    data.set_type(ot::contact::internal::translate(
-        ot::contact::ContactItemType::Employee));
-    data.set_value("testValue");
-    data.add_attribute(ot::contact::internal::translate(
-        ot::contact::ContactItemAttribute::Active));
-    data.set_start(NULL_START);
-    data.set_end(NULL_END);
-
-    const ot::ContactItem contactItem1(
-        api_,
-        std::string("testContactItemNym"),
-        CONTACT_CONTACT_DATA_VERSION,
-        ot::contact::ContactSectionName::Identifier,
-        data);
-
-    const ot::OTIdentifier identifier(
-        ot::Identifier::Factory(ot::identity::credential::Contact::ClaimID(
-            api_,
-            "testContactItemNym",
-            ot::contact::ContactSectionName::Identifier,
-            ot::contact::ContactItemType::Employee,
-            NULL_START,
-            NULL_END,
-            "testValue",
-            "")));
-    ASSERT_EQ(identifier, contactItem1.ID());
-    ASSERT_EQ(CONTACT_CONTACT_DATA_VERSION, contactItem1.Version());
-    ASSERT_EQ(
-        ot::contact::ContactSectionName::Identifier, contactItem1.Section());
-    ASSERT_EQ(ot::contact::ContactItemType::Employee, contactItem1.Type());
-    ASSERT_EQ("testValue", contactItem1.Value());
-    ASSERT_EQ(contactItem1.Start(), NULL_START);
-    ASSERT_EQ(contactItem1.End(), NULL_END);
-
-    ASSERT_TRUE(contactItem1.isActive());
-    ASSERT_FALSE(contactItem1.isLocal());
-    ASSERT_FALSE(contactItem1.isPrimary());
-}
-
 TEST_F(Test_ContactItem, copy_constructor)
 {
     ot::ContactItem copiedContactItem(contactItem_);
@@ -235,28 +191,6 @@ TEST_F(Test_ContactItem, operator_equal_false)
     // Can't use ASSERT_NE because there's no != operator defined for
     // ContactItem.
     ASSERT_FALSE(contactItem_ == contactItem2);
-}
-
-TEST_F(Test_ContactItem, operator_proto_equal)
-{
-    ot::proto::ContactItem protoItem = contactItem_;
-
-    ASSERT_EQ(contactItem_.ID().str(), protoItem.id());
-    ASSERT_EQ(contactItem_.Value(), protoItem.value());
-    ASSERT_EQ(contactItem_.Version(), protoItem.version());
-    ASSERT_EQ(
-        contactItem_.Type(),
-        ot::contact::internal::translate(protoItem.type()));
-    ASSERT_EQ(contactItem_.Start(), protoItem.start());
-    ASSERT_EQ(contactItem_.End(), protoItem.end());
-}
-
-TEST_F(Test_ContactItem, operator_proto_not_equal)
-{
-    ot::proto::ContactItem protoItem = contactItem_;
-    ot::proto::ContactItem protoItemNoId = contactItem_.Serialize();
-
-    ASSERT_NE(protoItemNoId.id(), protoItem.id());
 }
 
 TEST_F(Test_ContactItem, public_accessors)
@@ -334,25 +268,27 @@ TEST_F(Test_ContactItem, public_setters)
 TEST_F(Test_ContactItem, Serialize)
 {
     // Test without id.
-    ot::proto::ContactItem protoItem = contactItem_.Serialize();
+    auto bytes = ot::Space{};
+    EXPECT_TRUE(contactItem_.Serialize(ot::writer(bytes), false));
 
-    ASSERT_EQ(contactItem_.Value(), protoItem.value());
-    ASSERT_EQ(contactItem_.Version(), protoItem.version());
-    ASSERT_EQ(
-        contactItem_.Type(),
-        ot::contact::internal::translate(protoItem.type()));
-    ASSERT_EQ(contactItem_.Start(), protoItem.start());
-    ASSERT_EQ(contactItem_.End(), protoItem.end());
+    auto restored1 = ot::ContactItem{
+        api_, "testNym", contactItem_.Version(), contactItem_.Section(), bytes};
+
+    ASSERT_EQ(restored1.Value(), contactItem_.Value());
+    ASSERT_EQ(restored1.Version(), contactItem_.Version());
+    ASSERT_EQ(restored1.Type(), contactItem_.Type());
+    ASSERT_EQ(restored1.Start(), contactItem_.Start());
+    ASSERT_EQ(restored1.End(), contactItem_.End());
 
     // Test with id.
-    protoItem = contactItem_.Serialize(true);
+    EXPECT_TRUE(contactItem_.Serialize(ot::writer(bytes), true));
 
-    ASSERT_EQ(contactItem_.ID().str(), protoItem.id());
-    ASSERT_EQ(contactItem_.Value(), protoItem.value());
-    ASSERT_EQ(contactItem_.Version(), protoItem.version());
-    ASSERT_EQ(
-        contactItem_.Type(),
-        ot::contact::internal::translate(protoItem.type()));
-    ASSERT_EQ(contactItem_.Start(), protoItem.start());
-    ASSERT_EQ(contactItem_.End(), protoItem.end());
+    auto restored2 = ot::ContactItem{
+        api_, "testNym", contactItem_.Version(), contactItem_.Section(), bytes};
+
+    ASSERT_EQ(restored2.Value(), contactItem_.Value());
+    ASSERT_EQ(restored2.Version(), contactItem_.Version());
+    ASSERT_EQ(restored2.Type(), contactItem_.Type());
+    ASSERT_EQ(restored2.Start(), contactItem_.Start());
+    ASSERT_EQ(restored2.End(), contactItem_.End());
 }

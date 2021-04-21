@@ -222,6 +222,21 @@ ContactSection::ContactSection(
 {
 }
 
+ContactSection::ContactSection(
+    const api::internal::Core& api,
+    const std::string& nym,
+    const VersionNumber parentVersion,
+    const Space& serialized)
+    : ContactSection(
+          api,
+          nym,
+          parentVersion,
+          proto::Factory<proto::ContactSection>(
+              serialized.data(),
+              serialized.size()))
+{
+}
+
 auto ContactSection::operator+(const ContactSection& rhs) const
     -> ContactSection
 {
@@ -365,6 +380,27 @@ auto ContactSection::HaveClaim(const Identifier& item) const -> bool
     }
 
     return false;
+}
+
+auto ContactSection::Serialize(AllocateOutput destination, const bool withIDs)
+    const -> bool
+{
+    proto::ContactData data;
+    if (false == SerializeTo(data, withIDs) || data.section_size() != 1) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Failed to serialize the contactsection.")
+            .Flush();
+        return false;
+    }
+    auto section = data.section(0);
+    auto view = destination(section.ByteSizeLong());
+    if (!section.SerializeToArray(view.data(), static_cast<int>(view.size()))) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Failed to serialize the contactsection.")
+            .Flush();
+        return false;
+    }
+    return true;
 }
 
 auto ContactSection::SerializeTo(

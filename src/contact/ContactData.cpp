@@ -15,6 +15,7 @@
 
 #include "internal/contact/Contact.hpp"
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/contact/ContactGroup.hpp"
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/contact/ContactItemAttribute.hpp"
@@ -150,6 +151,21 @@ ContactData::ContactData(
           serialized.version(),
           targetVersion,
           extract_sections(api, nym, targetVersion, serialized))
+{
+}
+
+ContactData::ContactData(
+    const api::internal::Core& api,
+    const std::string& nym,
+    const VersionNumber targetVersion,
+    const Space& serialized)
+    : ContactData(
+          api,
+          nym,
+          targetVersion,
+          proto::Factory<proto::ContactData>(
+              serialized.data(),
+              serialized.size()))
 {
 }
 
@@ -1052,9 +1068,10 @@ auto ContactData::SetScope(
     }
 }
 
-auto ContactData::Serialize(AllocateOutput destination) const -> bool
+auto ContactData::Serialize(AllocateOutput destination, const bool withID) const
+    -> bool
 {
-    auto data = Serialize();
+    auto data = Serialize(withID);
     auto view = destination(data.ByteSizeLong());
     if (!data.SerializeToArray(view.data(), static_cast<int>(view.size()))) {
         LogOutput(OT_METHOD)(__FUNCTION__)(

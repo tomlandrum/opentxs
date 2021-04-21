@@ -22,8 +22,6 @@
 #include "opentxs/contact/ContactItemAttribute.hpp"
 #include "opentxs/contact/ContactSectionName.hpp"
 #include "opentxs/core/Identifier.hpp"
-#include "opentxs/protobuf/ContactItem.pb.h"
-#include "opentxs/protobuf/ContactSection.pb.h"
 
 namespace
 {
@@ -402,57 +400,6 @@ TEST_F(Test_ContactGroup, PrimaryClaim_notfound)
     const std::shared_ptr<ot::ContactItem>& primaryClaim =
         contactGroup_.PrimaryClaim();
     ASSERT_FALSE(primaryClaim);
-}
-
-TEST_F(Test_ContactGroup, SerializeTo)
-{
-    ot::proto::ContactSection contactSection1;
-    contactSection1.set_name(ot::contact::internal::translate(
-        ot::contact::ContactSectionName::Identifier));
-
-    // Serialize without ids.
-    const auto& group1 = contactGroup_.AddItem(active_);
-    ASSERT_TRUE(group1.SerializeTo(contactSection1, false));
-    ASSERT_EQ(group1.Size(), contactSection1.item_size());
-    ASSERT_EQ(
-        ot::contact::ContactSectionName::Identifier,
-        ot::contact::internal::translate(contactSection1.name()));
-    ot::proto::ContactItem item = contactSection1.item(0);
-    ASSERT_EQ(active_->Version(), item.version());
-    ASSERT_EQ(active_->Type(), ot::contact::internal::translate(item.type()));
-    ASSERT_EQ(active_->Value(), item.value());
-    ASSERT_EQ(active_->Start(), item.start());
-    ASSERT_EQ(active_->End(), item.end());
-    ASSERT_EQ(
-        ot::contact::ContactItemAttribute::Active,
-        ot::contact::internal::translate(item.attribute(0)));
-
-    ot::proto::ContactSection contactSection2;
-    contactSection2.set_name(ot::contact::internal::translate(
-        ot::contact::ContactSectionName::Identifier));
-
-    // Serialize with ids.
-    ASSERT_TRUE(group1.SerializeTo(contactSection2, true));
-    ASSERT_EQ(group1.Size(), contactSection2.item_size());
-    ASSERT_EQ(
-        ot::contact::ContactSectionName::Identifier,
-        ot::contact::internal::translate(contactSection2.name()));
-    item = contactSection2.item(0);
-    ASSERT_EQ(active_->ID().str(), item.id());
-    ASSERT_EQ(active_->Version(), item.version());
-    ASSERT_EQ(active_->Type(), ot::contact::internal::translate(item.type()));
-    ASSERT_EQ(active_->Value(), item.value());
-    ASSERT_EQ(active_->Start(), item.start());
-    ASSERT_EQ(active_->End(), item.end());
-    ASSERT_EQ(
-        ot::contact::ContactItemAttribute::Active,
-        ot::contact::internal::translate(item.attribute(0)));
-
-    // Serialize to the wrong section.
-    ot::proto::ContactSection contactSection3;
-    contactSection3.set_name(
-        ot::proto::ContactSectionName::CONTACTSECTION_ADDRESS);
-    ASSERT_FALSE(group1.SerializeTo(contactSection3, false));
 }
 
 TEST_F(Test_ContactGroup, Size)
