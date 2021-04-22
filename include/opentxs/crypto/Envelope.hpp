@@ -49,6 +49,8 @@ public:
         const identity::Nym& recipient,
         const AllocateOutput plaintext,
         const PasswordPrompt& reason) const noexcept = 0;
+    OPENTXS_EXPORT virtual bool Serialize(
+        AllocateOutput destination) const noexcept = 0;
     OPENTXS_EXPORT virtual SerializedType Serialize() const noexcept = 0;
 
     OPENTXS_EXPORT virtual bool Seal(

@@ -939,6 +939,12 @@ auto Factory::Envelope(
     return OTEnvelope{opentxs::Factory::Envelope(api_, serialized).release()};
 }
 
+auto Factory::Envelope(const opentxs::Space& serialized) const noexcept(false)
+    -> OTEnvelope
+{
+    return OTEnvelope{opentxs::Factory::Envelope(api_, serialized).release()};
+}
+
 auto Factory::Identifier() const -> OTIdentifier
 {
     return Identifier::Factory();

@@ -29,8 +29,7 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/crypto/Envelope.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/Envelope.pb.h"  // IWYU pragma: keep
-#include "opentxs/protobuf/Nym.pb.h"       // IWYU pragma: keep
+#include "opentxs/protobuf/Nym.pb.h"  // IWYU pragma: keep
 
 namespace
 {
@@ -215,7 +214,8 @@ TEST_F(Test_Envelope, multiple_recipients)
 
         if (false == sealed) { continue; }
 
-        const auto serialized = sender->Serialize();
+        auto bytes = ot::Space{};
+        ASSERT_TRUE(sender->Serialize(ot::writer(bytes)));
 
         for (auto nym = nyms_.cbegin(); nym != nyms_.cend(); ++nym) {
             const auto column =
@@ -223,7 +223,7 @@ TEST_F(Test_Envelope, multiple_recipients)
             auto plaintext = ot::String::Factory();
 
             try {
-                auto recipient = sender_.Factory().Envelope(serialized);
+                auto recipient = sender_.Factory().Envelope(bytes);
                 auto rNym = recipient_.Wallet().Nym((*nym)->ID());
 
                 OT_ASSERT(rNym);

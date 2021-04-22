@@ -22,6 +22,7 @@
 #include "internal/api/Api.hpp"
 #include "internal/crypto/key/Key.hpp"
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Core.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -62,6 +63,14 @@ auto Factory::Envelope(const api::internal::Core& api) noexcept
 auto Factory::Envelope(
     const api::internal::Core& api,
     const proto::Envelope& serialized) noexcept(false)
+    -> std::unique_ptr<crypto::Envelope>
+{
+    return std::make_unique<ReturnType>(api, serialized);
+}
+
+auto Factory::Envelope(
+    const api::internal::Core& api,
+    const Space& serialized) noexcept(false)
     -> std::unique_ptr<crypto::Envelope>
 {
     return std::make_unique<ReturnType>(api, serialized);
@@ -110,6 +119,12 @@ Envelope::Envelope(
     , dh_keys_(read_dh(api_, in))
     , session_keys_(read_sk(api_, in))
     , ciphertext_(read_ct(in))
+{
+}
+
+Envelope::Envelope(const api::internal::Core& api, const Space& in) noexcept(
+    false)
+    : Envelope(api, proto::Factory<proto::Envelope>(in.data(), in.size()))
 {
 }
 
@@ -503,6 +518,20 @@ auto Envelope::set_default_password(
     PasswordPrompt& password) noexcept -> bool
 {
     return password.SetPassword(api.Factory().SecretFromText("opentxs"));
+}
+
+auto Envelope::Serialize(AllocateOutput destination) const noexcept -> bool
+{
+    auto serialized = Serialize();
+    auto view = destination(serialized.ByteSizeLong());
+    if (false == serialized.SerializeToArray(
+                     view.data(), static_cast<int>(view.size()))) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize envelope")
+            .Flush();
+
+        return false;
+    }
+    return true;
 }
 
 auto Envelope::Serialize() const noexcept -> SerializedType

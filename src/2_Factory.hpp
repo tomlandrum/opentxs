@@ -559,6 +559,10 @@ public:
         const api::internal::Core& api,
         const proto::Envelope& serialized) noexcept(false)
         -> std::unique_ptr<crypto::Envelope>;
+    static auto Envelope(
+        const api::internal::Core& api,
+        const Space& serialized) noexcept(false)
+        -> std::unique_ptr<crypto::Envelope>;
     static auto FactoryAPIServer(const api::server::internal::Manager& api)
         -> api::internal::Factory*;
 #if OT_CASH

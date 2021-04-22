@@ -367,6 +367,8 @@ public:
     OPENTXS_EXPORT virtual OTEnvelope Envelope(
         const opentxs::crypto::Envelope::SerializedType& serialized) const
         noexcept(false) = 0;
+    OPENTXS_EXPORT virtual OTEnvelope Envelope(
+        const opentxs::Space& serialized) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTIdentifier Identifier() const = 0;
     OPENTXS_EXPORT virtual OTIdentifier Identifier(
         const std::string& serialized) const = 0;

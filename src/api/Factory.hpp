@@ -423,6 +423,8 @@ public:
         -> OTEnvelope final;
     auto Envelope(const opentxs::crypto::Envelope::SerializedType& serialized)
         const noexcept(false) -> OTEnvelope final;
+    auto Envelope(const opentxs::Space& serialized) const noexcept(false)
+        -> OTEnvelope final;
     auto Identifier() const -> OTIdentifier final;
     auto Identifier(const std::string& serialized) const -> OTIdentifier final;
     auto Identifier(const opentxs::String& serialized) const
