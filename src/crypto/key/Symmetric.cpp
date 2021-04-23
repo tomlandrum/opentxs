@@ -20,6 +20,7 @@
 #include "internal/crypto/key/Factory.hpp"
 #include "internal/crypto/key/Key.hpp"
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -411,6 +412,17 @@ auto Symmetric::Decrypt(
     return decrypt(lock, ciphertext, reason, output.as<std::uint8_t>());
 }
 
+auto Symmetric::DecryptFromBytes(
+    const Space& ciphertext,
+    const opentxs::PasswordPrompt& reason,
+    const AllocateOutput plaintext) const -> bool
+{
+    return Decrypt(
+        proto::Factory<proto::Ciphertext>(ciphertext.data(), ciphertext.size()),
+        reason,
+        plaintext);
+}
+
 auto Symmetric::encrypt(
     const Lock& lock,
     const std::uint8_t* input,
@@ -504,6 +516,35 @@ auto Symmetric::Encrypt(
     }
 
     return success;
+}
+
+auto Symmetric::EncryptToBytes(
+    const ReadView plaintext,
+    const opentxs::PasswordPrompt& reason,
+    AllocateOutput ciphertext,
+    const bool attachKey,
+    const opentxs::crypto::key::symmetric::Algorithm mode,
+    const ReadView iv) const -> bool
+{
+    auto serialized = proto::Ciphertext{};
+
+    if (false == Encrypt(plaintext, reason, serialized, attachKey, mode, iv)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to encrypt data.").Flush();
+
+        return false;
+    }
+
+    auto view = ciphertext(serialized.ByteSizeLong());
+    if (false == serialized.SerializeToArray(
+                     view.data(), static_cast<int>(view.size()))) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Failed to serialize encrypted data.")
+            .Flush();
+
+        return false;
+    }
+
+    return true;
 }
 
 auto Symmetric::encrypt_key(

@@ -59,6 +59,10 @@ public:
         const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> OTSymmetricKey final;
     auto Key(
+        const Space& serializedCiphertext,
+        const opentxs::crypto::key::symmetric::Algorithm mode) const
+        -> OTSymmetricKey final;
+    auto Key(
         const Secret& seed,
         const std::uint64_t operations = 0,
         const std::uint64_t difficulty = 0,

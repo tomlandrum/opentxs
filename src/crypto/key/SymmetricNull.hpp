@@ -23,10 +23,27 @@ public:
     {
         return false;
     }
+    auto DecryptFromBytes(
+        const Space&,
+        const PasswordPrompt&,
+        const AllocateOutput) const -> bool final
+    {
+        return false;
+    }
     auto Encrypt(
         const ReadView,
         const PasswordPrompt&,
         proto::Ciphertext&,
+        const bool,
+        const opentxs::crypto::key::symmetric::Algorithm,
+        const ReadView) const -> bool final
+    {
+        return false;
+    }
+    auto EncryptToBytes(
+        const ReadView,
+        const PasswordPrompt&,
+        AllocateOutput,
         const bool,
         const opentxs::crypto::key::symmetric::Algorithm,
         const ReadView) const -> bool final

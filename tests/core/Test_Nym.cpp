@@ -25,8 +25,6 @@
 #include "opentxs/crypto/key/Symmetric.hpp"
 #include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/Ciphertext.pb.h"
-#include "opentxs/protobuf/Enums.pb.h"
 
 #define TEST_MASTER_PASSWORD "test password"
 #define TEST_PLAINTEXT "The quick brown fox jumped over the lazy dog."
@@ -42,9 +40,8 @@ struct Test_Symmetric : public ::testing::Test {
     static ot::OTSymmetricKey key_;
     static ot::OTSymmetricKey second_key_;
     static std::optional<ot::OTSecret> key_password_;
-    static ot::proto::Ciphertext ciphertext_;
-    static ot::proto::Ciphertext second_ciphertext_;
-    static ot::proto::Ciphertext encrypted_password_;
+    static ot::Space ciphertext_;
+    static ot::Space second_ciphertext_;
 
     const ot::api::client::Manager& api_;
     ot::OTPasswordPrompt reason_;
@@ -89,9 +86,8 @@ ot::OTSymmetricKey Test_Symmetric::key_{ot::crypto::key::Symmetric::Factory()};
 ot::OTSymmetricKey Test_Symmetric::second_key_{
     ot::crypto::key::Symmetric::Factory()};
 std::optional<ot::OTSecret> Test_Symmetric::key_password_{};
-ot::proto::Ciphertext Test_Symmetric::ciphertext_{};
-ot::proto::Ciphertext Test_Symmetric::second_ciphertext_{};
-ot::proto::Ciphertext Test_Symmetric::encrypted_password_{};
+ot::Space Test_Symmetric::ciphertext_{};
+ot::Space Test_Symmetric::second_ciphertext_{};
 }  // namespace
 
 TEST_F(Test_Symmetric, create_key)
@@ -114,18 +110,18 @@ TEST_F(Test_Symmetric, key_functionality)
 
     ASSERT_TRUE(password->SetPassword(key_password_.value()));
 
-    const auto encrypted =
-        key_->Encrypt(TEST_PLAINTEXT, password, ciphertext_, true, mode_);
+    const auto encrypted = key_->EncryptToBytes(
+        TEST_PLAINTEXT, password, ot::writer(ciphertext_), true, mode_);
 
     ASSERT_TRUE(encrypted);
 
-    auto recoveredKey = api_.Symmetric().Key(ciphertext_.key(), mode_);
+    auto recoveredKey = api_.Symmetric().Key(ciphertext_, mode_);
 
     ASSERT_TRUE(recoveredKey.get());
 
     std::string plaintext{};
-    auto decrypted =
-        recoveredKey->Decrypt(ciphertext_, password, [&](const auto size) {
+    auto decrypted = recoveredKey->DecryptFromBytes(
+        ciphertext_, password, [&](const auto size) {
             plaintext.resize(size);
 
             return ot::WritableView{plaintext.data(), plaintext.size()};
@@ -138,12 +134,12 @@ TEST_F(Test_Symmetric, key_functionality)
 
     ASSERT_TRUE(password->SetPassword(wrongPassword));
 
-    recoveredKey = api_.Symmetric().Key(ciphertext_.key(), mode_);
+    recoveredKey = api_.Symmetric().Key(ciphertext_, mode_);
 
     ASSERT_TRUE(recoveredKey.get());
 
-    decrypted =
-        recoveredKey->Decrypt(ciphertext_, password, [&](const auto size) {
+    decrypted = recoveredKey->DecryptFromBytes(
+        ciphertext_, password, [&](const auto size) {
             plaintext.resize(size);
 
             return ot::WritableView{plaintext.data(), plaintext.size()};
@@ -165,8 +161,8 @@ TEST_F(Test_Symmetric, create_second_key)
 
     EXPECT_TRUE(second_key_.get());
 
-    const auto encrypted = second_key_->Encrypt(
-        TEST_PLAINTEXT, password, second_ciphertext_, true, mode_);
+    const auto encrypted = second_key_->EncryptToBytes(
+        TEST_PLAINTEXT, password, ot::writer(second_ciphertext_), true, mode_);
 
     ASSERT_TRUE(encrypted);
 }

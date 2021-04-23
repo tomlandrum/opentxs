@@ -51,10 +51,22 @@ public:
         const proto::Ciphertext& ciphertext,
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const -> bool final;
+    auto DecryptFromBytes(
+        const Space& ciphertext,
+        const PasswordPrompt& reason,
+        const AllocateOutput plaintext) const -> bool final;
     auto Encrypt(
         const ReadView plaintext,
         const PasswordPrompt& reason,
         proto::Ciphertext& ciphertext,
+        const bool attachKey = true,
+        const opentxs::crypto::key::symmetric::Algorithm mode =
+            opentxs::crypto::key::symmetric::Algorithm::Error,
+        const ReadView iv = {}) const -> bool final;
+    auto EncryptToBytes(
+        const ReadView plaintext,
+        const PasswordPrompt& reason,
+        AllocateOutput ciphertext,
         const bool attachKey = true,
         const opentxs::crypto::key::symmetric::Algorithm mode =
             opentxs::crypto::key::symmetric::Algorithm::Error,

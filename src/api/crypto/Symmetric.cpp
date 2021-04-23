@@ -11,6 +11,7 @@
 
 #include "internal/api/Api.hpp"
 #include "internal/api/crypto/Factory.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/crypto/Crypto.hpp"
 #include "opentxs/core/Log.hpp"
@@ -94,6 +95,21 @@ auto Symmetric::Key(
     OT_ASSERT(nullptr != engine);
 
     return api_.Factory().SymmetricKey(*engine, serialized);
+}
+
+auto Symmetric::Key(
+    const Space& serializedCiphertext,
+    const opentxs::crypto::key::symmetric::Algorithm mode) const
+    -> OTSymmetricKey
+{
+    auto engine = GetEngine(mode);
+
+    OT_ASSERT(nullptr != engine);
+
+    auto ciphertext = proto::Factory<proto::Ciphertext>(
+        serializedCiphertext.data(), serializedCiphertext.size());
+
+    return api_.Factory().SymmetricKey(*engine, ciphertext.key());
 }
 
 auto Symmetric::Key(

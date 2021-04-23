@@ -71,6 +71,10 @@ public:
         const proto::Ciphertext& ciphertext,
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const = 0;
+    OPENTXS_EXPORT virtual bool DecryptFromBytes(
+        const Space& ciphertext,
+        const PasswordPrompt& reason,
+        const AllocateOutput plaintext) const = 0;
     /** Encrypt plaintext using the symmetric key
      *
      *  \param[in] plaintext The data to be encrypted
@@ -84,6 +88,14 @@ public:
         const ReadView plaintext,
         const PasswordPrompt& reason,
         proto::Ciphertext& ciphertext,
+        const bool attachKey = true,
+        const opentxs::crypto::key::symmetric::Algorithm mode =
+            opentxs::crypto::key::symmetric::Algorithm::Error,
+        const ReadView iv = {}) const = 0;
+    OPENTXS_EXPORT virtual bool EncryptToBytes(
+        const ReadView plaintext,
+        const PasswordPrompt& reason,
+        AllocateOutput ciphertext,
         const bool attachKey = true,
         const opentxs::crypto::key::symmetric::Algorithm mode =
             opentxs::crypto::key::symmetric::Algorithm::Error,
