@@ -301,6 +301,7 @@ public:
         const blockchain::Type chain,
         const PasswordPrompt& reason,
         const std::uint8_t version) const noexcept -> ECKey final;
+    auto Serialize(AllocateOutput destination) const noexcept -> bool final;
     auto Serialize() const noexcept -> Serialized final;
     auto Sign(
         const identity::credential::Base& credential,

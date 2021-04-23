@@ -509,6 +509,8 @@ public:
         const std::string& base58) const noexcept = 0;
     OPENTXS_EXPORT virtual OTPaymentCode PaymentCode(
         const proto::PaymentCode& serialized) const noexcept = 0;
+    OPENTXS_EXPORT virtual OTPaymentCode PaymentCode(
+        const Space& serialized) const noexcept = 0;
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
     OPENTXS_EXPORT virtual OTPaymentCode PaymentCode(
         const std::string& seed,

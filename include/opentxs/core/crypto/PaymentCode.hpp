@@ -113,6 +113,8 @@ public:
         const blockchain::Type chain,
         const PasswordPrompt& reason,
         const std::uint8_t version = 0) const noexcept = 0;
+    virtual bool Serialize(
+        AllocateOutput destination) const noexcept = 0;
     virtual Serialized Serialize() const noexcept = 0;
     virtual bool Sign(
         const identity::credential::Base& credential,

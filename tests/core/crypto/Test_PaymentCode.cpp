@@ -25,8 +25,6 @@
 #include "opentxs/core/crypto/PaymentCode.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/HDPath.pb.h"
-#include "opentxs/protobuf/PaymentCode.pb.h"  // IWYU pragma: keep
 
 using namespace opentxs;
 
@@ -216,17 +214,6 @@ TEST_F(Test_PaymentCode, empty_paycode)
     EXPECT_STREQ(paycode_0.c_str(), nymData_0.PaymentCode(currency).c_str());
 }
 
-/* Test: equals operator
- */
-TEST_F(Test_PaymentCode, paycode_equals)
-{
-    auto payment_code = client_.Factory().PaymentCode(paycode_0);
-    auto& rep1 = payment_code.get();
-    auto rep2 = payment_code->Serialize();
-
-    EXPECT_TRUE(rep1 == rep2);
-}
-
 /* Test: Base58 encoding
  */
 TEST_F(Test_PaymentCode, asBase58)
@@ -258,22 +245,24 @@ TEST_F(Test_PaymentCode, factory)
     EXPECT_STREQ(paycode_1.c_str(), factory_1b->asBase58().c_str());
 
     // Factory 2: proto::PaymentCode&
-    auto factory_2 = client_.Factory().PaymentCode(factory_1->Serialize());
+    auto bytes = ot::Space{};
+    factory_1->Serialize(ot::writer(bytes));
+    auto factory_2 = client_.Factory().PaymentCode(bytes);
 
     EXPECT_STREQ(paycode_0.c_str(), factory_2->asBase58().c_str());
 
-    auto factory_2b = client_.Factory().PaymentCode(factory_1b->Serialize());
+    factory_1b->Serialize(ot::writer(bytes));
+    auto factory_2b = client_.Factory().PaymentCode(bytes);
 
     EXPECT_STREQ(paycode_1.c_str(), factory_2b->asBase58().c_str());
 
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
     // Factory 3: std:
-    auto path = proto::HDPath{};
     const auto nym = client_.Wallet().Nym(identifier::Nym::Factory(nymID_0));
 
-    EXPECT_TRUE(nym.get()->Path(path));
+    EXPECT_TRUE(nym.get()->HasPath());
 
-    const auto& fingerprint = path.root();
+    const auto& fingerprint = nym.get()->PathRoot();
     auto factory_3 = client_.Factory().PaymentCode(
         fingerprint, 0, 1, reason_);  // seed, nym, paycode version
 
@@ -299,11 +288,10 @@ TEST_F(Test_PaymentCode, factory_seed_nym)
     [[maybe_unused]] std::uint8_t bitmessage_stream = 0;
 
     const auto nym = client_.Wallet().Nym(identifier::Nym::Factory(nymID_0));
-    auto path = proto::HDPath{};
 
-    EXPECT_TRUE(nym.get()->Path(path));
+    EXPECT_TRUE(nym.get()->HasPath());
 
-    auto fingerprint{path.root()};
+    auto fingerprint{nym.get()->PathRoot()};
     auto privatekey =
         client_.Seeds().GetPaymentCode(fingerprint, 10, version, reason_);
 

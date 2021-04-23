@@ -568,6 +568,8 @@ public:
         -> OTPaymentCode final;
     auto PaymentCode(const proto::PaymentCode& serialized) const noexcept
         -> OTPaymentCode final;
+    auto PaymentCode(const Space& serialized) const noexcept
+        -> OTPaymentCode final;
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
     auto PaymentCode(
         const std::string& seed,

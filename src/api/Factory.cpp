@@ -1704,6 +1704,13 @@ auto Factory::PaymentCode(const proto::PaymentCode& serialized) const noexcept
     };
 }
 
+auto Factory::PaymentCode(const Space& serialized) const noexcept
+    -> OTPaymentCode
+{
+    return PaymentCode(proto::Factory<proto::PaymentCode>(
+        serialized.data(), serialized.size()));
+}
+
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
 auto Factory::PaymentCode(
     const std::string& seed,
