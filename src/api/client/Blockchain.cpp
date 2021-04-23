@@ -299,8 +299,33 @@ auto Blockchain::NewPaymentCodeSubaccount(
         nymID, local, remote, path, chain, reason);
 }
 
+<<<<<<< Upstream, based on c6e99c1d05926a67e54c7f21814f50b060029f33
 auto Blockchain::Owner(const Identifier& accountID) const noexcept
     -> const identifier::Nym&
+=======
+auto Blockchain::NewPaymentCodeSubaccount(
+    const identifier::Nym& nymID,
+    const opentxs::PaymentCode& local,
+    const opentxs::PaymentCode& remote,
+    const Space bytes,
+    const Chain chain,
+    const PasswordPrompt& reason) const noexcept -> OTIdentifier
+{
+    LOCK_NYM()
+
+    auto path = proto::Factory<proto::HDPath>(bytes.data(), bytes.size());
+    return new_payment_code(nymLock, nymID, local, remote, path, chain, reason);
+}
+
+auto Blockchain::new_payment_code(
+    const Lock&,
+    const identifier::Nym& nymID,
+    const opentxs::PaymentCode& local,
+    const opentxs::PaymentCode& remote,
+    const proto::HDPath path,
+    const Chain chain,
+    const PasswordPrompt& reason) const noexcept -> OTIdentifier
+>>>>>>> 99970f7 Removed protobuf dependencies from Test_BlockchainAPI and Text_CreateNymHD.
 {
     return imp_->Owner(accountID);
 }

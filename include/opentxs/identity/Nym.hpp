@@ -141,12 +141,18 @@ public:
             crypto::key::asymmetric::Algorithm::Null) const = 0;
     OPENTXS_EXPORT virtual bool HasCapability(
         const NymCapability& capability) const = 0;
+    OPENTXS_EXPORT virtual bool HasPath() const = 0;
     OPENTXS_EXPORT virtual const identifier::Nym& ID() const = 0;
 
     OPENTXS_EXPORT virtual std::string Name() const = 0;
 
     OPENTXS_EXPORT virtual bool Path(proto::HDPath& output) const = 0;
+    OPENTXS_EXPORT virtual const std::string PathRoot() const = 0;
+    OPENTXS_EXPORT virtual int PathChildSize() const = 0;
+    OPENTXS_EXPORT virtual std::uint32_t PathChild(int index) const = 0;
     OPENTXS_EXPORT virtual std::string PaymentCode() const = 0;
+    OPENTXS_EXPORT virtual bool PaymentCodePath(
+        AllocateOutput destination) const = 0;
     OPENTXS_EXPORT virtual bool PaymentCodePath(
         proto::HDPath& output) const = 0;
     OPENTXS_EXPORT virtual std::string PhoneNumbers(

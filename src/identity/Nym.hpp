@@ -144,11 +144,16 @@ public:
     auto GetPublicSignKey(crypto::key::asymmetric::Algorithm keytype) const
         -> const crypto::key::Asymmetric& final;
     auto HasCapability(const NymCapability& capability) const -> bool final;
+    auto HasPath() const -> bool final;
     auto ID() const -> const identifier::Nym& final { return id_; }
     auto Name() const -> std::string final;
     auto Path(proto::HDPath& output) const -> bool final;
+    auto PathRoot() const -> const std::string final;
+    auto PathChildSize() const -> int final;
+    auto PathChild(int index) const -> std::uint32_t final;
     auto PaymentCode() const -> std::string final;
     auto PaymentCodePath(proto::HDPath& output) const -> bool final;
+    auto PaymentCodePath(AllocateOutput destination) const -> bool final;
     auto PhoneNumbers(bool active) const -> std::string final;
     auto Revision() const -> std::uint64_t final;
     auto SerializeCredentialIndex(const Mode mode) const -> Serialized final;

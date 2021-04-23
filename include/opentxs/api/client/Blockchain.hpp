@@ -175,6 +175,13 @@ public:
         const proto::HDPath path,
         const Chain chain,
         const PasswordPrompt& reason) const noexcept = 0;
+    virtual OTIdentifier NewPaymentCodeSubaccount(
+        const identifier::Nym& nymID,
+        const opentxs::PaymentCode& local,
+        const opentxs::PaymentCode& remote,
+        const Space path,
+        const Chain chain,
+        const PasswordPrompt& reason) const noexcept = 0;
     virtual const identifier::Nym& Owner(
         const Identifier& accountID) const noexcept = 0;
     virtual const identifier::Nym& Owner(

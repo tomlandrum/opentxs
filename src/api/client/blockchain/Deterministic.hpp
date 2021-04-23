@@ -65,6 +65,10 @@ public:
         -> std::optional<Bip32Index> final;
     auto Lookahead() const noexcept -> std::size_t final { return window_; }
     auto Path() const noexcept -> proto::HDPath final { return path_; }
+    auto PathRoot() const noexcept -> const std::string final
+    {
+        return path_.root();
+    }
     auto Reserve(
         const Subchain type,
         const PasswordPrompt& reason,

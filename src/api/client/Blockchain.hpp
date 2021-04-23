@@ -219,6 +219,13 @@ public:
         const proto::HDPath path,
         const Chain chain,
         const PasswordPrompt& reason) const noexcept -> OTIdentifier final;
+    auto NewPaymentCodeSubaccount(
+        const identifier::Nym& nymID,
+        const opentxs::PaymentCode& local,
+        const opentxs::PaymentCode& remote,
+        const Space path,
+        const Chain chain,
+        const PasswordPrompt& reason) const noexcept -> OTIdentifier final;
     auto Owner(const Identifier& accountID) const noexcept
         -> const identifier::Nym& final;
     auto Owner(const blockchain::Key& key) const noexcept

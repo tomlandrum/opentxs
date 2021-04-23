@@ -22,7 +22,6 @@
 #include "opentxs/crypto/Bip43Purpose.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/HDPath.pb.h"
 
 using namespace opentxs;
 
@@ -85,46 +84,43 @@ TEST_F(Test_CreateNymHD, TestNym_ABCD)
     const auto NymD = client_.Wallet().Nym(reason_, "Dave", {SeedB_, 1});
 
     // Alice
-    proto::HDPath pathA;
-    EXPECT_TRUE(NymA->Path(pathA));
-    EXPECT_STREQ(pathA.root().c_str(), SeedA_.c_str());
-    EXPECT_EQ(2, pathA.child_size());
+    EXPECT_TRUE(NymA->HasPath());
+    EXPECT_STREQ(NymA->PathRoot().c_str(), SeedA_.c_str());
+    EXPECT_EQ(2, NymA->PathChildSize());
 
     EXPECT_EQ(
         static_cast<Bip32Index>(Bip43Purpose::NYM) |
             static_cast<Bip32Index>(Bip32Child::HARDENED),
-        pathA.child(0));
+        NymA->PathChild(0));
 
     EXPECT_EQ(
-        0 | static_cast<Bip32Index>(Bip32Child::HARDENED), pathA.child(1));
+        0 | static_cast<Bip32Index>(Bip32Child::HARDENED), NymA->PathChild(1));
 
     // Bob
-    proto::HDPath pathB;
-    EXPECT_TRUE(NymB->Path(pathB));
-    EXPECT_STREQ(pathB.root().c_str(), SeedB_.c_str());
-    EXPECT_EQ(2, pathB.child_size());
+    EXPECT_TRUE(NymB->HasPath());
+    EXPECT_STREQ(NymB->PathRoot().c_str(), SeedB_.c_str());
+    EXPECT_EQ(2, NymB->PathChildSize());
 
     EXPECT_EQ(
         static_cast<Bip32Index>(Bip43Purpose::NYM) |
             static_cast<Bip32Index>(Bip32Child::HARDENED),
-        pathB.child(0));
+        NymB->PathChild(0));
 
     EXPECT_EQ(
-        0 | static_cast<Bip32Index>(Bip32Child::HARDENED), pathB.child(1));
+        0 | static_cast<Bip32Index>(Bip32Child::HARDENED), NymB->PathChild(1));
 
     // Charly
-    proto::HDPath pathC;
-    EXPECT_TRUE(NymC->Path(pathC));
-    EXPECT_STREQ(pathC.root().c_str(), SeedA_.c_str());
-    EXPECT_EQ(2, pathC.child_size());
+    EXPECT_TRUE(NymC->HasPath());
+    EXPECT_STREQ(NymC->PathRoot().c_str(), SeedA_.c_str());
+    EXPECT_EQ(2, NymC->PathChildSize());
 
     EXPECT_EQ(
         static_cast<Bip32Index>(Bip43Purpose::NYM) |
             static_cast<Bip32Index>(Bip32Child::HARDENED),
-        pathC.child(0));
+        NymC->PathChild(0));
 
     EXPECT_EQ(
-        1 | static_cast<Bip32Index>(Bip32Child::HARDENED), pathC.child(1));
+        1 | static_cast<Bip32Index>(Bip32Child::HARDENED), NymC->PathChild(1));
 }
 
 TEST_F(Test_CreateNymHD, TestNym_Dave)
@@ -133,18 +129,17 @@ TEST_F(Test_CreateNymHD, TestNym_Dave)
 
     ASSERT_TRUE(NymD);
 
-    proto::HDPath pathD;
-    EXPECT_TRUE(NymD->Path(pathD));
-    EXPECT_STREQ(pathD.root().c_str(), SeedB_.c_str());
-    EXPECT_EQ(2, pathD.child_size());
+    EXPECT_TRUE(NymD->HasPath());
+    EXPECT_STREQ(NymD->PathRoot().c_str(), SeedB_.c_str());
+    EXPECT_EQ(2, NymD->PathChildSize());
 
     EXPECT_EQ(
         static_cast<Bip32Index>(Bip43Purpose::NYM) |
             static_cast<Bip32Index>(Bip32Child::HARDENED),
-        pathD.child(0));
+        NymD->PathChild(0));
 
     EXPECT_EQ(
-        1 | static_cast<Bip32Index>(Bip32Child::HARDENED), pathD.child(1));
+        1 | static_cast<Bip32Index>(Bip32Child::HARDENED), NymD->PathChild(1));
 }
 
 TEST_F(Test_CreateNymHD, TestNym_Eve)
@@ -157,18 +152,17 @@ TEST_F(Test_CreateNymHD, TestNym_Eve)
     EXPECT_EQ(EveID, NymE->ID().str());
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
 
-    proto::HDPath pathE;
-    EXPECT_TRUE(NymE->Path(pathE));
-    EXPECT_STREQ(pathE.root().c_str(), SeedB_.c_str());
-    EXPECT_EQ(2, pathE.child_size());
+    EXPECT_TRUE(NymE->HasPath());
+    EXPECT_STREQ(NymE->PathRoot().c_str(), SeedB_.c_str());
+    EXPECT_EQ(2, NymE->PathChildSize());
 
     EXPECT_EQ(
         static_cast<Bip32Index>(Bip43Purpose::NYM) |
             static_cast<Bip32Index>(Bip32Child::HARDENED),
-        pathE.child(0));
+        NymE->PathChild(0));
 
     EXPECT_EQ(
-        2 | static_cast<Bip32Index>(Bip32Child::HARDENED), pathE.child(1));
+        2 | static_cast<Bip32Index>(Bip32Child::HARDENED), NymE->PathChild(1));
 }
 
 TEST_F(Test_CreateNymHD, TestNym_Frank)
@@ -182,25 +176,24 @@ TEST_F(Test_CreateNymHD, TestNym_Frank)
     EXPECT_EQ(FrankID, NymF->ID().str());
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
 
-    proto::HDPath pathF, pathF2;
-    EXPECT_TRUE(NymF->Path(pathF));
-    EXPECT_TRUE(NymF2->Path(pathF2));
+    EXPECT_TRUE(NymF->HasPath());
+    EXPECT_TRUE(NymF2->HasPath());
 
-    EXPECT_STREQ(pathF.root().c_str(), SeedB_.c_str());
-    EXPECT_STREQ(pathF2.root().c_str(), SeedA_.c_str());
+    EXPECT_STREQ(NymF->PathRoot().c_str(), SeedB_.c_str());
+    EXPECT_STREQ(NymF2->PathRoot().c_str(), SeedA_.c_str());
 
-    EXPECT_EQ(2, pathF.child_size());
-    EXPECT_EQ(2, pathF2.child_size());
+    EXPECT_EQ(2, NymF->PathChildSize());
+    EXPECT_EQ(2, NymF2->PathChildSize());
 
     EXPECT_EQ(
         static_cast<Bip32Index>(Bip43Purpose::NYM) |
             static_cast<Bip32Index>(Bip32Child::HARDENED),
-        pathF.child(0));
+        NymF->PathChild(0));
 
     EXPECT_EQ(
-        3 | static_cast<Bip32Index>(Bip32Child::HARDENED), pathF.child(1));
+        3 | static_cast<Bip32Index>(Bip32Child::HARDENED), NymF->PathChild(1));
     EXPECT_EQ(
-        3 | static_cast<Bip32Index>(Bip32Child::HARDENED), pathF2.child(1));
+        3 | static_cast<Bip32Index>(Bip32Child::HARDENED), NymF2->PathChild(1));
 }
 
 TEST_F(Test_CreateNymHD, TestNym_NonnegativeIndex)
@@ -208,12 +201,11 @@ TEST_F(Test_CreateNymHD, TestNym_NonnegativeIndex)
     const auto Nym1 = client_.Wallet().Nym(reason_, "Nym1", {SeedC_, 0});
     const auto Nym2 = client_.Wallet().Nym(reason_, "Nym2", {SeedC_, 0});
 
-    proto::HDPath path1, path2;
-    EXPECT_TRUE(Nym1->Path(path1));
-    EXPECT_TRUE(Nym2->Path(path2));
+    EXPECT_TRUE(Nym1->HasPath());
+    EXPECT_TRUE(Nym2->HasPath());
 
-    const auto nym1Index = path1.child(1);
-    const auto nym2Index = path2.child(1);
+    const auto nym1Index = Nym1->PathChild(1);
+    const auto nym2Index = Nym2->PathChild(1);
 
     ASSERT_EQ(nym1Index, nym2Index);
 }
@@ -223,12 +215,11 @@ TEST_F(Test_CreateNymHD, TestNym_NegativeIndex)
     const auto Nym1 = client_.Wallet().Nym(reason_, "Nym1", {SeedD_, -1});
     const auto Nym2 = client_.Wallet().Nym(reason_, "Nym2", {SeedD_, -1});
 
-    proto::HDPath path1, path2;
-    EXPECT_TRUE(Nym1->Path(path1));
-    EXPECT_TRUE(Nym2->Path(path2));
+    EXPECT_TRUE(Nym1->HasPath());
+    EXPECT_TRUE(Nym2->HasPath());
 
-    const auto nym1Index = path1.child(1);
-    const auto nym2Index = path2.child(1);
+    const auto nym1Index = Nym1->PathChild(1);
+    const auto nym2Index = Nym2->PathChild(1);
 
     ASSERT_NE(nym1Index, nym2Index);
 }

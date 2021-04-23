@@ -41,6 +41,7 @@ public:
         const Subchain type) const noexcept = 0;
     OPENTXS_EXPORT virtual std::size_t Lookahead() const noexcept = 0;
     OPENTXS_EXPORT virtual proto::HDPath Path() const noexcept = 0;
+    OPENTXS_EXPORT virtual const std::string PathRoot() const noexcept = 0;
     OPENTXS_EXPORT virtual std::optional<Bip32Index> Reserve(
         const Subchain type,
         const PasswordPrompt& reason,
