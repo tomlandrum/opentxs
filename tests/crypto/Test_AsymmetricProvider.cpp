@@ -32,7 +32,6 @@
 #include "opentxs/crypto/key/HD.hpp"
 #include "opentxs/crypto/library/AsymmetricProvider.hpp"
 #include "opentxs/crypto/library/EcdsaProvider.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
 #include "util/HDIndex.hpp"  // IWYU pragma: keep
 
 using namespace opentxs;

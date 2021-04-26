@@ -422,6 +422,21 @@ auto Nym::AddSocialMediaProfile(
 
 auto Nym::Alias() const -> std::string { return alias_; }
 
+auto Nym::asPublicNym(AllocateOutput destination) const -> bool
+{
+    auto serialized = asPublicNym();
+    auto view = destination(serialized.ByteSizeLong());
+    if (false == serialized.SerializeToArray(
+                     view.data(), static_cast<int>(view.size()))) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize nym.")
+            .Flush();
+
+        return false;
+    }
+
+    return true;
+}
+
 auto Nym::asPublicNym() const -> const Nym::Serialized
 {
     return SerializeCredentialIndex(Mode::Full);

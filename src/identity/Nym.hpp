@@ -80,6 +80,7 @@ class Nym final : virtual public identity::internal::Nym, Lockable
 {
 public:
     auto Alias() const -> std::string final;
+    auto asPublicNym(AllocateOutput destination) const -> bool final;
     auto asPublicNym() const -> const Serialized final;
     auto at(const key_type& id) const noexcept(false) -> const value_type& final
     {

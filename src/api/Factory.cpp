@@ -305,6 +305,13 @@ auto Factory::BailmentRequest(
     }
 }
 
+auto Factory::BailmentRequest(const Nym_p& nym, const ReadView& view) const
+    noexcept(false) -> OTBailmentRequest
+{
+    return BailmentRequest(
+        nym, proto::Factory<proto::PeerRequest>(view.data(), view.size()));
+}
+
 auto Factory::Basket() const -> std::unique_ptr<opentxs::Basket>
 {
     std::unique_ptr<opentxs::Basket> basket;
@@ -1946,6 +1953,12 @@ auto Factory::PeerRequest(
             throw std::runtime_error("Unsupported reply type");
         }
     }
+}
+
+auto Factory::PeerRequest(const Nym_p& nym, const ReadView& view) const
+    noexcept(false) -> OTPeerRequest
+{
+    return PeerRequest(nym, proto::Factory<proto::PeerRequest>(view));
 }
 
 auto Factory::Pipeline(

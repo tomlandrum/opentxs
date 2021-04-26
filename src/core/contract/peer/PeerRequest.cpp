@@ -54,7 +54,7 @@ Request::Request(
     : Signable(api, nym, version, conditions, "")
     , initiator_(nym->ID())
     , recipient_(recipient)
-    , server_(Identifier::Factory(server))
+    , server_(server)
     , cookie_(Identifier::Random())
     , type_(type)
 {
@@ -78,7 +78,7 @@ Request::Request(
               : Signatures{})
     , initiator_(api.Factory().NymID(serialized.initiator()))
     , recipient_(api.Factory().NymID(serialized.recipient()))
-    , server_(Identifier::Factory(serialized.server()))
+    , server_(api.Factory().ServerID(serialized.server()))
     , cookie_(Identifier::Factory(serialized.cookie()))
     , type_(internal::translate(serialized.type()))
 {

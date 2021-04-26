@@ -22,7 +22,6 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/ServerContract.pb.h"  // IWYU pragma: keep
 
 ot::OTNymID nym_id_{ot::identifier::Nym::Factory()};
 ot::OTServerID server_id_{ot::identifier::Server::Factory()};
@@ -53,7 +52,9 @@ TEST_F(Ledger, init)
     ASSERT_FALSE(nym_id_->empty());
 
     const auto serverContract = server_.Wallet().Server(server_.ID());
-    client_.Wallet().Server(serverContract->PublicContract());
+    auto bytes = ot::Space{};
+    serverContract->PublicContractToBytes(ot::writer(bytes));
+    client_.Wallet().Server(bytes);
     server_id_->SetString(serverContract->ID()->str());
 
     ASSERT_FALSE(server_id_->empty());

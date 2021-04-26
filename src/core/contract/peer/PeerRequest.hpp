@@ -63,6 +63,7 @@ public:
         return recipient_;
     }
     auto Serialize() const -> OTData final;
+    auto Server() const -> const identifier::Server& final { return server_; }
     auto Type() const -> PeerRequestType final { return type_; }
     void SetAlias(const std::string&) final {}
 
@@ -94,7 +95,7 @@ private:
 
     const OTNymID initiator_;
     const OTNymID recipient_;
-    const OTIdentifier server_;
+    const OTServerID server_;
     const OTIdentifier cookie_;
     const PeerRequestType type_;
 

@@ -63,6 +63,8 @@ public:
     virtual proto::ServerContract Contract() const = 0;
     virtual std::string EffectiveName() const = 0;
     virtual proto::ServerContract PublicContract() const = 0;
+	virtual bool PublicContractToBytes(
+        AllocateOutput destination) const = 0;
     virtual bool Statistics(String& strContents) const = 0;
     virtual const Data& TransportKey() const = 0;
     virtual OTSecret TransportKey(Data& pubkey, const PasswordPrompt& reason)

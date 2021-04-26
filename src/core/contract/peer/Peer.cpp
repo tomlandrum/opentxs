@@ -7,15 +7,41 @@
 #include "1_Internal.hpp"                        // IWYU pragma: associated
 #include "internal/core/contract/peer/Peer.hpp"  // IWYU pragma: associated
 
+#include "opentxs/Proto.tpp"
 #include "opentxs/core/contract/peer/ConnectionInfoType.hpp"
 #include "opentxs/core/contract/peer/PeerObjectType.hpp"
 #include "opentxs/core/contract/peer/PeerRequestType.hpp"
 #include "opentxs/core/contract/peer/SecretType.hpp"
+#include "opentxs/protobuf/ContractEnums.pb.h"
+#include "opentxs/protobuf/PairEvent.pb.h"
 #include "opentxs/protobuf/PeerEnums.pb.h"
 #include "util/Container.hpp"
 
 namespace opentxs::contract::peer::internal
 {
+PairEvent::PairEvent(const ReadView view)
+    : PairEvent(proto::Factory<proto::PairEvent>(view))
+{
+}
+
+PairEvent::PairEvent(const proto::PairEvent& serialized)
+    : PairEvent(
+          serialized.version(),
+          translate(serialized.type()),
+          serialized.issuer())
+{
+}
+
+PairEvent::PairEvent(
+    const std::uint32_t version,
+    const PairEventType type,
+    const std::string& issuer)
+    : version_(version)
+    , type_(type)
+    , issuer_(issuer)
+{
+}
+
 auto connectioninfotype_map() noexcept -> const ConnectionInfoTypeMap&
 {
     static const auto map = ConnectionInfoTypeMap{
@@ -32,6 +58,16 @@ auto connectioninfotype_map() noexcept -> const ConnectionInfoTypeMap&
     return map;
 }
 
+auto paireventtype_map() noexcept -> const PairEventTypeMap&
+{
+    static const auto map = PairEventTypeMap{
+        {PairEventType::Error, proto::PAIREVENT_ERROR},
+        {PairEventType::Rename, proto::PAIREVENT_RENAME},
+        {PairEventType::StoreSecret, proto::PAIREVENT_STORESECRET},
+    };
+
+    return map;
+}
 auto peerobjecttype_map() noexcept -> const PeerObjectTypeMap&
 {
     static const auto map = PeerObjectTypeMap{
@@ -82,6 +118,15 @@ auto translate(ConnectionInfoType in) noexcept -> proto::ConnectionInfoType
     }
 }
 
+auto translate(PairEventType in) noexcept -> proto::PairEventType
+{
+    try {
+        return paireventtype_map().at(in);
+    } catch (...) {
+        return proto::PAIREVENT_ERROR;
+    }
+}
+
 auto translate(PeerObjectType in) noexcept -> proto::PeerObjectType
 {
     try {
@@ -120,6 +165,20 @@ auto translate(proto::ConnectionInfoType in) noexcept -> ConnectionInfoType
         return map.at(in);
     } catch (...) {
         return ConnectionInfoType::Error;
+    }
+}
+
+auto translate(proto::PairEventType in) noexcept -> PairEventType
+{
+    static const auto map = reverse_arbitrary_map<
+        PairEventType,
+        proto::PairEventType,
+        PairEventTypeReverseMap>(paireventtype_map());
+
+    try {
+        return map.at(in);
+    } catch (...) {
+        return PairEventType::Error;
     }
 }
 

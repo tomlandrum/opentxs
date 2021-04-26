@@ -25,6 +25,7 @@
 #include "internal/otx/consensus/Consensus.hpp"
 #include "opentxs/Exclusive.hpp"
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/Shared.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/Types.hpp"
@@ -1158,6 +1159,11 @@ auto Wallet::Nym(const proto::Nym& serialized) const -> Nym_p
     }
 
     return existing;
+}
+
+auto Wallet::Nym(const Space& bytes) const -> Nym_p
+{
+    return Nym(proto::Factory<proto::Nym>(bytes.data(), bytes.size()));
 }
 
 auto Wallet::Nym(
@@ -2316,6 +2322,12 @@ auto Wallet::Server(const proto::ServerContract& contract) const
     }
 
     return Server(serverID);
+}
+
+auto Wallet::Server(const Space& contract) const -> OTServerContract
+{
+    return Server(opentxs::proto::Factory<proto::ServerContract>(
+        contract.data(), contract.size()));
 }
 
 auto Wallet::Server(

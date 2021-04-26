@@ -53,10 +53,14 @@ public:
         const identifier::UnitDefinition& unitID,
         const bool onlyUnused = true) const
         -> std::vector<BailmentDetails> final;
+    auto BailmentInstructionsSize(
+        const identifier::UnitDefinition& unitID) const -> std::size_t final;
     auto ConnectionInfo(const contract::peer::ConnectionInfoType type) const
         -> std::vector<ConnectionDetails> final;
     auto ConnectionInfoInitiated(
         const contract::peer::ConnectionInfoType type) const -> bool final;
+    auto ConnectionInfoSize(const contract::peer::ConnectionInfoType type) const
+        -> std::size_t final;
     auto GetRequests(
         const contract::peer::PeerRequestType type,
         const RequestStatus state = RequestStatus::All) const

@@ -182,6 +182,7 @@ public:
         const std::chrono::milliseconds& timeout =
             std::chrono::milliseconds(0)) const -> Nym_p final;
     auto Nym(const proto::Nym& nym) const -> Nym_p final;
+    auto Nym(const Space& nym) const -> Nym_p final;
     auto Nym(
         const PasswordPrompt& reason,
         const std::string name,
@@ -276,6 +277,7 @@ public:
             std::chrono::milliseconds(0)) const -> OTServerContract final;
     auto Server(const proto::ServerContract& contract) const
         -> OTServerContract final;
+    auto Server(const Space& contract) const -> OTServerContract final;
     auto Server(
         const std::string& nymid,
         const std::string& name,

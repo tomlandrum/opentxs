@@ -417,6 +417,12 @@ auto Issuer::BailmentInstructions(
     return output;
 }
 
+auto Issuer::BailmentInstructionsSize(
+    const identifier::UnitDefinition& unitID) const -> std::size_t
+{
+    return BailmentInstructions(unitID).size();
+}
+
 auto Issuer::ConnectionInfo(const contract::peer::ConnectionInfoType type) const
     -> std::vector<Issuer::ConnectionDetails>
 {
@@ -513,6 +519,12 @@ auto Issuer::ConnectionInfoInitiated(
     }
 
     return 0 != count;
+}
+
+auto Issuer::ConnectionInfoSize(
+    const contract::peer::ConnectionInfoType type) const -> std::size_t
+{
+    return ConnectionInfo(type).size();
 }
 
 auto Issuer::find_request(

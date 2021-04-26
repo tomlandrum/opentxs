@@ -67,9 +67,13 @@ public:
     virtual std::vector<BailmentDetails> BailmentInstructions(
         const identifier::UnitDefinition& unitID,
         const bool onlyUnused = true) const = 0;
+    virtual std::size_t BailmentInstructionsSize(
+        const identifier::UnitDefinition& unitID) const = 0;
     virtual std::vector<ConnectionDetails> ConnectionInfo(
         const contract::peer::ConnectionInfoType type) const = 0;
     virtual bool ConnectionInfoInitiated(
+        const contract::peer::ConnectionInfoType type) const = 0;
+    virtual std::size_t ConnectionInfoSize(
         const contract::peer::ConnectionInfoType type) const = 0;
     virtual std::set<std::tuple<OTIdentifier, OTIdentifier, bool>> GetRequests(
         const contract::peer::PeerRequestType type,

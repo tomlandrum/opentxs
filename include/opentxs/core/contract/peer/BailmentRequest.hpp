@@ -13,6 +13,11 @@
 
 namespace opentxs
 {
+namespace identifier
+{
+class Server;
+class UnitDefinition;
+}  // namespace identifier
 namespace contract
 {
 namespace peer
@@ -39,6 +44,9 @@ class OPENTXS_EXPORT Bailment : virtual public peer::Request
 {
 public:
     ~Bailment() override = default;
+
+    OPENTXS_EXPORT virtual const identifier::Server& ServerID() const = 0;
+    OPENTXS_EXPORT virtual const identifier::UnitDefinition& UnitID() const = 0;
 
 protected:
     Bailment() noexcept = default;

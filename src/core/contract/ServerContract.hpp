@@ -61,6 +61,7 @@ public:
     auto EffectiveName() const -> std::string final;
     auto Name() const -> std::string final { return name_; }
     auto PublicContract() const -> proto::ServerContract final;
+    auto PublicContractToBytes(AllocateOutput destination) const -> bool final;
     auto Statistics(String& strContents) const -> bool final;
     auto Serialize() const -> OTData final;
     auto TransportKey() const -> const Data& final;

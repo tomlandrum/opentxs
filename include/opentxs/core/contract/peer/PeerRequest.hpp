@@ -30,6 +30,7 @@ class Request;
 namespace identifier
 {
 class Nym;
+class Server;
 }  // namespace identifier
 
 namespace proto
@@ -54,6 +55,7 @@ public:
     virtual SerializedType Contract() const = 0;
     virtual const identifier::Nym& Initiator() const = 0;
     virtual const identifier::Nym& Recipient() const = 0;
+	virtual const identifier::Server& Server() const = 0;
     virtual PeerRequestType Type() const = 0;
 
     ~Request() override = default;

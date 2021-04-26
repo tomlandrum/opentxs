@@ -192,6 +192,9 @@ public:
     OPENTXS_EXPORT virtual OTBailmentRequest BailmentRequest(
         const Nym_p& nym,
         const proto::PeerRequest& serialized) const noexcept(false) = 0;
+    OPENTXS_EXPORT virtual OTBailmentRequest BailmentRequest(
+        const Nym_p& nym,
+        const ReadView& view) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual std::unique_ptr<opentxs::Basket> Basket() const = 0;
     OPENTXS_EXPORT virtual std::unique_ptr<opentxs::Basket> Basket(
         std::int32_t nCount,
@@ -567,6 +570,9 @@ public:
     OPENTXS_EXPORT virtual OTPeerRequest PeerRequest(
         const Nym_p& nym,
         const proto::PeerRequest& serialized) const noexcept(false) = 0;
+    OPENTXS_EXPORT virtual OTPeerRequest PeerRequest(
+        const Nym_p& nym,
+        const ReadView& view) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTZMQPipeline Pipeline(
         std::function<void(opentxs::network::zeromq::Message&)> callback)
         const = 0;

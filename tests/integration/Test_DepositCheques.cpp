@@ -39,8 +39,6 @@
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/otx/LastReplyStatus.hpp"
-#include "opentxs/protobuf/Nym.pb.h"             // IWYU pragma: keep
-#include "opentxs/protobuf/ServerContract.pb.h"  // IWYU pragma: keep
 
 using namespace opentxs;
 
@@ -119,8 +117,10 @@ public:
         const ot::api::client::Manager& client)
     {
         auto reason = client.Factory().PasswordPrompt(__FUNCTION__);
-        auto clientVersion =
-            client.Wallet().Server(server_contract_->PublicContract());
+        auto bytes = ot::Space{};
+        EXPECT_TRUE(server_contract_->PublicContractToBytes(ot::writer(bytes)));
+        auto clientVersion = client.Wallet().Server(bytes);
+
         client.OTX().SetIntroductionServer(clientVersion);
     }
 
@@ -330,19 +330,20 @@ TEST_F(Test_DepositCheques, add_contacts)
     contact_id_issuer_alice_ = issuerAlice->ID();
     contact_id_issuer_bob_ = issuerAlice->ID();
 
-    EXPECT_TRUE(alice_client_.Wallet().Nym(
-        bob_client_.Wallet().Nym(bob_nym_id_)->asPublicNym()));
+    auto bytes = ot::Space{};
+    bob_client_.Wallet().Nym(bob_nym_id_)->asPublicNym(ot::writer(bytes));
+    EXPECT_TRUE(alice_client_.Wallet().Nym(bytes));
 
-    EXPECT_TRUE(alice_client_.Wallet().Nym(
-        issuer_client_.Wallet().Nym(issuer_nym_id_)->asPublicNym()));
-    EXPECT_TRUE(bob_client_.Wallet().Nym(
-        alice_client_.Wallet().Nym(alice_nym_id_)->asPublicNym()));
-    EXPECT_TRUE(bob_client_.Wallet().Nym(
-        issuer_client_.Wallet().Nym(issuer_nym_id_)->asPublicNym()));
-    EXPECT_TRUE(issuer_client_.Wallet().Nym(
-        alice_client_.Wallet().Nym(alice_nym_id_)->asPublicNym()));
-    EXPECT_TRUE(issuer_client_.Wallet().Nym(
-        bob_client_.Wallet().Nym(bob_nym_id_)->asPublicNym()));
+    issuer_client_.Wallet().Nym(issuer_nym_id_)->asPublicNym(ot::writer(bytes));
+    EXPECT_TRUE(alice_client_.Wallet().Nym(bytes));
+    alice_client_.Wallet().Nym(alice_nym_id_)->asPublicNym(ot::writer(bytes));
+    EXPECT_TRUE(bob_client_.Wallet().Nym(bytes));
+    issuer_client_.Wallet().Nym(issuer_nym_id_)->asPublicNym(ot::writer(bytes));
+    EXPECT_TRUE(bob_client_.Wallet().Nym(bytes));
+    alice_client_.Wallet().Nym(alice_nym_id_)->asPublicNym(ot::writer(bytes));
+    EXPECT_TRUE(issuer_client_.Wallet().Nym(bytes));
+    bob_client_.Wallet().Nym(bob_nym_id_)->asPublicNym(ot::writer(bytes));
+    EXPECT_TRUE(issuer_client_.Wallet().Nym(bytes));
 }
 
 TEST_F(Test_DepositCheques, issue_dollars)

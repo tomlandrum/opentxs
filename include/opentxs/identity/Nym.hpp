@@ -84,6 +84,8 @@ public:
     OPENTXS_EXPORT static const VersionNumber MaxVersion;
 
     OPENTXS_EXPORT virtual std::string Alias() const = 0;
+    OPENTXS_EXPORT virtual bool asPublicNym(
+        AllocateOutput destination) const = 0;
     OPENTXS_EXPORT virtual const Serialized asPublicNym() const = 0;
     OPENTXS_EXPORT virtual const value_type& at(const key_type& id) const
         noexcept(false) = 0;

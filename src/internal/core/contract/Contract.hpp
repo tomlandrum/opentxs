@@ -29,6 +29,7 @@
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
 #include "opentxs/core/contract/peer/PeerRequestType.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
+#include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/protobuf/ContractEnums.pb.h"
 #include "opentxs/protobuf/PeerReply.pb.h"
 #include "opentxs/protobuf/PeerRequest.pb.h"
@@ -182,6 +183,10 @@ struct Server final : virtual public opentxs::contract::Server,
     auto Contract() const -> proto::ServerContract final { return {}; }
     auto EffectiveName() const -> std::string final { return {}; }
     auto PublicContract() const -> proto::ServerContract final { return {}; }
+    auto PublicContractToBytes(AllocateOutput) const -> bool final
+    {
+        return false;
+    }
     auto Statistics(String&) const -> bool final { return {}; }
     auto TransportKey() const -> const Data& final { return id_; }
     auto TransportKey(Data&, const PasswordPrompt&) const -> OTSecret final
@@ -239,6 +244,7 @@ struct Request final : virtual public opentxs::contract::peer::Request,
     auto Contract() const -> SerializedType final { return {}; }
     auto Initiator() const -> const identifier::Nym& final { return nym_; }
     auto Recipient() const -> const identifier::Nym& final { return nym_; }
+    auto Server() const -> const identifier::Server& final { return server_; }
     auto Type() const -> PeerRequestType final
     {
         return PeerRequestType::Error;
@@ -247,6 +253,7 @@ struct Request final : virtual public opentxs::contract::peer::Request,
     Request(const api::Core& api)
         : Signable(api)
         , nym_(api.Factory().NymID())
+        , server_(api.Factory().ServerID())
     {
     }
 
@@ -254,12 +261,14 @@ struct Request final : virtual public opentxs::contract::peer::Request,
 
 private:
     const identifier::Nym& nym_;
+    const identifier::Server& server_;
 
     auto clone() const noexcept -> Request* final { return new Request(*this); }
 
     Request(const Request& rhs)
         : Signable(rhs)
         , nym_(rhs.nym_)
+        , server_(rhs.server_)
     {
     }
 };

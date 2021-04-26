@@ -226,6 +226,8 @@ public:
         -> OTBailmentRequest final;
     auto BailmentRequest(const Nym_p& nym, const proto::PeerRequest& serialized)
         const noexcept(false) -> OTBailmentRequest final;
+    auto BailmentRequest(const Nym_p& nym, const ReadView& view) const
+        noexcept(false) -> OTBailmentRequest final;
     auto Basket() const -> std::unique_ptr<opentxs::Basket> final;
     auto Basket(std::int32_t nCount, std::int64_t lMinimumTransferAmount) const
         -> std::unique_ptr<opentxs::Basket> final;
@@ -627,6 +629,8 @@ public:
     auto PeerRequest() const noexcept -> OTPeerRequest final;
     auto PeerRequest(const Nym_p& nym, const proto::PeerRequest& serialized)
         const noexcept(false) -> OTPeerRequest final;
+    auto PeerRequest(const Nym_p& nym, const ReadView& view) const
+        noexcept(false) -> OTPeerRequest final;
     auto Pipeline(
         std::function<void(opentxs::network::zeromq::Message&)> callback) const
         -> OTZMQPipeline final;

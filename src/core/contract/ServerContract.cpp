@@ -356,6 +356,20 @@ auto Server::PublicContract() const -> proto::ServerContract
     return serialized;
 }
 
+auto Server::PublicContractToBytes(AllocateOutput destination) const -> bool
+{
+    auto serialized = PublicContract();
+
+    auto view = destination(serialized.ByteSizeLong());
+    if (false == serialized.SerializeToArray(
+                     view.data(), static_cast<int>(view.size()))) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialized contract.")
+            .Flush();
+        return false;
+    }
+    return true;
+}
+
 auto Server::Statistics(String& strContents) const -> bool
 {
     const auto strID = String::Factory(id_);

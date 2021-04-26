@@ -58,6 +58,12 @@ public:
 
     ~Bailment() final = default;
 
+    auto ServerID() const -> const identifier::Server& final { return server_; }
+    auto UnitID() const -> const identifier::UnitDefinition& final
+    {
+        return unit_;
+    }
+
 private:
     friend opentxs::Factory;
 
