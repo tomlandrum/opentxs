@@ -31,7 +31,7 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/StorageThread.pb.h"
+//#include "opentxs/protobuf/StorageThread.pb.h"
 
 namespace
 {
@@ -92,44 +92,45 @@ struct Test_BlockchainActivity : public ::testing::Test {
 
         return output;
     }
-    [[maybe_unused]] auto check_thread(
-        const ot::proto::StorageThread& thread,
-        const std::string& txid) const noexcept -> bool
-    {
-        EXPECT_EQ(thread.item_size(), 1);
-
-        auto success{thread.item_size() == 1};
-
-        if (false == success) { return false; }
-
-        const auto& item = thread.item(0);
-        const auto iTxid =
-            api_.Factory().Data(item.txid(), ot::StringStyle::Raw);
-
-        EXPECT_EQ(
-            item.box(), static_cast<std::uint32_t>(ot::StorageBox::BLOCKCHAIN));
-        EXPECT_EQ(iTxid->asHex(), txid);
-        EXPECT_NE(item.time(), 0);
-        EXPECT_TRUE(item.account().empty());
-
-        success &=
-            (item.box() ==
-             static_cast<std::uint32_t>(ot::StorageBox::BLOCKCHAIN));
-        success &= (iTxid->asHex() == txid);
-        success &= (item.time() != 0);
-        success &= (item.account().empty());
-
-        return success;
-    }
-    [[maybe_unused]] auto check_thread(
-        const ot::proto::StorageThread& thread) const noexcept -> bool
-    {
-        EXPECT_EQ(thread.item_size(), 0);
-
-        auto success{thread.item_size() == 0};
-
-        return success;
-    }
+    //    [[maybe_unused]] auto check_thread(
+    //        const ot::proto::StorageThread& thread,
+    //        const std::string& txid) const noexcept -> bool
+    //    {
+    //        EXPECT_EQ(thread.item_size(), 1);
+    //
+    //        auto success{thread.item_size() == 1};
+    //
+    //        if (false == success) { return false; }
+    //
+    //        const auto& item = thread.item(0);
+    //        const auto iTxid =
+    //            api_.Factory().Data(item.txid(), ot::StringStyle::Raw);
+    //
+    //        EXPECT_EQ(
+    //            item.box(),
+    //            static_cast<std::uint32_t>(ot::StorageBox::BLOCKCHAIN));
+    //        EXPECT_EQ(iTxid->asHex(), txid);
+    //        EXPECT_NE(item.time(), 0);
+    //        EXPECT_TRUE(item.account().empty());
+    //
+    //        success &=
+    //            (item.box() ==
+    //             static_cast<std::uint32_t>(ot::StorageBox::BLOCKCHAIN));
+    //        success &= (iTxid->asHex() == txid);
+    //        success &= (item.time() != 0);
+    //        success &= (item.account().empty());
+    //
+    //        return success;
+    //    }
+    //    [[maybe_unused]] auto check_thread(
+    //        const ot::proto::StorageThread& thread) const noexcept -> bool
+    //    {
+    //        EXPECT_EQ(thread.item_size(), 0);
+    //
+    //        auto success{thread.item_size() == 0};
+    //
+    //        return success;
+    //    }
     [[maybe_unused]] auto contact_1_id() const noexcept -> const ot::Identifier&
     {
         static const auto output = api_.Contacts().NymToContact(nym_1_id());
