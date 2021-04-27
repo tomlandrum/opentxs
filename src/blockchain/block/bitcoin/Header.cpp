@@ -612,15 +612,8 @@ auto Header::Serialize(
 
         return true;
     } else {
-        auto serialized = Serialize();
-        auto view = destination(serialized.ByteSizeLong());
-        if (!serialized.SerializeToArray(
-                view.data(), static_cast<int>(view.size()))) {
-            LogOutput(OT_METHOD)(__FUNCTION__)(
-                ": Failed to serialize the header.")
-                .Flush();
-            return false;
-        }
+        write(Serialize(), destination);
+
         return true;
     }
 }

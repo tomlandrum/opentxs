@@ -308,8 +308,7 @@ auto Factory::BailmentRequest(
 auto Factory::BailmentRequest(const Nym_p& nym, const ReadView& view) const
     noexcept(false) -> OTBailmentRequest
 {
-    return BailmentRequest(
-        nym, proto::Factory<proto::PeerRequest>(view.data(), view.size()));
+    return BailmentRequest(nym, proto::Factory<proto::PeerRequest>(view));
 }
 
 auto Factory::Basket() const -> std::unique_ptr<opentxs::Basket>
@@ -946,8 +945,8 @@ auto Factory::Envelope(
     return OTEnvelope{opentxs::Factory::Envelope(api_, serialized).release()};
 }
 
-auto Factory::Envelope(const opentxs::Space& serialized) const noexcept(false)
-    -> OTEnvelope
+auto Factory::Envelope(const opentxs::ReadView& serialized) const
+    noexcept(false) -> OTEnvelope
 {
     return OTEnvelope{opentxs::Factory::Envelope(api_, serialized).release()};
 }
@@ -1711,11 +1710,10 @@ auto Factory::PaymentCode(const proto::PaymentCode& serialized) const noexcept
     };
 }
 
-auto Factory::PaymentCode(const Space& serialized) const noexcept
+auto Factory::PaymentCode(const ReadView& serialized) const noexcept
     -> OTPaymentCode
 {
-    return PaymentCode(proto::Factory<proto::PaymentCode>(
-        serialized.data(), serialized.size()));
+    return PaymentCode(proto::Factory<proto::PaymentCode>(serialized));
 }
 
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32

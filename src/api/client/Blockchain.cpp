@@ -304,11 +304,11 @@ auto Blockchain::NewPaymentCodeSubaccount(
     const identifier::Nym& nymID,
     const opentxs::PaymentCode& local,
     const opentxs::PaymentCode& remote,
-    const Space bytes,
+    const ReadView& view,
     const Chain chain,
     const PasswordPrompt& reason) const noexcept -> OTIdentifier
 {
-    auto path = proto::Factory<proto::HDPath>(bytes.data(), bytes.size());
+    auto path = proto::Factory<proto::HDPath>(view);
     return imp_->NewPaymentCodeSubaccount(
         nymID, local, remote, path, chain, reason);
 }

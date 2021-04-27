@@ -68,7 +68,7 @@ public:
         const api::internal::Core& api,
         const std::string& nym,
         const VersionNumber targetVersion,
-        const Space& serialized);
+        const ReadView& serialized);
     OPENTXS_EXPORT ContactData(const ContactData&);
 
     OPENTXS_EXPORT ContactData operator+(const ContactData& rhs) const;

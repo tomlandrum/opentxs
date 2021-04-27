@@ -358,15 +358,7 @@ auto Server::PublicContract() const -> proto::ServerContract
 
 auto Server::PublicContractToBytes(AllocateOutput destination) const -> bool
 {
-    auto serialized = PublicContract();
-
-    auto view = destination(serialized.ByteSizeLong());
-    if (false == serialized.SerializeToArray(
-                     view.data(), static_cast<int>(view.size()))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialized contract.")
-            .Flush();
-        return false;
-    }
+    write(PublicContract(), destination);
     return true;
 }
 

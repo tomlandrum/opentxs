@@ -98,7 +98,7 @@ auto Symmetric::Key(
 }
 
 auto Symmetric::Key(
-    const Space& serializedCiphertext,
+    const ReadView& serializedCiphertext,
     const opentxs::crypto::key::symmetric::Algorithm mode) const
     -> OTSymmetricKey
 {
@@ -106,8 +106,7 @@ auto Symmetric::Key(
 
     OT_ASSERT(nullptr != engine);
 
-    auto ciphertext = proto::Factory<proto::Ciphertext>(
-        serializedCiphertext.data(), serializedCiphertext.size());
+    auto ciphertext = proto::Factory<proto::Ciphertext>(serializedCiphertext);
 
     return api_.Factory().SymmetricKey(*engine, ciphertext.key());
 }

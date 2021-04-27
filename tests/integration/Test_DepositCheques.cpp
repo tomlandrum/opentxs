@@ -119,7 +119,7 @@ public:
         auto reason = client.Factory().PasswordPrompt(__FUNCTION__);
         auto bytes = ot::Space{};
         EXPECT_TRUE(server_contract_->PublicContractToBytes(ot::writer(bytes)));
-        auto clientVersion = client.Wallet().Server(bytes);
+        auto clientVersion = client.Wallet().Server(ot::reader(bytes));
 
         client.OTX().SetIntroductionServer(clientVersion);
     }
@@ -332,18 +332,18 @@ TEST_F(Test_DepositCheques, add_contacts)
 
     auto bytes = ot::Space{};
     bob_client_.Wallet().Nym(bob_nym_id_)->asPublicNym(ot::writer(bytes));
-    EXPECT_TRUE(alice_client_.Wallet().Nym(bytes));
+    EXPECT_TRUE(alice_client_.Wallet().Nym(ot::reader(bytes)));
 
     issuer_client_.Wallet().Nym(issuer_nym_id_)->asPublicNym(ot::writer(bytes));
-    EXPECT_TRUE(alice_client_.Wallet().Nym(bytes));
+    EXPECT_TRUE(alice_client_.Wallet().Nym(ot::reader(bytes)));
     alice_client_.Wallet().Nym(alice_nym_id_)->asPublicNym(ot::writer(bytes));
-    EXPECT_TRUE(bob_client_.Wallet().Nym(bytes));
+    EXPECT_TRUE(bob_client_.Wallet().Nym(ot::reader(bytes)));
     issuer_client_.Wallet().Nym(issuer_nym_id_)->asPublicNym(ot::writer(bytes));
-    EXPECT_TRUE(bob_client_.Wallet().Nym(bytes));
+    EXPECT_TRUE(bob_client_.Wallet().Nym(ot::reader(bytes)));
     alice_client_.Wallet().Nym(alice_nym_id_)->asPublicNym(ot::writer(bytes));
-    EXPECT_TRUE(issuer_client_.Wallet().Nym(bytes));
+    EXPECT_TRUE(issuer_client_.Wallet().Nym(ot::reader(bytes)));
     bob_client_.Wallet().Nym(bob_nym_id_)->asPublicNym(ot::writer(bytes));
-    EXPECT_TRUE(issuer_client_.Wallet().Nym(bytes));
+    EXPECT_TRUE(issuer_client_.Wallet().Nym(ot::reader(bytes)));
 }
 
 TEST_F(Test_DepositCheques, issue_dollars)

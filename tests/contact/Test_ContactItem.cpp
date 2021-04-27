@@ -272,7 +272,11 @@ TEST_F(Test_ContactItem, Serialize)
     EXPECT_TRUE(contactItem_.Serialize(ot::writer(bytes), false));
 
     auto restored1 = ot::ContactItem{
-        api_, "testNym", contactItem_.Version(), contactItem_.Section(), bytes};
+        api_,
+        "testNym",
+        contactItem_.Version(),
+        contactItem_.Section(),
+        ot::reader(bytes)};
 
     ASSERT_EQ(restored1.Value(), contactItem_.Value());
     ASSERT_EQ(restored1.Version(), contactItem_.Version());
@@ -284,7 +288,11 @@ TEST_F(Test_ContactItem, Serialize)
     EXPECT_TRUE(contactItem_.Serialize(ot::writer(bytes), true));
 
     auto restored2 = ot::ContactItem{
-        api_, "testNym", contactItem_.Version(), contactItem_.Section(), bytes};
+        api_,
+        "testNym",
+        contactItem_.Version(),
+        contactItem_.Section(),
+        ot::reader(bytes)};
 
     ASSERT_EQ(restored2.Value(), contactItem_.Value());
     ASSERT_EQ(restored2.Version(), contactItem_.Version());

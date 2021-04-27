@@ -59,7 +59,7 @@ public:
         const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> OTSymmetricKey final;
     auto Key(
-        const Space& serializedCiphertext,
+        const ReadView& serializedCiphertext,
         const opentxs::crypto::key::symmetric::Algorithm mode) const
         -> OTSymmetricKey final;
     auto Key(

@@ -32,7 +32,7 @@ TEST_F(Test_HeaderOracle, test_block_serialization)
     auto space = ot::Space{};
     auto const bitcoinformat{false};
     ASSERT_TRUE(header->Serialize(ot::writer(space), bitcoinformat));
-    header = api_.Factory().BlockHeader(space);
+    header = api_.Factory().BlockHeader(ot::reader(space));
 
     ASSERT_TRUE(header);
     EXPECT_EQ(header->Hash(), hash1);
@@ -50,7 +50,7 @@ TEST_F(Test_HeaderOracle, test_block_serialization)
     EXPECT_EQ(header->ParentHash(), hash1);
 
     ASSERT_TRUE(header->Serialize(ot::writer(space), bitcoinformat));
-    header = api_.Factory().BlockHeader(space);
+    header = api_.Factory().BlockHeader(ot::reader(space));
 
     ASSERT_TRUE(header);
     EXPECT_EQ(header->Hash(), hash2);

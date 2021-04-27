@@ -29,7 +29,6 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/crypto/Envelope.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/Nym.pb.h"  // IWYU pragma: keep
 
 namespace
 {
@@ -95,7 +94,9 @@ public:
 
                 OT_ASSERT(rNym);
 
-                nyms_.emplace_back(sender_.Wallet().Nym(rNym->asPublicNym()));
+                auto bytes = ot::Space{};
+                OT_ASSERT(rNym->asPublicNym(ot::writer(bytes)));
+                nyms_.emplace_back(sender_.Wallet().Nym(ot::reader(bytes)));
 
                 OT_ASSERT(bool(*nyms_.crbegin()));
             }
@@ -114,7 +115,9 @@ public:
 
                 OT_ASSERT(rNym);
 
-                nyms_.emplace_back(sender_.Wallet().Nym(rNym->asPublicNym()));
+                auto bytes = ot::Space{};
+                OT_ASSERT(rNym->asPublicNym(ot::writer(bytes)));
+                nyms_.emplace_back(sender_.Wallet().Nym(ot::reader(bytes)));
 
                 OT_ASSERT(bool(*nyms_.crbegin()));
             }
@@ -133,7 +136,9 @@ public:
 
                 OT_ASSERT(rNym);
 
-                nyms_.emplace_back(sender_.Wallet().Nym(rNym->asPublicNym()));
+                auto bytes = ot::Space{};
+                OT_ASSERT(rNym->asPublicNym(ot::writer(bytes)));
+                nyms_.emplace_back(sender_.Wallet().Nym(ot::reader(bytes)));
 
                 OT_ASSERT(bool(*nyms_.crbegin()));
             }
@@ -223,7 +228,7 @@ TEST_F(Test_Envelope, multiple_recipients)
             auto plaintext = ot::String::Factory();
 
             try {
-                auto recipient = sender_.Factory().Envelope(bytes);
+                auto recipient = sender_.Factory().Envelope(ot::reader(bytes));
                 auto rNym = recipient_.Wallet().Nym((*nym)->ID());
 
                 OT_ASSERT(rNym);

@@ -135,7 +135,7 @@ auto Factory::Purse(
     return new blind::implementation::Purse(api, serialized);
 }
 
-auto Factory::Purse(const api::internal::Core& api, const Space& serialized)
+auto Factory::Purse(const api::internal::Core& api, const ReadView& serialized)
     -> blind::Purse*
 {
     return new blind::implementation::Purse(api, serialized);
@@ -343,8 +343,8 @@ Purse::Purse(const api::internal::Core& api, const proto::Purse& in)
     }
 }
 
-Purse::Purse(const api::internal::Core& api, const Space& in)
-    : Purse(api, opentxs::proto::Factory<proto::Purse>(in.data(), in.size()))
+Purse::Purse(const api::internal::Core& api, const ReadView& in)
+    : Purse(api, opentxs::proto::Factory<proto::Purse>(in))
 {
 }
 
@@ -758,12 +758,7 @@ auto Purse::Serialize() const -> proto::Purse
 
 auto Purse::Serialize(AllocateOutput destination) const noexcept -> void
 {
-    auto purse = Serialize();
-    auto view = destination(purse.ByteSizeLong());
-    if (!purse.SerializeToArray(view.data(), static_cast<int>(view.size()))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize the purse.")
-            .Flush();
-    }
+    write(Serialize(), destination);
 }
 
 auto Purse::Unlock(

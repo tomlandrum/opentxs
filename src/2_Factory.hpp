@@ -561,7 +561,7 @@ public:
         -> std::unique_ptr<crypto::Envelope>;
     static auto Envelope(
         const api::internal::Core& api,
-        const Space& serialized) noexcept(false)
+        const ReadView& serialized) noexcept(false)
         -> std::unique_ptr<crypto::Envelope>;
     static auto FactoryAPIServer(const api::server::internal::Manager& api)
         -> api::internal::Factory*;
@@ -734,7 +734,7 @@ public:
         const proto::Purse& serialized) -> blind::Purse*;
     OPENTXS_EXPORT static auto Purse(
         const api::internal::Core& api,
-        const Space& serialized) -> blind::Purse*;
+        const ReadView& serialized) -> blind::Purse*;
     OPENTXS_EXPORT static auto Purse(
         const api::internal::Core& api,
         const otx::context::Server&,

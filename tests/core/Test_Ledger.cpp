@@ -54,7 +54,7 @@ TEST_F(Ledger, init)
     const auto serverContract = server_.Wallet().Server(server_.ID());
     auto bytes = ot::Space{};
     serverContract->PublicContractToBytes(ot::writer(bytes));
-    client_.Wallet().Server(bytes);
+    client_.Wallet().Server(ot::reader(bytes));
     server_id_->SetString(serverContract->ID()->str());
 
     ASSERT_FALSE(server_id_->empty());

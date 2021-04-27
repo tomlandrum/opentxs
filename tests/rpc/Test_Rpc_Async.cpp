@@ -455,7 +455,7 @@ TEST_F(Test_Rpc_Async, Send_Payment_Cheque_No_Account_Owner)
     const auto contact = client_a.Contacts().NewContact(
         "label_only_contact",
         identifier::Nym::Factory(),
-        client_a.Factory().PaymentCode(""));
+        client_a.Factory().PaymentCode(std::string{}));
 
     auto sendpayment = command.mutable_sendpayment();
 
@@ -495,7 +495,7 @@ TEST_F(Test_Rpc_Async, Send_Payment_Cheque_No_Path)
     const auto contact = client_a.Contacts().NewContact(
         "label_only_contact",
         identifier::Nym::Factory(),
-        client_a.Factory().PaymentCode(""));
+        client_a.Factory().PaymentCode(std::string{}));
 
     auto sendpayment = command.mutable_sendpayment();
 

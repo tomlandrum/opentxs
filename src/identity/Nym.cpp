@@ -424,15 +424,7 @@ auto Nym::Alias() const -> std::string { return alias_; }
 
 auto Nym::asPublicNym(AllocateOutput destination) const -> bool
 {
-    auto serialized = asPublicNym();
-    auto view = destination(serialized.ByteSizeLong());
-    if (false == serialized.SerializeToArray(
-                     view.data(), static_cast<int>(view.size()))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize nym.")
-            .Flush();
-
-        return false;
-    }
+    write(asPublicNym(), destination);
 
     return true;
 }
@@ -1113,15 +1105,9 @@ auto Nym::PaymentCodePath(AllocateOutput destination) const -> bool
 
         return false;
     }
-    auto view = destination(path.ByteSizeLong());
-    if (false ==
-        path.SerializeToArray(view.data(), static_cast<int>(view.size()))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed to serialize payment code path to bytes.")
-            .Flush();
 
-        return false;
-    }
+    write(path, destination);
+
     return true;
 }
 

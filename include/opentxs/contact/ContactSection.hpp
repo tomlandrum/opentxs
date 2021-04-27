@@ -72,7 +72,7 @@ public:
         const api::internal::Core& api,
         const std::string& nym,
         const VersionNumber parentVersion,
-        const Space& serialized);
+        const ReadView& serialized);
     OPENTXS_EXPORT ContactSection(const ContactSection&) noexcept;
     OPENTXS_EXPORT ContactSection(ContactSection&&) noexcept;
 

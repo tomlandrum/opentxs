@@ -72,7 +72,7 @@ public:
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const = 0;
     OPENTXS_EXPORT virtual bool DecryptFromBytes(
-        const Space& ciphertext,
+        const ReadView& ciphertext,
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const = 0;
     /** Encrypt plaintext using the symmetric key

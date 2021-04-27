@@ -24,7 +24,7 @@ public:
         return false;
     }
     auto DecryptFromBytes(
-        const Space&,
+        const ReadView&,
         const PasswordPrompt&,
         const AllocateOutput) const -> bool final
     {

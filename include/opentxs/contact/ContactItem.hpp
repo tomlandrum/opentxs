@@ -77,7 +77,7 @@ public:
         const std::string& nym,
         const VersionNumber parentVersion,
         const contact::ContactSectionName section,
-        const Space& serialized);
+        const ReadView& serialized);
     OPENTXS_EXPORT ContactItem(const ContactItem&) noexcept;
     OPENTXS_EXPORT ContactItem(ContactItem&&) noexcept;
 

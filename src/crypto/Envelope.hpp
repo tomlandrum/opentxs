@@ -75,8 +75,9 @@ public:
     Envelope(
         const api::internal::Core& api,
         const SerializedType& serialized) noexcept(false);
-    Envelope(const api::internal::Core& api, const Space& serialized) noexcept(
-        false);
+    Envelope(
+        const api::internal::Core& api,
+        const ReadView& serialized) noexcept(false);
 
     ~Envelope() final = default;
 

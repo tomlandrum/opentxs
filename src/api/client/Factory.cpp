@@ -213,7 +213,7 @@ auto Factory::BlockHeader(const proto::BlockchainBlockHeader& serialized) const
     }
 }
 
-auto Factory::BlockHeader(const Space& bytes) const -> BlockHeaderP
+auto Factory::BlockHeader(const ReadView& bytes) const -> BlockHeaderP
 {
     return BlockHeader(proto::Factory<proto::BlockchainBlockHeader>(bytes));
 }

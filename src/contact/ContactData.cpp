@@ -158,14 +158,12 @@ ContactData::ContactData(
     const api::internal::Core& api,
     const std::string& nym,
     const VersionNumber targetVersion,
-    const Space& serialized)
+    const ReadView& serialized)
     : ContactData(
           api,
           nym,
           targetVersion,
-          proto::Factory<proto::ContactData>(
-              serialized.data(),
-              serialized.size()))
+          proto::Factory<proto::ContactData>(serialized))
 {
 }
 
@@ -1071,14 +1069,7 @@ auto ContactData::SetScope(
 auto ContactData::Serialize(AllocateOutput destination, const bool withID) const
     -> bool
 {
-    auto data = Serialize(withID);
-    auto view = destination(data.ByteSizeLong());
-    if (!data.SerializeToArray(view.data(), static_cast<int>(view.size()))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed to serialize the contactdata.")
-            .Flush();
-        return false;
-    }
+    write(Serialize(withID), destination);
     return true;
 }
 

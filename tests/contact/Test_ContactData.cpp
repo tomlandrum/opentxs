@@ -684,8 +684,8 @@ TEST_F(Test_ContactData, Serialize)
     auto bytes = ot::Space{};
     EXPECT_TRUE(data1.Serialize(ot::writer(bytes), false));
 
-    auto restored1 =
-        ot::ContactData{api_, "ContactDataNym1", data1.Version(), bytes};
+    auto restored1 = ot::ContactData{
+        api_, "ContactDataNym1", data1.Version(), ot::reader(bytes)};
 
     ASSERT_EQ(restored1.Version(), data1.Version());
     auto section_iterator = restored1.begin();
@@ -709,8 +709,8 @@ TEST_F(Test_ContactData, Serialize)
     // Serialize with ids.
     EXPECT_TRUE(data1.Serialize(ot::writer(bytes), true));
 
-    auto restored2 =
-        ot::ContactData{api_, "ContactDataNym1", data1.Version(), bytes};
+    auto restored2 = ot::ContactData{
+        api_, "ContactDataNym1", data1.Version(), ot::reader(bytes)};
 
     ASSERT_EQ(restored2.Version(), data1.Version());
     section_iterator = restored2.begin();

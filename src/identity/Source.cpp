@@ -161,7 +161,7 @@ Source::Source(
     : factory_{factory}
     , type_(nymParameters.SourceType())
     , pubkey_(nymParameters.Keypair().GetPublicKey())
-    , payment_code_(factory_.PaymentCode(""))
+    , payment_code_(factory_.PaymentCode(std::string{}))
     , version_(key_to_source_version_.at(pubkey_->Version()))
 
 {
@@ -201,7 +201,7 @@ auto Source::deserialize_paymentcode(
         return factory.PaymentCode(serialized.paymentcode());
     } else {
 
-        return factory.PaymentCode("");
+        return factory.PaymentCode(std::string{});
     }
 }
 

@@ -208,7 +208,7 @@ private:
         std::optional<OTSecret> secondaryKeyPassword);
     Purse(const api::internal::Core& api, const Purse& owner);
     Purse(const api::internal::Core& api, const proto::Purse& serialized);
-    Purse(const api::internal::Core& api, const Space& serialized);
+    Purse(const api::internal::Core& api, const ReadView& serialized);
     Purse() = delete;
     Purse(const Purse&);
     Purse(Purse&&) = delete;

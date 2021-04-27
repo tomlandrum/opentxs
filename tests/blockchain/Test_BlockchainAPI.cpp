@@ -1273,15 +1273,15 @@ TEST_F(Test_BlockchainAPI, paymentcode)
     const auto& nym = alex_;
     const auto& chain = btc_chain_;
     const auto pNym = api_.Wallet().Nym(nym);
+    auto bytes = ot::Space{};
     const auto accountID = api_.Blockchain().NewPaymentCodeSubaccount(
         nym,
         api_.Factory().PaymentCode(pNym->PaymentCode()),
-        api_.Factory().PaymentCode(
-            "PD1jTsa1rjnbMMLVbj5cg2c8KkFY32KWtPRqVVpSBkv1jf8zjHJVu"),
+        api_.Factory().PaymentCode(std::string{
+            "PD1jTsa1rjnbMMLVbj5cg2c8KkFY32KWtPRqVVpSBkv1jf8zjHJVu"}),
         [&] {
-            auto bytes = ot::Space{};
             pNym->PaymentCodePath(ot::writer(bytes));
-            return bytes;
+            return ot::reader(bytes);
         }(),
         chain,
         reason_);

@@ -42,7 +42,7 @@ public:
         const proto::SymmetricKey& serialized,
         const opentxs::crypto::key::symmetric::Algorithm mode) const = 0;
     OPENTXS_EXPORT virtual OTSymmetricKey Key(
-        const Space& serializedCiphertext,
+        const ReadView& serializedCiphertext,
         const opentxs::crypto::key::symmetric::Algorithm mode) const = 0;
     OPENTXS_EXPORT virtual OTSymmetricKey Key(
         const Secret& seed,

@@ -184,7 +184,7 @@ auto ContactList::ParsedArgs::extract_paymentcode(
 
     // Case 3: not possible to extract a payment code
 
-    return api.Factory().PaymentCode("");
+    return api.Factory().PaymentCode(std::string{});
 }
 
 auto ContactList::AddContact(

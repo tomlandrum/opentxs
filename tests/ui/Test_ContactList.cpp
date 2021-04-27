@@ -72,9 +72,11 @@ public:
               nym_id_,
               make_cb(contact_list_widget_, "contact list")))
         , shutdown_(false)
-        , bob_payment_code_(client_.Factory().PaymentCode(BOB_PAYMENT_CODE))
+        , bob_payment_code_(
+              client_.Factory().PaymentCode(std::string{BOB_PAYMENT_CODE}))
         , bob_contact_id_(ot::Identifier::Factory())
-        , chris_payment_code_(client_.Factory().PaymentCode(CHRIS_PAYMENT_CODE))
+        , chris_payment_code_(
+              client_.Factory().PaymentCode(std::string{CHRIS_PAYMENT_CODE}))
         , chris_contact_id_(ot::Identifier::Factory())
     {
     }

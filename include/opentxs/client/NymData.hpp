@@ -257,7 +257,7 @@ public:
     bool SetContactData(
         const proto::ContactData& data,
         const PasswordPrompt& reason);
-    bool SetContactData(const Space& data, const PasswordPrompt& reason);
+    bool SetContactData(const ReadView& data, const PasswordPrompt& reason);
     bool SetScope(
         const contact::ContactItemType type,
         const std::string& name,

@@ -70,7 +70,7 @@ auto Factory::Envelope(
 
 auto Factory::Envelope(
     const api::internal::Core& api,
-    const Space& serialized) noexcept(false)
+    const ReadView& serialized) noexcept(false)
     -> std::unique_ptr<crypto::Envelope>
 {
     return std::make_unique<ReturnType>(api, serialized);
@@ -122,9 +122,9 @@ Envelope::Envelope(
 {
 }
 
-Envelope::Envelope(const api::internal::Core& api, const Space& in) noexcept(
+Envelope::Envelope(const api::internal::Core& api, const ReadView& in) noexcept(
     false)
-    : Envelope(api, proto::Factory<proto::Envelope>(in.data(), in.size()))
+    : Envelope(api, proto::Factory<proto::Envelope>(in))
 {
 }
 
@@ -522,15 +522,8 @@ auto Envelope::set_default_password(
 
 auto Envelope::Serialize(AllocateOutput destination) const noexcept -> bool
 {
-    auto serialized = Serialize();
-    auto view = destination(serialized.ByteSizeLong());
-    if (false == serialized.SerializeToArray(
-                     view.data(), static_cast<int>(view.size()))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize envelope")
-            .Flush();
+    write(Serialize(), destination);
 
-        return false;
-    }
     return true;
 }
 

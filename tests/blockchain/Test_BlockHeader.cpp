@@ -139,7 +139,7 @@ TEST_F(Test_BlockHeader, serialize_deserialize)
 
     auto bytes = ot::Space{};
     EXPECT_TRUE(header.Serialize(ot::writer(bytes), false));
-    auto restored = api_.Factory().BlockHeader(bytes);
+    auto restored = api_.Factory().BlockHeader(ot::reader(bytes));
 
     ASSERT_TRUE(restored);
     EXPECT_EQ(expectedHash.get(), restored->Hash());

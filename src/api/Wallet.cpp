@@ -1161,9 +1161,9 @@ auto Wallet::Nym(const proto::Nym& serialized) const -> Nym_p
     return existing;
 }
 
-auto Wallet::Nym(const Space& bytes) const -> Nym_p
+auto Wallet::Nym(const ReadView& bytes) const -> Nym_p
 {
-    return Nym(proto::Factory<proto::Nym>(bytes.data(), bytes.size()));
+    return Nym(proto::Factory<proto::Nym>(bytes));
 }
 
 auto Wallet::Nym(
@@ -2324,10 +2324,9 @@ auto Wallet::Server(const proto::ServerContract& contract) const
     return Server(serverID);
 }
 
-auto Wallet::Server(const Space& contract) const -> OTServerContract
+auto Wallet::Server(const ReadView& contract) const -> OTServerContract
 {
-    return Server(opentxs::proto::Factory<proto::ServerContract>(
-        contract.data(), contract.size()));
+    return Server(opentxs::proto::Factory<proto::ServerContract>(contract));
 }
 
 auto Wallet::Server(

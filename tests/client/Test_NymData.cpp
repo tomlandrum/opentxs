@@ -450,7 +450,7 @@ TEST_F(Test_NymData, SetContactData)
 
     auto bytes = ot::Space{};
     EXPECT_TRUE(contactData.Serialize(ot::writer(bytes)));
-    auto set = nymData_.SetContactData(bytes, reason_);
+    auto set = nymData_.SetContactData(ot::reader(bytes), reason_);
     EXPECT_TRUE(set);
 }
 

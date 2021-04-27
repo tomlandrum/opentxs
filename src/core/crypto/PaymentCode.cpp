@@ -937,15 +937,8 @@ auto PaymentCode::postprocess(const Secret& in) const noexcept(false)
 
 auto PaymentCode::Serialize(AllocateOutput destination) const noexcept -> bool
 {
-    auto serialized = Serialize();
-    auto view = destination(serialized.ByteSizeLong());
-    if (false == serialized.SerializeToArray(
-                     view.data(), static_cast<int>(view.size()))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize payment code")
-            .Flush();
+    write(Serialize(), destination);
 
-        return false;
-    }
     return true;
 }
 

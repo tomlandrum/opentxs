@@ -330,7 +330,7 @@ public:
     {
         return {};
     }
-    auto BlockHeader(const Space& serialized) const -> BlockHeaderP override
+    auto BlockHeader(const ReadView& serialized) const -> BlockHeaderP override
     {
         return {};
     }
@@ -425,7 +425,7 @@ public:
         -> OTEnvelope final;
     auto Envelope(const opentxs::crypto::Envelope::SerializedType& serialized)
         const noexcept(false) -> OTEnvelope final;
-    auto Envelope(const opentxs::Space& serialized) const noexcept(false)
+    auto Envelope(const opentxs::ReadView& serialized) const noexcept(false)
         -> OTEnvelope final;
     auto Identifier() const -> OTIdentifier final;
     auto Identifier(const std::string& serialized) const -> OTIdentifier final;
@@ -570,7 +570,7 @@ public:
         -> OTPaymentCode final;
     auto PaymentCode(const proto::PaymentCode& serialized) const noexcept
         -> OTPaymentCode final;
-    auto PaymentCode(const Space& serialized) const noexcept
+    auto PaymentCode(const ReadView& serialized) const noexcept
         -> OTPaymentCode final;
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
     auto PaymentCode(

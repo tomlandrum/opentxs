@@ -289,7 +289,7 @@ public:
     OPENTXS_EXPORT virtual BlockHeaderP BlockHeader(
         const proto::BlockchainBlockHeader& serialized) const = 0;
     OPENTXS_EXPORT virtual BlockHeaderP BlockHeader(
-        const Space& serialized) const = 0;
+        const ReadView& serialized) const = 0;
     OPENTXS_EXPORT virtual BlockHeaderP BlockHeader(
         const opentxs::blockchain::Type type,
         const Data& raw) const = 0;
@@ -371,7 +371,7 @@ public:
         const opentxs::crypto::Envelope::SerializedType& serialized) const
         noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTEnvelope Envelope(
-        const opentxs::Space& serialized) const noexcept(false) = 0;
+        const opentxs::ReadView& serialized) const noexcept(false) = 0;
     OPENTXS_EXPORT virtual OTIdentifier Identifier() const = 0;
     OPENTXS_EXPORT virtual OTIdentifier Identifier(
         const std::string& serialized) const = 0;
@@ -513,7 +513,7 @@ public:
     OPENTXS_EXPORT virtual OTPaymentCode PaymentCode(
         const proto::PaymentCode& serialized) const noexcept = 0;
     OPENTXS_EXPORT virtual OTPaymentCode PaymentCode(
-        const Space& serialized) const noexcept = 0;
+        const ReadView& serialized) const noexcept = 0;
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1 && OT_CRYPTO_WITH_BIP32
     OPENTXS_EXPORT virtual OTPaymentCode PaymentCode(
         const std::string& seed,

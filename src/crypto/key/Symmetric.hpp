@@ -52,7 +52,7 @@ public:
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const -> bool final;
     auto DecryptFromBytes(
-        const Space& ciphertext,
+        const ReadView& ciphertext,
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const -> bool final;
     auto Encrypt(

@@ -413,14 +413,12 @@ auto Symmetric::Decrypt(
 }
 
 auto Symmetric::DecryptFromBytes(
-    const Space& ciphertext,
+    const ReadView& ciphertext,
     const opentxs::PasswordPrompt& reason,
     const AllocateOutput plaintext) const -> bool
 {
     return Decrypt(
-        proto::Factory<proto::Ciphertext>(ciphertext.data(), ciphertext.size()),
-        reason,
-        plaintext);
+        proto::Factory<proto::Ciphertext>(ciphertext), reason, plaintext);
 }
 
 auto Symmetric::encrypt(

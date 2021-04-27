@@ -287,8 +287,9 @@ auto NymData::SetContactData(
     return nym().SetContactData(data, reason);
 }
 
-auto NymData::SetContactData(const Space& bytes, const PasswordPrompt& reason)
-    -> bool
+auto NymData::SetContactData(
+    const ReadView& bytes,
+    const PasswordPrompt& reason) -> bool
 {
     auto data = proto::Factory<proto::ContactData>(bytes);
     return SetContactData(data, reason);

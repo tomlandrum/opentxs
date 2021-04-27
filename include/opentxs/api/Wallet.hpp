@@ -258,7 +258,7 @@ public:
      */
     OPENTXS_EXPORT virtual Nym_p Nym(
         const identity::Nym::Serialized& nym) const = 0;
-    OPENTXS_EXPORT virtual Nym_p Nym(const Space& nym) const = 0;
+    OPENTXS_EXPORT virtual Nym_p Nym(const ReadView& bytes) const = 0;
 
     OPENTXS_EXPORT virtual Nym_p Nym(
         const PasswordPrompt& reason,
@@ -575,8 +575,8 @@ public:
      */
     OPENTXS_EXPORT virtual OTServerContract Server(
         const proto::ServerContract& contract) const noexcept(false) = 0;
-    OPENTXS_EXPORT virtual OTServerContract Server(const Space& contract) const
-        noexcept(false) = 0;
+    OPENTXS_EXPORT virtual OTServerContract Server(
+        const ReadView& contract) const noexcept(false) = 0;
 
     /**   Create a new server contract
      *

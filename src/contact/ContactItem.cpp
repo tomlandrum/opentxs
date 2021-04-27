@@ -256,13 +256,13 @@ ContactItem::ContactItem(
     const std::string& nym,
     const VersionNumber parentVersion,
     const contact::ContactSectionName section,
-    const Space& bytes)
+    const ReadView& bytes)
     : ContactItem(
           api,
           nym,
           parentVersion,
           section,
-          proto::Factory<proto::ContactItem>(bytes.data(), bytes.size()))
+          proto::Factory<proto::ContactItem>(bytes))
 {
 }
 
@@ -318,14 +318,8 @@ auto ContactItem::Section() const -> const contact::ContactSectionName&
 auto ContactItem::Serialize(AllocateOutput destination, const bool withID) const
     -> bool
 {
-    auto item = Serialize(withID);
-    auto view = destination(item.ByteSizeLong());
-    if (!item.SerializeToArray(view.data(), static_cast<int>(view.size()))) {
-        LogOutput(OT_METHOD)(__FUNCTION__)(
-            ": Failed to serialize the contactitem.")
-            .Flush();
-        return false;
-    }
+    write(Serialize(withID), destination);
+
     return true;
 }
 

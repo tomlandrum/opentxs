@@ -224,7 +224,7 @@ TEST_F(Test_Basic, serialize_deserialize)
     request_purse_->Serialize(opentxs::writer(serialized_bytes_));
 
     std::unique_ptr<ot::blind::Purse> restored{
-        ot::Factory::Purse(api_, serialized_bytes_)};
+        ot::Factory::Purse(api_, ot::reader(serialized_bytes_))};
 
     ASSERT_TRUE(restored);
 
@@ -264,7 +264,7 @@ TEST_F(Test_Basic, serialize_deserialize)
 TEST_F(Test_Basic, sign)
 {
     std::unique_ptr<ot::blind::Purse> restored{
-        ot::Factory::Purse(api_, serialized_bytes_)};
+        ot::Factory::Purse(api_, ot::reader(serialized_bytes_))};
 
     ASSERT_TRUE(restored);
 
@@ -323,9 +323,10 @@ TEST_F(Test_Basic, process)
 
     auto& issuePurse = *issue_purse_;
 
-    opentxs::Space space;
-    issuePurse.Serialize(opentxs::writer(space));
-    std::unique_ptr<ot::blind::Purse> restored{ot::Factory::Purse(api_, space)};
+    auto bytes = ot::Space{};
+    issuePurse.Serialize(opentxs::writer(bytes));
+    std::unique_ptr<ot::blind::Purse> restored{
+        ot::Factory::Purse(api_, ot::reader(bytes))};
 
     ASSERT_TRUE(restored);
 
@@ -353,9 +354,10 @@ TEST_F(Test_Basic, verify)
     EXPECT_TRUE(issuePurse.Unlock(bob, reason_));
     ASSERT_TRUE(issuePurse.IsUnlocked());
 
-    opentxs::Space space;
-    issuePurse.Serialize(opentxs::writer(space));
-    std::unique_ptr<ot::blind::Purse> restored{ot::Factory::Purse(api_, space)};
+    auto bytes = ot::Space{};
+    issuePurse.Serialize(opentxs::writer(bytes));
+    std::unique_ptr<ot::blind::Purse> restored{
+        ot::Factory::Purse(api_, ot::reader(bytes))};
 
     ASSERT_TRUE(restored);
 

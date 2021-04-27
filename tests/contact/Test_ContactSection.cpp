@@ -544,8 +544,8 @@ TEST_F(Test_ContactSection, SerializeTo)
     auto bytes = ot::Space{};
     ASSERT_TRUE(section1.Serialize(ot::writer(bytes), false));
 
-    auto restored1 =
-        ot::ContactSection{api_, "ContactDataNym1", section1.Version(), bytes};
+    auto restored1 = ot::ContactSection{
+        api_, "ContactDataNym1", section1.Version(), ot::reader(bytes)};
 
     ASSERT_EQ(restored1.Size(), section1.Size());
     ASSERT_EQ(restored1.Type(), section1.Type());
@@ -563,8 +563,8 @@ TEST_F(Test_ContactSection, SerializeTo)
     ASSERT_EQ(activeContactItem_->End(), contact_item->End());
 
     //    // Serialize with ids.
-    auto restored2 =
-        ot::ContactSection{api_, "ContactDataNym1", section1.Version(), bytes};
+    auto restored2 = ot::ContactSection{
+        api_, "ContactDataNym1", section1.Version(), ot::reader(bytes)};
 
     ASSERT_EQ(restored2.Size(), section1.Size());
     ASSERT_EQ(restored2.Type(), section1.Type());
