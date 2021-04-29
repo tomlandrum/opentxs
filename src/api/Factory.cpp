@@ -23,6 +23,7 @@
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #endif  // OT_BLOCKCHAIN
+#include "internal/core/contract/peer/Factory.hpp"
 #include "internal/core/contract/peer/Peer.hpp"
 #include "internal/crypto/key/Factory.hpp"
 #include "internal/crypto/key/Key.hpp"
@@ -1884,7 +1885,7 @@ auto Factory::PeerObject(
 
 auto Factory::PeerReply() const noexcept -> OTPeerReply
 {
-    return OTPeerReply{opentxs::Factory::PeerReply(api_)};
+    return OTPeerReply{opentxs::factory::PeerReply(api_)};
 }
 
 auto Factory::PeerReply(const Nym_p& nym, const proto::PeerReply& serialized)
@@ -1917,7 +1918,7 @@ auto Factory::PeerReply(const Nym_p& nym, const proto::PeerReply& serialized)
 
 auto Factory::PeerRequest() const noexcept -> OTPeerRequest
 {
-    return OTPeerRequest{opentxs::Factory::PeerRequest(api_)};
+    return OTPeerRequest{opentxs::factory::PeerRequest(api_)};
 }
 
 auto Factory::PeerRequest(

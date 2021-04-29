@@ -51,47 +51,6 @@ namespace opentxs::peer::implementation
 class Object final : virtual public opentxs::PeerObject
 {
 public:
-    auto Message() const -> const std::unique_ptr<std::string>& final
-    {
-        return message_;
-    }
-    auto Nym() const -> const Nym_p& final { return nym_; }
-    auto Payment() const -> const std::unique_ptr<std::string>& final
-    {
-        return payment_;
-    }
-#if OT_CASH
-    auto Purse() const -> std::shared_ptr<blind::Purse> final { return purse_; }
-#endif
-    auto Request() const -> const OTPeerRequest final { return request_; }
-    auto Reply() const -> const OTPeerReply final { return reply_; }
-    auto Serialize() const -> proto::PeerObject final;
-    auto Type() const -> contract::peer::PeerObjectType final { return type_; }
-    auto Validate() const -> bool final;
-
-    auto Message() -> std::unique_ptr<std::string>& final { return message_; }
-    auto Payment() -> std::unique_ptr<std::string>& final { return payment_; }
-#if OT_CASH
-    auto Purse() -> std::shared_ptr<blind::Purse>& final { return purse_; }
-#endif
-
-    ~Object() final = default;
-
-private:
-    friend opentxs::Factory;
-
-    const api::internal::Core& api_;
-    Nym_p nym_{nullptr};
-    std::unique_ptr<std::string> message_{nullptr};
-    std::unique_ptr<std::string> payment_{nullptr};
-    OTPeerReply reply_{nullptr};
-    OTPeerRequest request_{nullptr};
-#if OT_CASH
-    std::shared_ptr<blind::Purse> purse_{nullptr};
-#endif
-    contract::peer::PeerObjectType type_{contract::peer::PeerObjectType::Error};
-    VersionNumber version_{0};
-
     Object(
         const api::client::Contacts& contacts,
         const api::internal::Core& api,
@@ -132,6 +91,46 @@ private:
 #endif
         const contract::peer::PeerObjectType type,
         const VersionNumber version);
+
+    auto Message() const -> const std::unique_ptr<std::string>& final
+    {
+        return message_;
+    }
+    auto Nym() const -> const Nym_p& final { return nym_; }
+    auto Payment() const -> const std::unique_ptr<std::string>& final
+    {
+        return payment_;
+    }
+#if OT_CASH
+    auto Purse() const -> std::shared_ptr<blind::Purse> final { return purse_; }
+#endif
+    auto Request() const -> const OTPeerRequest final { return request_; }
+    auto Reply() const -> const OTPeerReply final { return reply_; }
+    auto Serialize() const -> proto::PeerObject final;
+    auto Type() const -> contract::peer::PeerObjectType final { return type_; }
+    auto Validate() const -> bool final;
+
+    auto Message() -> std::unique_ptr<std::string>& final { return message_; }
+    auto Payment() -> std::unique_ptr<std::string>& final { return payment_; }
+#if OT_CASH
+    auto Purse() -> std::shared_ptr<blind::Purse>& final { return purse_; }
+#endif
+
+    ~Object() final = default;
+
+private:
+    const api::internal::Core& api_;
+    Nym_p nym_{nullptr};
+    std::unique_ptr<std::string> message_{nullptr};
+    std::unique_ptr<std::string> payment_{nullptr};
+    OTPeerReply reply_{nullptr};
+    OTPeerRequest request_{nullptr};
+#if OT_CASH
+    std::shared_ptr<blind::Purse> purse_{nullptr};
+#endif
+    contract::peer::PeerObjectType type_{contract::peer::PeerObjectType::Error};
+    VersionNumber version_{0};
+
     Object() = delete;
 };
 }  // namespace opentxs::peer::implementation

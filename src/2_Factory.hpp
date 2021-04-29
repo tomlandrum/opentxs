@@ -669,55 +669,6 @@ public:
         std::unique_ptr<crypto::key::Secp256k1> key
 #endif
         ) noexcept -> std::unique_ptr<opentxs::PaymentCode>;
-    static auto PeerObject(
-        const api::internal::Core& api,
-        const Nym_p& senderNym,
-        const std::string& message) -> opentxs::PeerObject*;
-    static auto PeerObject(
-        const api::internal::Core& api,
-        const Nym_p& senderNym,
-        const std::string& payment,
-        const bool isPayment) -> opentxs::PeerObject*;
-#if OT_CASH
-    static auto PeerObject(
-        const api::internal::Core& api,
-        const Nym_p& senderNym,
-        const std::shared_ptr<blind::Purse> purse) -> opentxs::PeerObject*;
-#endif
-    static auto PeerObject(
-        const api::internal::Core& api,
-        const OTPeerRequest request,
-        const OTPeerReply reply,
-        const VersionNumber version) -> opentxs::PeerObject*;
-    static auto PeerObject(
-        const api::internal::Core& api,
-        const OTPeerRequest request,
-        const VersionNumber version) -> opentxs::PeerObject*;
-    static auto PeerObject(
-        const api::client::Contacts& contacts,
-        const api::internal::Core& api,
-        const Nym_p& signerNym,
-        const proto::PeerObject& serialized) -> opentxs::PeerObject*;
-    static auto PeerObject(
-        const api::client::Contacts& contacts,
-        const api::internal::Core& api,
-        const Nym_p& recipientNym,
-        const opentxs::Armored& encrypted,
-        const opentxs::PasswordPrompt& reason) -> opentxs::PeerObject*;
-    static auto PeerReply(const api::Core& api) noexcept
-        -> std::shared_ptr<contract::peer::Reply>;
-    static auto PeerReply(
-        const api::internal::Core& api,
-        const Nym_p& nym,
-        const proto::PeerReply& serialized) noexcept
-        -> std::shared_ptr<contract::peer::Reply>;
-    static auto PeerRequest(const api::Core& api) noexcept
-        -> std::shared_ptr<contract::peer::Request>;
-    static auto PeerRequest(
-        const api::internal::Core& api,
-        const Nym_p& nym,
-        const proto::PeerRequest& serialized) noexcept
-        -> std::shared_ptr<contract::peer::Request>;
     static auto PrimaryCredential(
         const api::internal::Core& api,
         identity::internal::Authority& parent,

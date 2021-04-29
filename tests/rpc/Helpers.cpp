@@ -29,7 +29,6 @@
 #include "opentxs/network/zeromq/Message.hpp"
 #include "opentxs/network/zeromq/socket/Subscribe.hpp"
 #include "opentxs/otx/LastReplyStatus.hpp"
-#include "opentxs/protobuf/ServerContract.pb.h"
 
 namespace ottest
 {
@@ -202,7 +201,9 @@ auto RPC_fixture::ImportServerContract(
 
     if (0u == server->Version()) { return false; }
 
-    const auto client = to.Wallet().Server(server->PublicContract());
+    auto bytes = ot::Space{};
+    if (false == server->PublicContract(ot::writer(bytes))) { return false; }
+    const auto client = to.Wallet().Server(ot::reader(bytes));
 
     if (0u == client->Version()) { return false; }
 

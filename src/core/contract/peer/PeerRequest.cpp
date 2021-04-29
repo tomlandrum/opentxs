@@ -10,9 +10,9 @@
 #include <list>
 #include <memory>
 
-#include "2_Factory.hpp"
 #include "internal/api/Api.hpp"
 #include "internal/core/contract/Contract.hpp"
+#include "internal/core/contract/peer/Factory.hpp"
 #include "internal/core/contract/peer/Peer.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/api/Factory.hpp"
@@ -32,14 +32,14 @@
 
 #define OT_METHOD "opentxs::contract::peer::implementation::Request::"
 
-namespace opentxs
+namespace opentxs::factory
 {
-auto Factory::PeerRequest(const api::Core& api) noexcept
+auto PeerRequest(const api::Core& api) noexcept
     -> std::shared_ptr<contract::peer::Request>
 {
     return std::make_shared<contract::peer::blank::Request>(api);
 }
-}  // namespace opentxs
+}  // namespace opentxs::factory
 
 namespace opentxs::contract::peer::implementation
 {

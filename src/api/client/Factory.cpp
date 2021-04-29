@@ -15,7 +15,6 @@
 #include <tuple>
 #include <utility>
 
-#include "2_Factory.hpp"
 #include "opentxs/Proto.tpp"
 #if OT_BLOCKCHAIN
 #include "blockchain/bitcoin/CompactSize.hpp"
@@ -28,6 +27,7 @@
 #include "internal/blockchain/block/Block.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #endif  // OT_BLOCKCHAIN
+#include "internal/core/contract/peer/Factory.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #if OT_BLOCKCHAIN
 #include "opentxs/blockchain/block/Block.hpp"
@@ -267,7 +267,7 @@ auto Factory::PeerObject(const Nym_p& senderNym, const std::string& message)
     const -> std::unique_ptr<opentxs::PeerObject>
 {
     return std::unique_ptr<opentxs::PeerObject>{
-        opentxs::Factory::PeerObject(client_, senderNym, message)};
+        opentxs::factory::PeerObject(client_, senderNym, message)};
 }
 
 auto Factory::PeerObject(
@@ -276,7 +276,7 @@ auto Factory::PeerObject(
     const bool isPayment) const -> std::unique_ptr<opentxs::PeerObject>
 {
     return std::unique_ptr<opentxs::PeerObject>{
-        opentxs::Factory::PeerObject(client_, senderNym, payment, isPayment)};
+        opentxs::factory::PeerObject(client_, senderNym, payment, isPayment)};
 }
 
 #if OT_CASH
@@ -286,7 +286,7 @@ auto Factory::PeerObject(
     -> std::unique_ptr<opentxs::PeerObject>
 {
     return std::unique_ptr<opentxs::PeerObject>{
-        opentxs::Factory::PeerObject(client_, senderNym, purse)};
+        opentxs::factory::PeerObject(client_, senderNym, purse)};
 }
 #endif
 
@@ -296,7 +296,7 @@ auto Factory::PeerObject(
     const VersionNumber version) const -> std::unique_ptr<opentxs::PeerObject>
 {
     return std::unique_ptr<opentxs::PeerObject>{
-        opentxs::Factory::PeerObject(client_, request, reply, version)};
+        opentxs::factory::PeerObject(client_, request, reply, version)};
 }
 
 auto Factory::PeerObject(
@@ -304,7 +304,7 @@ auto Factory::PeerObject(
     const VersionNumber version) const -> std::unique_ptr<opentxs::PeerObject>
 {
     return std::unique_ptr<opentxs::PeerObject>{
-        opentxs::Factory::PeerObject(client_, request, version)};
+        opentxs::factory::PeerObject(client_, request, version)};
 }
 
 auto Factory::PeerObject(
@@ -312,7 +312,7 @@ auto Factory::PeerObject(
     const proto::PeerObject& serialized) const
     -> std::unique_ptr<opentxs::PeerObject>
 {
-    return std::unique_ptr<opentxs::PeerObject>{opentxs::Factory::PeerObject(
+    return std::unique_ptr<opentxs::PeerObject>{opentxs::factory::PeerObject(
         client_.Contacts(), client_, signerNym, serialized)};
 }
 
@@ -322,7 +322,7 @@ auto Factory::PeerObject(
     const opentxs::PasswordPrompt& reason) const
     -> std::unique_ptr<opentxs::PeerObject>
 {
-    return std::unique_ptr<opentxs::PeerObject>{opentxs::Factory::PeerObject(
+    return std::unique_ptr<opentxs::PeerObject>{opentxs::factory::PeerObject(
         client_.Contacts(), client_, recipientNym, encrypted, reason)};
 }
 }  // namespace opentxs::api::client::implementation
