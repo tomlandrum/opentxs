@@ -798,6 +798,24 @@ auto Storage::Load(
 
 auto Storage::Load(
     const std::string& id,
+    AllocateOutput destination,
+    const bool checking) const -> bool
+{
+    auto pSerialized = std::shared_ptr<proto::Nym>{};
+
+    if (false == Load(id, pSerialized, checking)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to load nym ")(id).Flush();
+
+        return false;
+    }
+
+    OT_ASSERT(pSerialized);
+
+    return write(*pSerialized, destination);
+}
+
+auto Storage::Load(
+    const std::string& id,
     std::shared_ptr<proto::Nym>& nym,
     std::string& alias,
     const bool checking) const -> bool
@@ -2090,6 +2108,12 @@ auto Storage::Store(const proto::Nym& data, const std::string& alias) const
     }
 
     return false;
+}
+
+auto Storage::Store(const ReadView& view, const std::string& alias) const
+    -> bool
+{
+    return Store(proto::Factory<proto::Nym>(view), alias);
 }
 
 auto Storage::Store(const std::string& nymID, const proto::Issuer& data) const

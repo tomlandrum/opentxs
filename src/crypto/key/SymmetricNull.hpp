@@ -40,7 +40,7 @@ public:
     {
         return false;
     }
-    auto EncryptToBytes(
+    auto Encrypt(
         const ReadView,
         const PasswordPrompt&,
         AllocateOutput,

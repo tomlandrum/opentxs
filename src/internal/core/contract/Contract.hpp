@@ -183,10 +183,7 @@ struct Server final : virtual public opentxs::contract::Server,
     auto Contract() const -> proto::ServerContract final { return {}; }
     auto EffectiveName() const -> std::string final { return {}; }
     auto PublicContract() const -> proto::ServerContract final { return {}; }
-    auto PublicContractToBytes(AllocateOutput) const -> bool final
-    {
-        return false;
-    }
+    auto PublicContract(AllocateOutput) const -> bool final { return false; }
     auto Statistics(String&) const -> bool final { return {}; }
     auto TransportKey() const -> const Data& final { return id_; }
     auto TransportKey(Data&, const PasswordPrompt&) const -> OTSecret final

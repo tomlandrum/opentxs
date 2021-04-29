@@ -356,7 +356,7 @@ auto Server::PublicContract() const -> proto::ServerContract
     return serialized;
 }
 
-auto Server::PublicContractToBytes(AllocateOutput destination) const -> bool
+auto Server::PublicContract(AllocateOutput destination) const -> bool
 {
     write(PublicContract(), destination);
     return true;

@@ -516,7 +516,7 @@ auto Symmetric::Encrypt(
     return success;
 }
 
-auto Symmetric::EncryptToBytes(
+auto Symmetric::Encrypt(
     const ReadView plaintext,
     const opentxs::PasswordPrompt& reason,
     AllocateOutput ciphertext,

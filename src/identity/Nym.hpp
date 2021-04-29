@@ -157,6 +157,8 @@ public:
     auto PaymentCodePath(AllocateOutput destination) const -> bool final;
     auto PhoneNumbers(bool active) const -> std::string final;
     auto Revision() const -> std::uint64_t final;
+    auto SerializeCredentialIndex(AllocateOutput, const Mode mode) const
+        -> bool final;
     auto SerializeCredentialIndex(const Mode mode) const -> Serialized final;
     void SerializeNymIDSource(Tag& parent) const final;
     auto size() const noexcept -> std::size_t final { return active_.size(); }

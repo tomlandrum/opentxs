@@ -603,6 +603,10 @@ public:
         const api::internal::Core& api,
         const proto::Nym& serialized,
         const std::string& alias) -> identity::internal::Nym*;
+    OPENTXS_EXPORT static auto Nym(
+        const api::internal::Core& api,
+        const ReadView& serialized,
+        const std::string& alias) -> identity::internal::Nym*;
     static auto NymFile(
         const api::internal::Core& core,
         Nym_p targetNym,

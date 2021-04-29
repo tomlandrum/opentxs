@@ -179,6 +179,10 @@ public:
         std::string& alias,
         const bool checking = false) const = 0;
     OPENTXS_EXPORT virtual bool Load(
+        const std::string& id,
+        AllocateOutput destination,
+        const bool checking = false) const = 0;
+    OPENTXS_EXPORT virtual bool Load(
         const std::string& nymID,
         const std::string& id,
         std::shared_ptr<proto::Issuer>& issuer,
@@ -373,6 +377,9 @@ public:
     OPENTXS_EXPORT virtual bool Store(const proto::Credential& data) const = 0;
     OPENTXS_EXPORT virtual bool Store(
         const proto::Nym& data,
+        const std::string& alias = std::string("")) const = 0;
+    OPENTXS_EXPORT virtual bool Store(
+        const ReadView& data,
         const std::string& alias = std::string("")) const = 0;
     OPENTXS_EXPORT virtual bool Store(
         const std::string& nymID,

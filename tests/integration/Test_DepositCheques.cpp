@@ -118,7 +118,7 @@ public:
     {
         auto reason = client.Factory().PasswordPrompt(__FUNCTION__);
         auto bytes = ot::Space{};
-        EXPECT_TRUE(server_contract_->PublicContractToBytes(ot::writer(bytes)));
+        EXPECT_TRUE(server_contract_->PublicContract(ot::writer(bytes)));
         auto clientVersion = client.Wallet().Server(ot::reader(bytes));
 
         client.OTX().SetIntroductionServer(clientVersion);

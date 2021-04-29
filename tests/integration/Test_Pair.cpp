@@ -166,9 +166,9 @@ public:
 
         EXPECT_EQ(issuer_.nym_id_->str(), std::string(body.at(0)));
 
-        const auto nym_p = api_issuer_.Wallet().Nym(issuer_.nym_id_);
+        const auto nym_p = api_chris_.Wallet().Nym(chris_.nym_id_);
         const auto request =
-            api_issuer_.Factory().PeerRequest(nym_p, body.at(1).Bytes());
+            api_chris_.Factory().PeerRequest(nym_p, body.at(1).Bytes());
 
         EXPECT_EQ(std::string(body.at(0)), request->Recipient().str());
         EXPECT_EQ(server_1_.id_, request->Server());

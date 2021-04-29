@@ -63,7 +63,7 @@ public:
         const opentxs::crypto::key::symmetric::Algorithm mode =
             opentxs::crypto::key::symmetric::Algorithm::Error,
         const ReadView iv = {}) const -> bool final;
-    auto EncryptToBytes(
+    auto Encrypt(
         const ReadView plaintext,
         const PasswordPrompt& reason,
         AllocateOutput ciphertext,

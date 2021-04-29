@@ -134,6 +134,15 @@ auto Factory::Nym(
         return nullptr;
     }
 }
+
+auto Factory::Nym(
+    const api::internal::Core& api,
+    const ReadView& view,
+    const std::string& alias) -> identity::internal::Nym*
+{
+    return Nym(api, proto::Factory<proto::Nym>(view), alias);
+}
+
 }  // namespace opentxs
 
 namespace opentxs::identity
@@ -1174,6 +1183,12 @@ void Nym::revoke_verification_credentials(const eLock& lock)
     }
 
     for (auto& it : revokedIDs) { m_listRevokedIDs.push_back(it); }
+}
+
+auto Nym::SerializeCredentialIndex(AllocateOutput destination, const Mode mode)
+    const -> bool
+{
+    return write(SerializeCredentialIndex(mode), destination);
 }
 
 auto Nym::SerializeCredentialIndex(const Mode mode) const -> Nym::Serialized

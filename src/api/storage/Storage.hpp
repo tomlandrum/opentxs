@@ -222,6 +222,10 @@ public:
         std::string& alias,
         const bool checking = false) const -> bool final;
     auto Load(
+        const std::string& id,
+        AllocateOutput destination,
+        const bool checking = false) const -> bool final;
+    auto Load(
         const std::string& nymID,
         const std::string& id,
         std::shared_ptr<proto::Issuer>& issuer,
@@ -407,6 +411,8 @@ public:
     auto Store(
         const proto::Nym& data,
         const std::string& alias = std::string("")) const -> bool final;
+    auto Store(const ReadView& data, const std::string& alias = std::string(""))
+        const -> bool final;
     auto Store(const std::string& nymID, const proto::Issuer& data) const
         -> bool final;
     auto Store(const std::string& nymID, const proto::PaymentWorkflow& data)

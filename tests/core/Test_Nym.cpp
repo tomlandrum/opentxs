@@ -110,7 +110,7 @@ TEST_F(Test_Symmetric, key_functionality)
 
     ASSERT_TRUE(password->SetPassword(key_password_.value()));
 
-    const auto encrypted = key_->EncryptToBytes(
+    const auto encrypted = key_->Encrypt(
         TEST_PLAINTEXT, password, ot::writer(ciphertext_), true, mode_);
 
     ASSERT_TRUE(encrypted);
@@ -161,7 +161,7 @@ TEST_F(Test_Symmetric, create_second_key)
 
     EXPECT_TRUE(second_key_.get());
 
-    const auto encrypted = second_key_->EncryptToBytes(
+    const auto encrypted = second_key_->Encrypt(
         TEST_PLAINTEXT, password, ot::writer(second_ciphertext_), true, mode_);
 
     ASSERT_TRUE(encrypted);

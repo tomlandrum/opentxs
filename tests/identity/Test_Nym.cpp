@@ -134,11 +134,12 @@ public:
         EXPECT_TRUE(nym.VerifyPseudonym());
 
         {
-            const auto serialized = nym.SerializeCredentialIndex(
-                ot::identity::internal::Nym::Mode::Abbreviated);
+            auto bytes = ot::Space{};
+            EXPECT_TRUE(nym.SerializeCredentialIndex(
+                ot::writer(bytes),
+                ot::identity::internal::Nym::Mode::Abbreviated));
 
-            EXPECT_TRUE(ot::proto::Validate(serialized, ot::VERBOSE));
-            EXPECT_TRUE(api.Storage().Store(serialized, nym.Alias()));
+            EXPECT_TRUE(api.Storage().Store(ot::reader(bytes), nym.Alias()));
         }
 
         {
@@ -155,15 +156,12 @@ public:
         }
 
         {
-            auto pSerialized = std::shared_ptr<ot::proto::Nym>{};
+            auto bytes = ot::Space{};
 
-            EXPECT_TRUE(api.Storage().Load(id->str(), pSerialized));
-            EXPECT_TRUE(pSerialized);
+            EXPECT_TRUE(api.Storage().Load(id->str(), ot::writer(bytes)));
+            EXPECT_TRUE(ot::valid(ot::reader(bytes)));
 
-            if (!pSerialized) { return false; }
-
-            const auto& serialized = *pSerialized;
-            pNym.reset(ot::Factory::Nym(api, serialized, alias));
+            pNym.reset(ot::Factory::Nym(api, ot::reader(bytes), alias));
 
             EXPECT_TRUE(pNym);
 

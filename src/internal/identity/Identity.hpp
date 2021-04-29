@@ -36,6 +36,9 @@ struct Nym : virtual public identity::Nym {
         Full = false,
     };
 
+    virtual auto SerializeCredentialIndex(
+        AllocateOutput destination,
+        const Mode mode) const -> bool = 0;
     virtual auto SerializeCredentialIndex(const Mode mode) const
         -> Serialized = 0;
     virtual auto WriteCredentials() const -> bool = 0;

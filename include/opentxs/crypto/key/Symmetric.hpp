@@ -92,7 +92,7 @@ public:
         const opentxs::crypto::key::symmetric::Algorithm mode =
             opentxs::crypto::key::symmetric::Algorithm::Error,
         const ReadView iv = {}) const = 0;
-    OPENTXS_EXPORT virtual bool EncryptToBytes(
+    OPENTXS_EXPORT virtual bool Encrypt(
         const ReadView plaintext,
         const PasswordPrompt& reason,
         AllocateOutput ciphertext,
