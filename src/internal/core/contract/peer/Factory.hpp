@@ -21,41 +21,44 @@ namespace opentxs::factory
 auto PeerObject(
     const api::internal::Core& api,
     const Nym_p& senderNym,
-    const std::string& message) -> opentxs::PeerObject*;
+    const std::string& message) -> std::unique_ptr<opentxs::PeerObject>;
 auto PeerObject(
     const api::internal::Core& api,
     const Nym_p& senderNym,
     const std::string& payment,
-    const bool isPayment) -> opentxs::PeerObject*;
+    const bool isPayment) -> std::unique_ptr<opentxs::PeerObject>;
 #if OT_CASH
 auto PeerObject(
     const api::internal::Core& api,
     const Nym_p& senderNym,
-    const std::shared_ptr<blind::Purse> purse) -> opentxs::PeerObject*;
+    const std::shared_ptr<blind::Purse> purse)
+    -> std::unique_ptr<opentxs::PeerObject>;
 #endif
 auto PeerObject(
     const api::internal::Core& api,
     const OTPeerRequest request,
     const OTPeerReply reply,
-    const VersionNumber version) -> opentxs::PeerObject*;
+    const VersionNumber version) -> std::unique_ptr<opentxs::PeerObject>;
 auto PeerObject(
     const api::internal::Core& api,
     const OTPeerRequest request,
-    const VersionNumber version) -> opentxs::PeerObject*;
+    const VersionNumber version) -> std::unique_ptr<opentxs::PeerObject>;
 auto PeerObject(
     const api::client::Contacts& contacts,
     const api::internal::Core& api,
     const Nym_p& signerNym,
-    const proto::PeerObject& serialized) -> opentxs::PeerObject*;
+    const proto::PeerObject& serialized)
+    -> std::unique_ptr<opentxs::PeerObject>;
 auto PeerObject(
     const api::client::Contacts& contacts,
     const api::internal::Core& api,
     const Nym_p& recipientNym,
     const opentxs::Armored& encrypted,
-    const opentxs::PasswordPrompt& reason) -> opentxs::PeerObject*;
+    const opentxs::PasswordPrompt& reason)
+    -> std::unique_ptr<opentxs::PeerObject>;
 auto PeerReply(const api::Core& api) noexcept
-    -> std::shared_ptr<contract::peer::Reply>;
+    -> std::unique_ptr<contract::peer::Reply>;
 
 auto PeerRequest(const api::Core& api) noexcept
-    -> std::shared_ptr<contract::peer::Request>;
+    -> std::unique_ptr<contract::peer::Request>;
 }  // namespace opentxs::factory

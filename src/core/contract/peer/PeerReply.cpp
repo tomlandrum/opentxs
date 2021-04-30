@@ -36,9 +36,9 @@
 namespace opentxs::factory
 {
 auto PeerReply(const api::Core& api) noexcept
-    -> std::shared_ptr<contract::peer::Reply>
+    -> std::unique_ptr<contract::peer::Reply>
 {
-    return std::make_shared<contract::peer::blank::Reply>(api);
+    return std::make_unique<contract::peer::blank::Reply>(api);
 }
 }  // namespace opentxs::factory
 

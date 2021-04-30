@@ -35,9 +35,9 @@
 namespace opentxs::factory
 {
 auto PeerRequest(const api::Core& api) noexcept
-    -> std::shared_ptr<contract::peer::Request>
+    -> std::unique_ptr<contract::peer::Request>
 {
-    return std::make_shared<contract::peer::blank::Request>(api);
+    return std::make_unique<contract::peer::blank::Request>(api);
 }
 }  // namespace opentxs::factory
 
