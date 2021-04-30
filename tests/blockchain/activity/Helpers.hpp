@@ -31,7 +31,6 @@
 #include "opentxs/core/crypto/NymParameters.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/identity/Nym.hpp"
-//#include "opentxs/protobuf/StorageThread.pb.h"
 
 namespace
 {

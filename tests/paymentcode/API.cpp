@@ -31,7 +31,6 @@
 #include "opentxs/crypto/SeedStyle.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/protobuf/HDPath.pb.h"
 
 namespace ot = opentxs;
 
@@ -86,15 +85,15 @@ TEST_F(Test_PaymentCodeAPI, alice)
     EXPECT_EQ(localPC->asBase58(), vector.payment_code_);
 
     const auto path = [&] {
-        auto out = ot::proto::HDPath{};
-        nym.PaymentCodePath(out);
+        auto out = ot::Space{};
+        nym.PaymentCodePath(ot::writer(out));
 
         return out;
     }();
     const auto id1 = alice_.Blockchain().NewPaymentCodeSubaccount(
-        nym.ID(), localPC, remotePC, path, receiveChain, reason);
+        nym.ID(), localPC, remotePC, ot::reader(path), receiveChain, reason);
     const auto id2 = alice_.Blockchain().NewPaymentCodeSubaccount(
-        nym.ID(), localPC, remotePC, path, sendChain, reason);
+        nym.ID(), localPC, remotePC, ot::reader(path), sendChain, reason);
 
     ASSERT_FALSE(id1->empty());
     ASSERT_FALSE(id2->empty());
@@ -188,15 +187,15 @@ TEST_F(Test_PaymentCodeAPI, bob)
     EXPECT_EQ(localPC->asBase58(), vector.payment_code_);
 
     const auto path = [&] {
-        auto out = ot::proto::HDPath{};
-        nym.PaymentCodePath(out);
+        auto out = ot::Space{};
+        nym.PaymentCodePath(ot::writer(out));
 
         return out;
     }();
     const auto id1 = bob_.Blockchain().NewPaymentCodeSubaccount(
-        nym.ID(), localPC, remotePC, path, receiveChain, reason);
+        nym.ID(), localPC, remotePC, ot::reader(path), receiveChain, reason);
     const auto id2 = bob_.Blockchain().NewPaymentCodeSubaccount(
-        nym.ID(), localPC, remotePC, path, sendChain, reason);
+        nym.ID(), localPC, remotePC, ot::reader(path), sendChain, reason);
 
     ASSERT_FALSE(id1->empty());
     ASSERT_FALSE(id2->empty());

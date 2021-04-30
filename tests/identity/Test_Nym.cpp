@@ -32,10 +32,6 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/identity/Source.hpp"
-#include "opentxs/protobuf/Check.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
-#include "opentxs/protobuf/Nym.pb.h"
-#include "opentxs/protobuf/verify/Nym.hpp"
 
 namespace ot = opentxs;
 

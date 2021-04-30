@@ -79,6 +79,12 @@ public:
         const Bip32Index index,
         const PasswordPrompt& reason) const
         -> std::unique_ptr<opentxs::crypto::key::HD> final;
+    auto AccountChildKey(
+        const ReadView& path,
+        const BIP44Chain internal,
+        const Bip32Index index,
+        const PasswordPrompt& reason) const
+        -> std::unique_ptr<opentxs::crypto::key::HD> final;
     auto AccountKey(
         const proto::HDPath& path,
         const BIP44Chain internal,

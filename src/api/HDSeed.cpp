@@ -18,6 +18,7 @@
 #include "internal/crypto/key/Factory.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/api/Context.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/HDSeed.hpp"
@@ -104,6 +105,17 @@ auto HDSeed::AccountChildKey(
 
     return {};
 #endif  // OT_CRYPTO_WITH_BIP32
+}
+
+auto HDSeed::AccountChildKey(
+    const ReadView& view,
+    const BIP44Chain internal,
+    const Bip32Index index,
+    const PasswordPrompt& reason) const
+    -> std::unique_ptr<opentxs::crypto::key::HD>
+{
+    return AccountChildKey(
+        proto::Factory<proto::HDPath>(view), internal, index, reason);
 }
 
 auto HDSeed::AccountKey(

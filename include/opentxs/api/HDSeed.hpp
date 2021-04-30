@@ -53,6 +53,12 @@ public:
         const BIP44Chain internal,
         const Bip32Index index,
         const PasswordPrompt& reason) const = 0;
+    OPENTXS_EXPORT virtual std::unique_ptr<opentxs::crypto::key::HD>
+    AccountChildKey(
+        const ReadView& path,
+        const BIP44Chain internal,
+        const Bip32Index index,
+        const PasswordPrompt& reason) const = 0;
     OPENTXS_EXPORT virtual std::unique_ptr<opentxs::crypto::key::HD> AccountKey(
         const proto::HDPath& path,
         const BIP44Chain internal,

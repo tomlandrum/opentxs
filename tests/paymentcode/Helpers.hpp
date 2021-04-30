@@ -13,6 +13,7 @@
 #include <string>
 
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
+#include "opentxs/Bytes.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/api/Context.hpp"
@@ -31,7 +32,6 @@
 #include "opentxs/crypto/Language.hpp"
 #include "opentxs/crypto/SeedStyle.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"
-#include "opentxs/protobuf/HDPath.pb.h"
 
 namespace
 {
@@ -63,8 +63,12 @@ struct User {
         auto& var = blind_key_secret_;
 
         if (false == bool(var)) {
+            auto bytes = ot::Space{};
+            if (false == bip44_path(api, chain, ot::writer(bytes))) {
+                throw std::runtime_error("Failed");
+            }
             var = api.Seeds().AccountChildKey(
-                bip44_path(api, chain), ot::INTERNAL_CHAIN, index_, reason);
+                ot::reader(bytes), ot::INTERNAL_CHAIN, index_, reason);
         }
 
         if (false == bool(var)) { throw std::runtime_error("Failed"); }
@@ -167,24 +171,19 @@ private:
 
     auto bip44_path(
         const ot::api::client::Manager& api,
-        const ot::blockchain::Type chain) const -> ot::proto::HDPath
+        const ot::blockchain::Type chain,
+        ot::AllocateOutput destination) const -> bool
     {
         if (false == seed_.has_value()) {
             throw std::runtime_error("missing seed");
         }
 
-        constexpr auto hard =
-            static_cast<ot::Bip32Index>(ot::Bip32Child::HARDENED);
-        const auto coin = api.Blockchain().Bip44(chain);
-        auto output = ot::proto::HDPath{};
-        output.set_version(1);
-        output.set_root(seed_.value());
-        output.add_child(
-            static_cast<ot::Bip32Index>(ot::Bip43Purpose::HDWALLET) | hard);
-        output.add_child(static_cast<ot::Bip32Index>(coin) | hard);
-        output.add_child(account_ | hard);
+        if (false ==
+            api.Blockchain().Bip44Path(chain, seed_.value(), destination)) {
+            throw std::runtime_error("missing path");
+        }
 
-        return output;
+        return true;
     }
 };
 

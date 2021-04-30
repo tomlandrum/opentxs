@@ -21,7 +21,6 @@
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
 #include "opentxs/network/zeromq/ListenCallback.hpp"
-#include "opentxs/protobuf/ServerContract.pb.h"
 
 namespace
 {
@@ -179,8 +178,9 @@ struct User {
         const ot::api::client::Manager& api,
         const Server& server)
     {
-        auto clientVersion =
-            api.Wallet().Server(server.Contract()->PublicContract());
+        auto bytes = ot::Space{};
+        server.Contract()->PublicContract(ot::writer(bytes));
+        auto clientVersion = api.Wallet().Server(ot::reader(bytes));
         api.OTX().SetIntroductionServer(clientVersion);
     }
 

@@ -90,6 +90,10 @@ public:
 
     // Throws std::out_of_range for invalid chains
     static Bip44Type Bip44(Chain chain) noexcept(false);
+    static bool Bip44Path(
+        Chain chain,
+        const std::string& seed,
+        AllocateOutput destination) noexcept(false);
 
     /// Throws std::runtime_error if chain is invalid
     virtual const blockchain::BalanceTree& Account(
