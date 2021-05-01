@@ -14,6 +14,7 @@
 #include "internal/api/Api.hpp"
 #include "internal/otx/OTX.hpp"
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/Wallet.hpp"
 #include "opentxs/core/Flag.hpp"
@@ -67,6 +68,13 @@ auto Request::Factory(
     const proto::ServerRequest serialized) -> OTXRequest
 {
     return OTXRequest{new implementation::Request(api, serialized)};
+}
+
+auto Request::Factory(const api::internal::Core& api, const ReadView& view)
+    -> OTXRequest
+{
+    return OTXRequest{new implementation::Request(
+        api, proto::Factory<proto::ServerRequest>(view))};
 }
 }  // namespace opentxs::otx
 
@@ -130,6 +138,11 @@ auto Request::Contract() const -> proto::ServerRequest
     auto output = full_version(lock);
 
     return output;
+}
+
+auto Request::Contract(AllocateOutput destination) const -> bool
+{
+    return write(Contract(), destination);
 }
 
 auto Request::extract_nym(

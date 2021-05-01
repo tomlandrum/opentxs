@@ -49,6 +49,7 @@ class Reply final : public otx::Reply,
 {
 public:
     auto Contract() const -> proto::ServerReply final;
+    auto Contract(AllocateOutput destination) const -> bool final;
     auto Number() const -> RequestNumber final { return number_; }
     auto Push() const -> std::shared_ptr<const proto::OTXPush> final
     {

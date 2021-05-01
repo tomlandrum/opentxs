@@ -3,23 +3,23 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef OPENTXS_OTX_TYPES_HPP
-#define OPENTXS_OTX_TYPES_HPP
+#ifndef OPENTXS_OTX_PUSH_TYPE_HPP
+#define OPENTXS_OTX_PUSH_TYPE_HPP
 
-#include "opentxs/Version.hpp"  // IWYU pragma: associated
+#include "opentxs/otx/Types.hpp"  // IWYU pragma: associated
 
-#include <cstddef>
 #include <cstdint>
 
 namespace opentxs
 {
 namespace otx
 {
-enum class ConsensusType : std::uint8_t;
-enum class LastReplyStatus : std::uint8_t;
-enum class OTXPushType : std::uint8_t;
-enum class ServerRequestType : std::uint8_t;
-enum class ServerReplyType : std::uint8_t;
+enum class OTXPushType : std::uint8_t {
+    Error = 0,
+    Nymbox = 1,
+    Inbox = 2,
+    Outbox = 3,
+};
 }  // namespace otx
 }  // namespace opentxs
 #endif

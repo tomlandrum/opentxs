@@ -14,6 +14,7 @@
 #include "internal/api/Api.hpp"
 #include "internal/otx/OTX.hpp"
 #include "opentxs/Pimpl.hpp"
+#include "opentxs/Proto.tpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/api/Factory.hpp"
 #include "opentxs/api/Wallet.hpp"
@@ -39,6 +40,18 @@ namespace opentxs::otx
 {
 const VersionNumber Reply::DefaultVersion{1};
 const VersionNumber Reply::MaxVersion{1};
+
+static auto construct_push(OTXPushType pushtype, const std::string& payload)
+    -> std::shared_ptr<const proto::OTXPush>
+{
+    auto pPush = std::make_shared<proto::OTXPush>();
+    auto& push = *pPush;
+    push.set_version(1);
+    push.set_type(internal::translate(pushtype));
+    push.set_item(payload);
+
+    return pPush;
+}
 
 auto Reply::Factory(
     const api::internal::Core& api,
@@ -75,9 +88,40 @@ auto Reply::Factory(
 
 auto Reply::Factory(
     const api::internal::Core& api,
+    const Nym_p signer,
+    const identifier::Nym& recipient,
+    const identifier::Server& server,
+    const otx::ServerReplyType type,
+    const RequestNumber number,
+    const bool success,
+    const PasswordPrompt& reason,
+    opentxs::otx::OTXPushType pushtype,
+    const std::string& payload) -> OTXReply
+{
+    return Factory(
+        api,
+        signer,
+        recipient,
+        server,
+        type,
+        number,
+        success,
+        reason,
+        std::move(construct_push(pushtype, payload)));
+}
+
+auto Reply::Factory(
+    const api::internal::Core& api,
     const proto::ServerReply serialized) -> OTXReply
 {
     return OTXReply{new implementation::Reply(api, serialized)};
+}
+
+auto Reply::Factory(const api::internal::Core& api, const ReadView& view)
+    -> OTXReply
+{
+    return OTXReply{new implementation::Reply(
+        api, proto::Factory<proto::ServerReply>(view))};
 }
 }  // namespace opentxs::otx
 
@@ -149,6 +193,11 @@ auto Reply::Contract() const -> proto::ServerReply
     auto output = full_version(lock);
 
     return output;
+}
+
+auto Reply::Contract(AllocateOutput destination) const -> bool
+{
+    return write(Contract(), destination);
 }
 
 auto Reply::extract_nym(

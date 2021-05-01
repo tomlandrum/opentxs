@@ -61,8 +61,12 @@ public:
     OPENTXS_EXPORT static Pimpl<opentxs::otx::Request> Factory(
         const api::internal::Core& api,
         const proto::ServerRequest serialized);
+    OPENTXS_EXPORT static Pimpl<opentxs::otx::Request> Factory(
+        const api::internal::Core& api,
+        const ReadView& view);
 
     OPENTXS_EXPORT virtual proto::ServerRequest Contract() const = 0;
+    OPENTXS_EXPORT virtual bool Contract(AllocateOutput destination) const = 0;
     OPENTXS_EXPORT virtual const identifier::Nym& Initiator() const = 0;
     OPENTXS_EXPORT virtual RequestNumber Number() const = 0;
     OPENTXS_EXPORT virtual const identifier::Server& Server() const = 0;

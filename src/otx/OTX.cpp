@@ -8,6 +8,7 @@
 #include "internal/otx/OTX.hpp"  // IWYU pragma: associated
 
 #include "opentxs/otx/ConsensusType.hpp"
+#include "opentxs/otx/OTXPushType.hpp"
 #include "opentxs/otx/ServerRequestType.hpp"
 #include "opentxs/protobuf/ConsensusEnums.pb.h"
 #include "opentxs/protobuf/OTXEnums.pb.h"
@@ -37,6 +38,18 @@ auto lastreplystatus_map() noexcept -> const LastReplyStatusMap&
         {LastReplyStatus::MessageFailed, proto::LASTREPLYSTATUS_MESSAGEFAILED},
         {LastReplyStatus::Unknown, proto::LASTREPLYSTATUS_UNKNOWN},
         {LastReplyStatus::NotSent, proto::LASTREPLYSTATUS_NOTSENT},
+    };
+
+    return map;
+}
+
+auto otxpushtype_map() noexcept -> const OTXPushTypeMap&
+{
+    static const auto map = OTXPushTypeMap{
+        {OTXPushType::Error, proto::OTXPUSH_ERROR},
+        {OTXPushType::Nymbox, proto::OTXPUSH_NYMBOX},
+        {OTXPushType::Inbox, proto::OTXPUSH_INBOX},
+        {OTXPushType::Outbox, proto::OTXPUSH_OUTBOX},
     };
 
     return map;
@@ -78,6 +91,15 @@ auto translate(otx::LastReplyStatus in) noexcept -> proto::LastReplyStatus
         return lastreplystatus_map().at(in);
     } catch (...) {
         return proto::LASTREPLYSTATUS_INVALID;
+    }
+}
+
+auto translate(otx::OTXPushType in) noexcept -> proto::OTXPushType
+{
+    try {
+        return otxpushtype_map().at(in);
+    } catch (...) {
+        return proto::OTXPUSH_ERROR;
     }
 }
 
@@ -124,6 +146,20 @@ auto translate(proto::LastReplyStatus in) noexcept -> otx::LastReplyStatus
         return map.at(in);
     } catch (...) {
         return otx::LastReplyStatus::Invalid;
+    }
+}
+
+auto translate(proto::OTXPushType in) noexcept -> otx::OTXPushType
+{
+    static const auto map = reverse_arbitrary_map<
+        otx::OTXPushType,
+        proto::OTXPushType,
+        OTXPushTypeReverseMap>(otxpushtype_map());
+
+    try {
+        return map.at(in);
+    } catch (...) {
+        return otx::OTXPushType::Error;
     }
 }
 

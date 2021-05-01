@@ -21,6 +21,8 @@ using ConsensusTypeReverseMap = std::map<proto::ConsensusType, ConsensusType>;
 using LastReplyStatusMap = std::map<LastReplyStatus, proto::LastReplyStatus>;
 using LastReplyStatusReverseMap =
     std::map<proto::LastReplyStatus, LastReplyStatus>;
+using OTXPushTypeMap = std::map<OTXPushType, proto::OTXPushType>;
+using OTXPushTypeReverseMap = std::map<proto::OTXPushType, OTXPushType>;
 using ServerReplyTypeMap = std::map<ServerReplyType, proto::ServerReplyType>;
 using ServerReplyTypeReverseMap =
     std::map<proto::ServerReplyType, ServerReplyType>;
@@ -31,12 +33,14 @@ using ServerRequestTypeReverseMap =
 
 auto consensustype_map() noexcept -> const ConsensusTypeMap&;
 auto lastreplystatus_map() noexcept -> const LastReplyStatusMap&;
+auto otxpushtype_map() noexcept -> const OTXPushTypeMap&;
 auto serverreplytype_map() noexcept -> const ServerReplyTypeMap&;
 auto serverrequesttype_map() noexcept -> const ServerRequestTypeMap&;
 OPENTXS_EXPORT auto translate(ConsensusType in) noexcept
     -> proto::ConsensusType;
 OPENTXS_EXPORT auto translate(LastReplyStatus in) noexcept
     -> proto::LastReplyStatus;
+OPENTXS_EXPORT auto translate(OTXPushType in) noexcept -> proto::OTXPushType;
 OPENTXS_EXPORT auto translate(ServerReplyType in) noexcept
     -> proto::ServerReplyType;
 OPENTXS_EXPORT auto translate(ServerRequestType in) noexcept
@@ -45,6 +49,7 @@ OPENTXS_EXPORT auto translate(proto::ConsensusType in) noexcept
     -> ConsensusType;
 OPENTXS_EXPORT auto translate(proto::LastReplyStatus in) noexcept
     -> LastReplyStatus;
+OPENTXS_EXPORT auto translate(proto::OTXPushType in) noexcept -> OTXPushType;
 OPENTXS_EXPORT auto translate(proto::ServerReplyType in) noexcept
     -> ServerReplyType;
 OPENTXS_EXPORT auto translate(proto::ServerRequestType in) noexcept

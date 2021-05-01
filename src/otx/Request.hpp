@@ -49,6 +49,7 @@ class Request final : public otx::Request,
 {
 public:
     auto Contract() const -> proto::ServerRequest final;
+    auto Contract(AllocateOutput destination) const -> bool final;
     auto Initiator() const -> const identifier::Nym& final
     {
         return initiator_;

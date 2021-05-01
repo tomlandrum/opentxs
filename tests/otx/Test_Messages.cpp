@@ -31,16 +31,11 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/identity/Nym.hpp"
+#include "opentxs/otx/OTXPushType.hpp"
 #include "opentxs/otx/Reply.hpp"
 #include "opentxs/otx/Request.hpp"
 #include "opentxs/otx/ServerReplyType.hpp"
 #include "opentxs/otx/ServerRequestType.hpp"
-#include "opentxs/protobuf/Enums.pb.h"
-#include "opentxs/protobuf/OTXPush.pb.h"
-#include "opentxs/protobuf/ServerContract.pb.h"  // IWYU pragma: keep
-#include "opentxs/protobuf/ServerReply.pb.h"
-#include "opentxs/protobuf/ServerRequest.pb.h"
-#include "opentxs/protobuf/Signature.pb.h"
 
 using namespace opentxs;
 
@@ -79,8 +74,9 @@ public:
         const contract::Server& contract,
         const ot::api::client::Manager& client)
     {
-        auto clientVersion =
-            client.Wallet().Server(server_contract_->PublicContract());
+        auto bytes = ot::Space{};
+        server_contract_->PublicContract(ot::writer(bytes));
+        auto clientVersion = client.Wallet().Server(ot::reader(bytes));
         client.OTX().SetIntroductionServer(clientVersion);
     }
 
@@ -129,26 +125,18 @@ TEST_F(Test_Messages, activateRequest)
     EXPECT_FALSE(requestID->empty());
     EXPECT_TRUE(request->Validate());
 
-    auto serialized = request->Contract();
-
-    EXPECT_EQ(ot::otx::Request::DefaultVersion, serialized.version());
-    EXPECT_EQ(requestID->str(), serialized.id());
-    EXPECT_EQ(type, otx::internal::translate(serialized.type()));
-    EXPECT_EQ(Alice_, serialized.nym());
-    EXPECT_EQ(server_id_.str(), serialized.server());
-    EXPECT_EQ(1, serialized.request());
-    EXPECT_FALSE(serialized.has_credentials());
-    EXPECT_TRUE(serialized.has_signature());
-    EXPECT_EQ(proto::SIGROLE_SERVERREQUEST, serialized.signature().role());
+    EXPECT_EQ(ot::otx::Request::DefaultVersion, request->Version());
+    EXPECT_EQ(requestID->str(), request->ID()->str());
 
     request->SetIncludeNym(true, reason_c_);
 
     EXPECT_TRUE(request->Validate());
 
-    serialized = request->Contract();
-    EXPECT_TRUE(serialized.has_credentials());
+    auto bytes = ot::Space{};
+    EXPECT_TRUE(request->Contract(ot::writer(bytes)));
 
-    const auto serverCopy = ot::otx::Request::Factory(server_, serialized);
+    const auto serverCopy =
+        ot::otx::Request::Factory(server_, ot::reader(bytes));
 
     ASSERT_TRUE(serverCopy->Nym());
     EXPECT_EQ(alice_nym_id_.get(), serverCopy->Nym()->ID());
@@ -169,11 +157,6 @@ TEST_F(Test_Messages, pushReply)
 
     ASSERT_TRUE(server);
 
-    auto pPush = std::make_shared<proto::OTXPush>();
-    auto& push = *pPush;
-    push.set_version(1);
-    push.set_type(proto::OTXPUSH_NYMBOX);
-    push.set_item(payload);
     auto reply = ot::otx::Reply::Factory(
         server_,
         server,
@@ -183,7 +166,8 @@ TEST_F(Test_Messages, pushReply)
         true,
         1,
         reason_s_,
-        std::move(pPush));
+        ot::otx::OTXPushType::Nymbox,
+        payload);
 
     ASSERT_TRUE(reply->Nym());
     EXPECT_EQ(server_.NymID(), reply->Nym()->ID());
@@ -198,27 +182,15 @@ TEST_F(Test_Messages, pushReply)
     EXPECT_FALSE(replyID->empty());
     EXPECT_TRUE(reply->Validate());
 
-    auto serialized = reply->Contract();
+    auto bytes = ot::Space{};
+    EXPECT_TRUE(reply->Contract(ot::writer(bytes)));
 
-    EXPECT_EQ(ot::otx::Reply::DefaultVersion, serialized.version());
-    EXPECT_EQ(replyID->str(), serialized.id());
-    EXPECT_EQ(type, otx::internal::translate(serialized.type()));
-    EXPECT_EQ(Alice_, serialized.nym());
-    EXPECT_EQ(server_id_.str(), serialized.server());
-    EXPECT_EQ(1, serialized.request());
-    EXPECT_TRUE(serialized.success());
-    EXPECT_TRUE(serialized.has_signature());
-    EXPECT_EQ(proto::SIGROLE_SERVERREPLY, serialized.signature().role());
+    EXPECT_EQ(ot::otx::Reply::DefaultVersion, reply->Version());
+    EXPECT_EQ(replyID->str(), reply->ID()->str());
 
-    ASSERT_TRUE(reply->Push());
-    EXPECT_EQ(payload, reply->Push()->item());
     EXPECT_TRUE(reply->Validate());
 
-    serialized = reply->Contract();
-
-    EXPECT_EQ(payload, serialized.push().item());
-
-    const auto aliceCopy = ot::otx::Reply::Factory(client_, serialized);
+    const auto aliceCopy = ot::otx::Reply::Factory(client_, ot::reader(bytes));
 
     ASSERT_TRUE(aliceCopy->Nym());
     EXPECT_EQ(server_.NymID(), aliceCopy->Nym()->ID());
@@ -228,7 +200,6 @@ TEST_F(Test_Messages, pushReply)
     EXPECT_EQ(1, aliceCopy->Number());
     EXPECT_EQ(replyID.get(), aliceCopy->ID());
     ASSERT_TRUE(aliceCopy->Push());
-    EXPECT_EQ(payload, aliceCopy->Push()->item());
     EXPECT_TRUE(aliceCopy->Validate());
 }
 }  // namespace

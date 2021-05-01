@@ -46,7 +46,7 @@ namespace opentxs::factory
 auto PeerObject(
     const api::internal::Core& api,
     const Nym_p& senderNym,
-    const std::string& message) -> std::unique_ptr<opentxs::PeerObject>
+    const std::string& message) noexcept -> std::unique_ptr<opentxs::PeerObject>
 {
     try {
         std::unique_ptr<opentxs::PeerObject> output(
@@ -66,7 +66,7 @@ auto PeerObject(
     const api::internal::Core& api,
     const Nym_p& senderNym,
     const std::string& payment,
-    const bool isPayment) -> std::unique_ptr<opentxs::PeerObject>
+    const bool isPayment) noexcept -> std::unique_ptr<opentxs::PeerObject>
 {
     try {
         if (!isPayment) { return factory::PeerObject(api, senderNym, payment); }
@@ -88,7 +88,7 @@ auto PeerObject(
 auto PeerObject(
     const api::internal::Core& api,
     const Nym_p& senderNym,
-    const std::shared_ptr<blind::Purse> purse)
+    const std::shared_ptr<blind::Purse> purse) noexcept
     -> std::unique_ptr<opentxs::PeerObject>
 {
     try {
@@ -110,7 +110,8 @@ auto PeerObject(
     const api::internal::Core& api,
     const OTPeerRequest request,
     const OTPeerReply reply,
-    const VersionNumber version) -> std::unique_ptr<opentxs::PeerObject>
+    const VersionNumber version) noexcept
+    -> std::unique_ptr<opentxs::PeerObject>
 {
     try {
         std::unique_ptr<opentxs::PeerObject> output(
@@ -129,7 +130,8 @@ auto PeerObject(
 auto PeerObject(
     const api::internal::Core& api,
     const OTPeerRequest request,
-    const VersionNumber version) -> std::unique_ptr<opentxs::PeerObject>
+    const VersionNumber version) noexcept
+    -> std::unique_ptr<opentxs::PeerObject>
 {
     try {
         std::unique_ptr<opentxs::PeerObject> output(
@@ -149,7 +151,8 @@ auto PeerObject(
     const api::client::Contacts& contacts,
     const api::internal::Core& api,
     const Nym_p& signerNym,
-    const proto::PeerObject& serialized) -> std::unique_ptr<opentxs::PeerObject>
+    const proto::PeerObject& serialized) noexcept
+    -> std::unique_ptr<opentxs::PeerObject>
 {
     try {
         const bool valid = proto::Validate(serialized, VERBOSE);
@@ -178,7 +181,7 @@ auto PeerObject(
     const api::internal::Core& api,
     const Nym_p& recipientNym,
     const opentxs::Armored& encrypted,
-    const opentxs::PasswordPrompt& reason)
+    const opentxs::PasswordPrompt& reason) noexcept
     -> std::unique_ptr<opentxs::PeerObject>
 {
     try {
