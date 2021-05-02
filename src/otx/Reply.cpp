@@ -42,7 +42,7 @@ const VersionNumber Reply::DefaultVersion{1};
 const VersionNumber Reply::MaxVersion{1};
 
 static auto construct_push(OTXPushType pushtype, const std::string& payload)
-    -> std::shared_ptr<const proto::OTXPush>
+    -> std::shared_ptr<proto::OTXPush>
 {
     auto pPush = std::make_shared<proto::OTXPush>();
     auto& push = *pPush;
@@ -107,7 +107,7 @@ auto Reply::Factory(
         number,
         success,
         reason,
-        std::move(construct_push(pushtype, payload)));
+        construct_push(pushtype, payload));
 }
 
 auto Reply::Factory(
