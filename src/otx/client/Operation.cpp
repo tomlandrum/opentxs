@@ -1001,7 +1001,14 @@ auto Operation::construct_send_nym_object(
     CREATE_MESSAGE(sendNymMessage, recipient->ID(), number, true, true);
 
     auto envelope = api_.Factory().Envelope();
-    auto plaintext = api_.Factory().Armored(object.Serialize(), "PEER OBJECT");
+    auto output = proto::PeerObject{};
+    if (false == object.Serialize(output)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize object.")
+            .Flush();
+
+        return {};
+    }
+    auto plaintext = api_.Factory().Armored(output, "PEER OBJECT");
     auto sealed =
         envelope->Seal({recipient, context.Nym()}, plaintext->Bytes(), reason_);
 
@@ -1152,8 +1159,21 @@ auto Operation::construct_send_peer_reply() -> std::shared_ptr<Message>
     auto& context = contextEditor.get();
     const auto& nym = *context.Nym();
     context.SetPush(enable_otx_push_.load());
-    const bool saved = api_.Wallet().PeerReplyCreate(
-        nym.ID(), peer_request_->Contract(), peer_reply_->Contract());
+    auto reply = proto::PeerReply{};
+    if (false == peer_reply_->Serialize(reply)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize reply.")
+            .Flush();
+
+        return {};
+    }
+    auto request = proto::PeerRequest{};
+    if (false == peer_request_->Serialize(request)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize request.")
+            .Flush();
+
+        return {};
+    }
+    const bool saved = api_.Wallet().PeerReplyCreate(nym.ID(), request, reply);
 
     if (false == saved) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to save reply in wallet.")
@@ -1205,8 +1225,14 @@ auto Operation::construct_send_peer_request() -> std::shared_ptr<Message>
     auto& context = contextEditor.get();
     const auto& nym = *context.Nym();
     context.SetPush(enable_otx_push_.load());
-    const bool saved =
-        api_.Wallet().PeerRequestCreate(nym.ID(), peer_request_->Contract());
+    auto serialized = proto::PeerRequest{};
+    if (false == peer_request_->Serialize(serialized)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize request.")
+            .Flush();
+
+        return {};
+    }
+    const bool saved = api_.Wallet().PeerRequestCreate(nym.ID(), serialized);
 
     if (false == saved) {
         LogOutput(OT_METHOD)(__FUNCTION__)(

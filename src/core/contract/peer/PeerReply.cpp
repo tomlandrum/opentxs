@@ -135,13 +135,6 @@ auto Reply::contract(const Lock& lock) const -> SerializedType
     return contract;
 }
 
-auto Reply::Contract() const -> SerializedType
-{
-    Lock lock(lock_);
-
-    return contract(lock);
-}
-
 auto Reply::FinalizeContract(Reply& contract, const PasswordPrompt& reason)
     -> bool
 {
@@ -233,6 +226,15 @@ auto Reply::Serialize() const -> OTData
     Lock lock(lock_);
 
     return api_.Factory().Data(contract(lock));
+}
+
+auto Reply::Serialize(SerializedType& output) const -> bool
+{
+    Lock lock(lock_);
+
+    output = contract(lock);
+
+    return true;
 }
 
 auto Reply::SigVersion(const Lock& lock) const -> SerializedType

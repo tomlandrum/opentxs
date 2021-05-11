@@ -10,7 +10,6 @@
 
 #include <string>
 
-#include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/contract/peer/Types.hpp"
@@ -64,7 +63,8 @@ public:
     virtual auto asOutbailment() const noexcept
         -> const reply::Outbailment& = 0;
 
-    OPENTXS_NO_EXPORT virtual SerializedType Contract() const = 0;
+    using Signable::Serialize;
+    OPENTXS_NO_EXPORT virtual bool Serialize(SerializedType&) const = 0;
     virtual PeerRequestType Type() const = 0;
     virtual const identifier::Server& Server() const = 0;
 

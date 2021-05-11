@@ -398,10 +398,8 @@ Object::Object(
 {
 }
 
-auto Object::Serialize() const -> proto::PeerObject
+auto Object::Serialize(proto::PeerObject& output) const -> bool
 {
-    proto::PeerObject output;
-
     output.set_type(contract::peer::internal::translate(type_));
 
     switch (type_) {
@@ -433,7 +431,10 @@ auto Object::Serialize() const -> proto::PeerObject
             output.set_version(version_);
 
             if (0 < request_->Version()) {
-                *(output.mutable_otrequest()) = request_->Contract();
+                if (false ==
+                    request_->Serialize(*(output.mutable_otrequest()))) {
+                    return false;
+                }
                 auto nym = api_.Wallet().Nym(request_->Initiator());
 
                 if (nym) { *output.mutable_nym() = nym->asPublicNym(); }
@@ -443,10 +444,15 @@ auto Object::Serialize() const -> proto::PeerObject
             output.set_version(version_);
 
             if (0 < reply_->Version()) {
-                *(output.mutable_otreply()) = reply_->Contract();
+                if (false == reply_->Serialize(*(output.mutable_otreply()))) {
+                    return false;
+                }
             }
             if (0 < request_->Version()) {
-                *(output.mutable_otrequest()) = request_->Contract();
+                if (false ==
+                    request_->Serialize(*(output.mutable_otrequest()))) {
+                    return false;
+                }
             }
         } break;
 #if OT_CASH
@@ -466,10 +472,11 @@ auto Object::Serialize() const -> proto::PeerObject
 #endif
         default: {
             LogOutput(OT_METHOD)(__FUNCTION__)(": Unknown type.").Flush();
+            return false;
         }
     }
 
-    return output;
+    return true;
 }
 
 auto Object::Validate() const -> bool
@@ -505,7 +512,10 @@ auto Object::Validate() const -> bool
         }
     }
 
-    const bool validProto = proto::Validate(Serialize(), VERBOSE);
+    auto output = proto::PeerObject{};
+    if (false == Serialize(output)) return false;
+
+    const bool validProto = proto::Validate(output, VERBOSE);
 
     return (validChildren && validProto);
 }

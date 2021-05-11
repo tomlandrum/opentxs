@@ -270,7 +270,8 @@ struct Reply : virtual public opentxs::contract::peer::Reply,
     auto asConnection() const noexcept -> const reply::Connection& final;
     auto asOutbailment() const noexcept -> const reply::Outbailment& final;
 
-    auto Contract() const -> SerializedType final { return {}; }
+    using Signable::Serialize;
+    auto Serialize(SerializedType&) const -> bool final { return false; }
     auto Server() const -> const identifier::Server& final { return server_; }
     auto Type() const -> PeerRequestType final
     {
@@ -309,9 +310,10 @@ struct Request : virtual public opentxs::contract::peer::Request,
     auto asStoreSecret() const noexcept
         -> const peer::request::StoreSecret& final;
 
-    auto Contract() const -> SerializedType final { return {}; }
     auto Initiator() const -> const identifier::Nym& final { return nym_; }
     auto Recipient() const -> const identifier::Nym& final { return nym_; }
+    using Signable::Serialize;
+    auto Serialize(SerializedType&) const -> bool final { return false; }
     auto Server() const -> const identifier::Server& final { return server_; }
     auto Type() const -> PeerRequestType final
     {

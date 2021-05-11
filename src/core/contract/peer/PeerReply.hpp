@@ -9,7 +9,6 @@
 #include <string>
 
 #include "core/contract/Signable.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -78,9 +77,9 @@ public:
     auto asOutbailment() const noexcept -> const reply::Outbailment& override;
 
     auto Alias() const -> std::string final { return Name(); }
-    auto Contract() const -> SerializedType override;
     auto Name() const -> std::string final { return id_->str(); }
     auto Serialize() const -> OTData final;
+    auto Serialize(SerializedType&) const -> bool override;
     auto Server() const -> const identifier::Server& final { return server_; }
     void SetAlias(const std::string&) final {}
     auto Type() const -> PeerRequestType final { return type_; }

@@ -140,13 +140,6 @@ auto Request::contract(const Lock& lock) const -> SerializedType
     return contract;
 }
 
-auto Request::Contract() const -> SerializedType
-{
-    Lock lock(lock_);
-
-    return contract(lock);
-}
-
 auto Request::FinalizeContract(Request& contract, const PasswordPrompt& reason)
     -> bool
 {
@@ -210,6 +203,15 @@ auto Request::Serialize() const -> OTData
     Lock lock(lock_);
 
     return api_.Factory().Data(contract(lock));
+}
+
+auto Request::Serialize(SerializedType& output) const -> bool
+{
+    Lock lock(lock_);
+
+    output = contract(lock);
+
+    return true;
 }
 
 auto Request::SigVersion(const Lock& lock) const -> SerializedType

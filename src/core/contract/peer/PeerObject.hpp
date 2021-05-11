@@ -12,7 +12,6 @@
 #include <memory>
 #include <string>
 
-#include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/core/contract/peer/PeerObject.hpp"
@@ -106,7 +105,7 @@ public:
 #endif
     auto Request() const -> const OTPeerRequest final { return request_; }
     auto Reply() const -> const OTPeerReply final { return reply_; }
-    auto Serialize() const -> proto::PeerObject final;
+    auto Serialize(proto::PeerObject& output) const -> bool final;
     auto Type() const -> contract::peer::PeerObjectType final { return type_; }
     auto Validate() const -> bool final;
 

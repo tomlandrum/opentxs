@@ -8,7 +8,6 @@
 #include <string>
 
 #include "core/contract/Signable.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -79,7 +78,6 @@ public:
     auto asStoreSecret() const noexcept -> const request::StoreSecret& override;
 
     auto Alias() const -> std::string final { return Name(); }
-    auto Contract() const -> SerializedType final;
     auto Initiator() const -> const identifier::Nym& final
     {
         return initiator_;
@@ -90,6 +88,7 @@ public:
         return recipient_;
     }
     auto Serialize() const -> OTData final;
+    auto Serialize(SerializedType&) const -> bool final;
     auto Server() const -> const identifier::Server& final { return server_; }
     auto Type() const -> PeerRequestType final { return type_; }
     void SetAlias(const std::string&) final {}

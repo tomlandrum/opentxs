@@ -13,7 +13,6 @@
 #include <string>
 
 #include "opentxs/Pimpl.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"
@@ -48,7 +47,7 @@ public:
 #endif
     virtual const OTPeerRequest Request() const = 0;
     virtual const OTPeerReply Reply() const = 0;
-    OPENTXS_NO_EXPORT virtual proto::PeerObject Serialize() const = 0;
+    OPENTXS_NO_EXPORT virtual bool Serialize(proto::PeerObject&) const = 0;
     virtual contract::peer::PeerObjectType Type() const = 0;
     virtual bool Validate() const = 0;
 

@@ -1640,7 +1640,13 @@ auto Wallet::PeerReplyReceive(
         return false;
     }
 
-    const proto::PeerReply serialized{reply.Reply()->Contract()};
+    auto serialized = proto::PeerReply{};
+    if (false == reply.Reply()->Serialize(serialized)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize reply.")
+            .Flush();
+
+        return false;
+    }
     const bool receivedReply =
         api_.Storage().Store(serialized, nymID, StorageBox::INCOMINGPEERREPLY);
 
@@ -1849,7 +1855,13 @@ auto Wallet::PeerRequestReceive(
         return false;
     }
 
-    const proto::PeerRequest serialized{request.Request()->Contract()};
+    auto serialized = proto::PeerRequest{};
+    if (false == request.Request()->Serialize(serialized)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize request.")
+            .Flush();
+
+        return false;
+    }
     const auto nymID = nym.str();
     Lock lock(peer_lock(nymID));
     const auto saved = api_.Storage().Store(
