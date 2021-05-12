@@ -2667,9 +2667,14 @@ auto OTAPI_Exec::GenerateBasketCreation(
             contact::ContactItemType::Unknown,
             version);
 
-        return api_.Factory()
-            .Armored(basketTemplate->PublicContract(), "BASKET CONTRACT")
-            ->Get();
+        auto serialized = proto::UnitDefinition{};
+        if (false == basketTemplate->Serialize(serialized, true)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Failed to serialize unit definition.")
+                .Flush();
+            return {};
+        }
+        return api_.Factory().Armored(serialized, "BASKET CONTRACT")->Get();
     } catch (...) {
 
         return {};

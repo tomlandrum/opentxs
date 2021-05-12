@@ -61,9 +61,9 @@ public:
     auto EffectiveName() const -> std::string final;
     auto Name() const -> std::string final { return name_; }
     auto Serialize() const -> OTData final;
-    auto Serialize(proto::ServerContract& output, bool includeNym = false) const
-        -> bool final;
     auto Serialize(AllocateOutput destination, bool includeNym = false) const
+        -> bool final;
+    auto Serialize(proto::ServerContract& output, bool includeNym = false) const
         -> bool final;
     auto Statistics(String& strContents) const -> bool final;
     auto TransportKey() const -> const Data& final;

@@ -1184,8 +1184,13 @@ auto RPC::get_unit_definitions(const proto::RPCCommand& command) const
                 add_output_status(output, proto::RPCRESPONSE_INVALID);
 
             } else {
-                *output.add_unit() = contract->PublicContract();
-                add_output_status(output, proto::RPCRESPONSE_SUCCESS);
+                auto serialized = proto::UnitDefinition{};
+                if (false == contract->Serialize(serialized, true)) {
+                    add_output_status(output, proto::RPCRESPONSE_NONE);
+                } else {
+                    *output.add_unit() = serialized;
+                    add_output_status(output, proto::RPCRESPONSE_SUCCESS);
+                }
             }
         } catch (...) {
             add_output_status(output, proto::RPCRESPONSE_NONE);

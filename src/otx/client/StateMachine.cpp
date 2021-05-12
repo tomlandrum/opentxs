@@ -658,7 +658,13 @@ auto StateMachine::issue_unit_definition(
 
         OT_ASSERT(serialized);
 
-        *serialized = unitDefinition->PublicContract();
+        if (false == unitDefinition->Serialize(*serialized, true)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Failed to serialize unit definition.")
+                .Flush();
+
+            return finish_task(taskID, false, error_result());
+        }
         otx::context::Server::ExtraArgs args{label, false};
 
         DO_OPERATION(IssueUnitDefinition, serialized, args);

@@ -130,7 +130,12 @@ auto Basket::FinalizeTemplate(
             std::make_shared<proto::Signature>();
         if (contract->update_signature(lock, reason)) {
             lock.unlock();
-            serialized = contract->PublicContract();
+            if (false == contract->Serialize(serialized, true)) {
+                LogOutput("Failed to serialize unit definition.")(__FUNCTION__)
+                    .Flush();
+                return false;
+                ;
+            }
 
             return proto::Validate(serialized, VERBOSE, false);
         }

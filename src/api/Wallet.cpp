@@ -2607,7 +2607,13 @@ auto Wallet::unit_definition(std::shared_ptr<contract::Unit>&& contract) const
     const auto unit = contract->ID()->str();
     const auto id = api_.Factory().UnitID(unit);
 
-    if (api_.Storage().Store(contract->Contract(), contract->Alias())) {
+    auto serialized = proto::UnitDefinition{};
+    if (false == contract->Serialize(serialized)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Failed to serialize unit definition")
+            .Flush();
+    }
+    if (api_.Storage().Store(serialized, contract->Alias())) {
         {
             Lock mapLock(unit_map_lock_);
             auto it = unit_map_.find(unit);
@@ -2656,8 +2662,14 @@ auto Wallet::UnitDefinition(const proto::UnitDefinition& contract) const
                     unitID->Assign(candidate->ID());
                 }
 
-                const auto stored = api_.Storage().Store(
-                    candidate->Contract(), candidate->Alias());
+                auto serialized = proto::UnitDefinition{};
+                if (false == candidate->Serialize(serialized)) {
+                    LogOutput(OT_METHOD)(__FUNCTION__)(
+                        ": Failed to serialize unit definition.")
+                        .Flush();
+                }
+                const auto stored =
+                    api_.Storage().Store(serialized, candidate->Alias());
 
                 if (stored) {
                     {

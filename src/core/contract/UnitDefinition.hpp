@@ -61,7 +61,6 @@ public:
     auto AddAccountRecord(
         const std::string& dataFolder,
         const Account& theAccount) const -> bool override;
-    auto Contract() const -> SerializedType override;
     auto DecimalPower() const -> std::int32_t override { return 0; }
     auto DisplayStatistics(String& strContents) const -> bool override;
     auto EraseAccountRecord(
@@ -92,9 +91,11 @@ public:
         return primary_unit_symbol_;
     }
     auto Name() const -> std::string override { return short_name_; }
-    auto PublicContract() const -> SerializedType override;
-    auto PublicContract(AllocateOutput destination) const -> bool override;
     auto Serialize() const -> OTData override;
+    auto Serialize(AllocateOutput destination, bool includeNym = false) const
+        -> bool override;
+    auto Serialize(SerializedType&, bool includeNym = false) const
+        -> bool override;
     auto StringToAmountLocale(
         std::int64_t& amount,
         const std::string& str_input,

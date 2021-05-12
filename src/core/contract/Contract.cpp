@@ -92,6 +92,13 @@ auto Server::Serialize(proto::ServerContract& output, bool includeNym) const
     output = {};
     return true;
 }
+
+auto Unit::Serialize(proto::UnitDefinition& output, bool includeNym) const
+    -> bool
+{
+    output = {};
+    return true;
+}
 }  // namespace opentxs::contract::blank
 
 namespace opentxs::contract::internal

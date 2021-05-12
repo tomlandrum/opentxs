@@ -343,21 +343,6 @@ auto Server::Serialize() const -> OTData
     return api_.Factory().Data(contract(lock));
 }
 
-auto Server::Serialize(proto::ServerContract& serialized, bool includeNym) const
-    -> bool
-{
-    Lock lock(lock_);
-
-    serialized = contract(lock);
-
-    if (includeNym && nym_) {
-        auto publicNym = nym_->asPublicNym();
-        *(serialized.mutable_publicnym()) = publicNym;
-    }
-
-    return true;
-}
-
 auto Server::Serialize(AllocateOutput destination, bool includeNym) const
     -> bool
 {
@@ -369,6 +354,21 @@ auto Server::Serialize(AllocateOutput destination, bool includeNym) const
     }
 
     write(serialized, destination);
+
+    return true;
+}
+
+auto Server::Serialize(proto::ServerContract& serialized, bool includeNym) const
+    -> bool
+{
+    Lock lock(lock_);
+
+    serialized = contract(lock);
+
+    if (includeNym && nym_) {
+        auto publicNym = nym_->asPublicNym();
+        *(serialized.mutable_publicnym()) = publicNym;
+    }
 
     return true;
 }

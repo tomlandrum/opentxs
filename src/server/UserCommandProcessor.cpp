@@ -930,10 +930,15 @@ auto UserCommandProcessor::cmd_get_instrument_definition(
     if (0 == msgIn.enum_) {
         // try everything
         try {
-            const auto unitDefiniton =
+            const auto unitDefinition =
                 server_.API().Wallet().UnitDefinition(unitID);
-            serialized =
-                manager_.Factory().Data(unitDefiniton->PublicContract());
+            auto proto = proto::UnitDefinition{};
+            if (false == unitDefinition->Serialize(proto, true)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(
+                    ": Failed to serialize unit definition.")
+                    .Flush();
+            }
+            serialized = manager_.Factory().Data(proto);
             reply.SetPayload(serialized);
             reply.SetBool(true);
         } catch (...) {
@@ -981,7 +986,13 @@ auto UserCommandProcessor::cmd_get_instrument_definition(
     } else if (ContractType::unit == static_cast<ContractType>(msgIn.enum_)) {
         try {
             const auto contract = server_.API().Wallet().UnitDefinition(unitID);
-            serialized = manager_.Factory().Data(contract->PublicContract());
+            auto proto = proto::UnitDefinition{};
+            if (false == contract->Serialize(proto, true)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(
+                    ": Failed to serialize unit definition.")
+                    .Flush();
+            }
+            serialized = manager_.Factory().Data(proto);
             reply.SetPayload(serialized);
             reply.SetBool(true);
         } catch (...) {

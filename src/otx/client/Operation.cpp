@@ -854,8 +854,15 @@ auto Operation::construct_issue_unit_definition() -> std::shared_ptr<Message>
 
         auto id = contract->ID();
         id->GetString(message.m_strInstrumentDefinitionID);
-        message.m_ascPayload =
-            api_.Factory().Armored(contract->PublicContract());
+        auto serialized = proto::UnitDefinition{};
+        if (false == contract->Serialize(serialized, true)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Failed to serialize unit definition")
+                .Flush();
+
+            return {};
+        }
+        message.m_ascPayload = api_.Factory().Armored(serialized);
 
         FINISH_MESSAGE(__FUNCTION__, registerInstrumentDefinition);
     } catch (...) {
@@ -923,7 +930,15 @@ auto Operation::construct_publish_unit() -> std::shared_ptr<Message>
         CREATE_MESSAGE(registerContract, -1, true, true);
 
         message.enum_ = static_cast<std::uint8_t>(ContractType::unit);
-        message.m_ascPayload = api_.Factory().Armored(contract->Contract());
+        auto serialized = proto::UnitDefinition{};
+        if (false == contract->Serialize(serialized)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Failed to serialize unit definition: ")(target_unit_id_)
+                .Flush();
+
+            return {};
+        }
+        message.m_ascPayload = api_.Factory().Armored(serialized);
 
         FINISH_MESSAGE(__FUNCTION__, registerContract);
     } catch (...) {

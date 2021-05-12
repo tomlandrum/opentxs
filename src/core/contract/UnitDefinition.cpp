@@ -496,13 +496,6 @@ auto Unit::AddAccountRecord(
     return true;
 }
 
-auto Unit::Contract() const -> SerializedType
-{
-    Lock lock(lock_);
-
-    return contract(lock);
-}
-
 auto Unit::contract(const Lock& lock) const -> SerializedType
 {
     auto contract = SigVersion(lock);
@@ -774,30 +767,40 @@ auto Unit::IDVersion(const Lock& lock) const -> SerializedType
     return contract;
 }
 
-auto Unit::PublicContract() const -> SerializedType
-{
-    Lock lock(lock_);
-
-    auto serialized = contract(lock);
-
-    if (nym_) {
-        auto publicNym = nym_->asPublicNym();
-        *(serialized.mutable_publicnym()) = publicNym;
-    }
-
-    return serialized;
-}
-
-auto Unit::PublicContract(AllocateOutput destination) const -> bool
-{
-    return write(PublicContract(), destination);
-}
-
 auto Unit::Serialize() const -> OTData
 {
     Lock lock(lock_);
 
     return api_.Factory().Data(contract(lock));
+}
+
+auto Unit::Serialize(AllocateOutput destination, bool includeNym) const -> bool
+{
+    auto serialized = proto::UnitDefinition{};
+    if (false == Serialize(serialized, includeNym)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Failed to serialize unit definition.")
+            .Flush();
+        return false;
+    }
+
+    write(serialized, destination);
+
+    return true;
+}
+
+auto Unit::Serialize(SerializedType& serialized, bool includeNym) const -> bool
+{
+    Lock lock(lock_);
+
+    serialized = contract(lock);
+
+    if (includeNym && nym_) {
+        auto publicNym = nym_->asPublicNym();
+        *(serialized.mutable_publicnym()) = publicNym;
+    }
+
+    return true;
 }
 
 auto Unit::SetAlias(const std::string& alias) -> void

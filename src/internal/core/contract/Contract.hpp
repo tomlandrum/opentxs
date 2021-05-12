@@ -142,7 +142,6 @@ struct Unit final : virtual public opentxs::contract::Unit, public Signable {
     {
         return {};
     }
-    auto Contract() const -> SerializedType final { return {}; }
     auto DecimalPower() const -> std::int32_t final { return {}; }
     auto DisplayStatistics(String&) const -> bool final { return {}; }
     auto EraseAccountRecord(const std::string&, const Identifier&) const
@@ -181,8 +180,14 @@ struct Unit final : virtual public opentxs::contract::Unit, public Signable {
     {
         return terms_;
     }
-    auto PublicContract() const -> SerializedType final { return {}; }
-    auto PublicContract(AllocateOutput) const -> bool final { return false; }
+    using Signable::Serialize;
+    auto Serialize(AllocateOutput destination, bool includeNym = false) const
+        -> bool final
+    {
+        return write(proto::UnitDefinition{}, destination);
+    }
+    auto Serialize(proto::UnitDefinition& output, bool includeNym = false) const
+        -> bool final;
     auto StringToAmountLocale(
         Amount&,
         const std::string&,

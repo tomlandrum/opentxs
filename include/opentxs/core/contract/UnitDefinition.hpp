@@ -11,7 +11,6 @@
 #include <cstdint>
 #include <string>
 
-#include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/contract/Types.hpp"
@@ -66,7 +65,6 @@ public:
     virtual bool AddAccountRecord(
         const std::string& dataFolder,
         const Account& theAccount) const = 0;
-    OPENTXS_NO_EXPORT virtual SerializedType Contract() const = 0;
     virtual std::int32_t DecimalPower() const = 0;
     virtual bool DisplayStatistics(String& strContents) const = 0;
     virtual bool EraseAccountRecord(
@@ -90,8 +88,12 @@ public:
     virtual std::string FractionalUnitName() const = 0;
     virtual const std::string& GetCurrencyName() const = 0;
     virtual const std::string& GetCurrencySymbol() const = 0;
-    virtual SerializedType PublicContract() const = 0;
-    virtual bool PublicContract(AllocateOutput destination) const = 0;
+    using Signable::Serialize;
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        SerializedType&,
+        bool includeNym = false) const = 0;
+    virtual bool Serialize(AllocateOutput destination, bool includeNym = false)
+        const = 0;
     virtual bool StringToAmountLocale(
         Amount& amount,
         const std::string& str_input,

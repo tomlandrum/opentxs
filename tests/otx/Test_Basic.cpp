@@ -1323,7 +1323,7 @@ TEST_F(Test_Basic, issueAsset)
     auto& stateMachine = *alice_state_machine_;
 
     auto bytes = ot::Space{};
-    EXPECT_TRUE(asset_contract_1_->PublicContract(ot::writer(bytes)));
+    EXPECT_TRUE(asset_contract_1_->Serialize(ot::writer(bytes), true));
     auto started =
         stateMachine.IssueUnitDefinition(ot::reader(bytes), extra_args_);
 
