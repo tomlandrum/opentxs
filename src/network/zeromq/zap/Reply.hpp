@@ -11,7 +11,7 @@
 #include <map>
 #include <string>
 
-#include "2_Factory.hpp"
+#include "internal/network/Factory.hpp"
 #include "network/zeromq/Message.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
@@ -70,25 +70,25 @@ public:
 
         return set_field(
             STATUS_CODE_POSITION,
-            OTZMQFrame{Factory::ZMQFrame(value.data(), value.size())});
+            OTZMQFrame{factory::ZMQFrame(value.data(), value.size())});
     }
     auto SetMetadata(const Data& metadata) -> bool override
     {
         return set_field(
             METADATA_POSITION,
-            OTZMQFrame{Factory::ZMQFrame(metadata.data(), metadata.size())});
+            OTZMQFrame{factory::ZMQFrame(metadata.data(), metadata.size())});
     }
     auto SetStatus(const std::string& status) -> bool override
     {
         return set_field(
             STATUS_TEXT_POSITION,
-            OTZMQFrame{Factory::ZMQFrame(status.data(), status.size())});
+            OTZMQFrame{factory::ZMQFrame(status.data(), status.size())});
     }
     auto SetUserID(const std::string& userID) -> bool override
     {
         return set_field(
             USER_ID_POSITION,
-            OTZMQFrame{Factory::ZMQFrame(userID.data(), userID.size())});
+            OTZMQFrame{factory::ZMQFrame(userID.data(), userID.size())});
     }
 
     ~Reply() override = default;

@@ -12,14 +12,10 @@
 #include <iosfwd>
 #include <string>
 
+#include "internal/network/Factory.hpp"
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
-
-namespace opentxs
-{
-class Factory;
-}  // namespace opentxs
 
 namespace opentxs::network::zeromq::implementation
 {
@@ -43,7 +39,14 @@ public:
     ~Frame() final;
 
 private:
-    friend opentxs::Factory;
+    friend network::zeromq::Frame* opentxs::factory::ZMQFrame() noexcept;
+    friend network::zeromq::Frame* opentxs::factory::ZMQFrame(
+        std::size_t) noexcept;
+    friend network::zeromq::Frame* opentxs::factory::ZMQFrame(
+        const void*,
+        const std::size_t) noexcept;
+    friend network::zeromq::Frame* opentxs::factory::ZMQFrame(
+        const ProtobufType&) noexcept;
     friend network::zeromq::Frame;
 
     mutable zmq_msg_t message_;

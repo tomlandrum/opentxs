@@ -9,34 +9,34 @@
 
 #include <cstring>
 
-#include "2_Factory.hpp"
+#include "internal/network/Factory.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/core/Log.hpp"
 
 template class opentxs::Pimpl<opentxs::network::zeromq::Frame>;
 
-namespace opentxs
+namespace opentxs::factory
 {
 using ReturnType = network::zeromq::implementation::Frame;
 
-auto Factory::ZMQFrame() -> network::zeromq::Frame* { return new ReturnType(); }
+auto ZMQFrame() noexcept -> network::zeromq::Frame* { return new ReturnType(); }
 
-auto Factory::ZMQFrame(const std::size_t size) -> network::zeromq::Frame*
+auto ZMQFrame(const std::size_t size) noexcept -> network::zeromq::Frame*
 {
     return new ReturnType(size);
 }
 
-auto Factory::ZMQFrame(const void* data, const std::size_t size)
+auto ZMQFrame(const void* data, const std::size_t size) noexcept
     -> network::zeromq::Frame*
 {
     return new ReturnType(data, size);
 }
 
-auto Factory::ZMQFrame(const ProtobufType& data) -> network::zeromq::Frame*
+auto ZMQFrame(const ProtobufType& data) noexcept -> network::zeromq::Frame*
 {
     return new ReturnType(data);
 }
-}  // namespace opentxs
+}  // namespace opentxs::factory
 
 namespace opentxs::network::zeromq::implementation
 {

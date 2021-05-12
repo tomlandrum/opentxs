@@ -931,20 +931,5 @@ public:
         -> api::network::ZAP*;
     static auto ZMQ(const api::internal::Core& api, const Flag& running)
         -> api::network::ZMQ*;
-    static auto ZMQContext() -> network::zeromq::Context*;
-    OPENTXS_EXPORT static auto ZMQFrame() -> network::zeromq::Frame*;
-    OPENTXS_EXPORT static auto ZMQFrame(std::size_t size)
-        -> network::zeromq::Frame*;
-    OPENTXS_EXPORT static auto ZMQFrame(
-        const void* data,
-        const std::size_t size) -> network::zeromq::Frame*;
-    OPENTXS_EXPORT static auto ZMQFrame(const ProtobufType& data)
-        -> network::zeromq::Frame*;
-    OPENTXS_EXPORT static auto ZMQMessage() -> network::zeromq::Message*;
-    OPENTXS_EXPORT static auto ZMQMessage(
-        const void* data,
-        const std::size_t size) -> network::zeromq::Message*;
-    OPENTXS_EXPORT static auto ZMQMessage(const ProtobufType& data)
-        -> network::zeromq::Message*;
 };
 }  // namespace opentxs

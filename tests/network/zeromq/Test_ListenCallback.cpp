@@ -6,8 +6,8 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "2_Factory.hpp"
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
+#include "internal/network/Factory.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
@@ -46,7 +46,7 @@ TEST_F(Test_ListenCallback, ListenCallback_Process)
     ASSERT_NE(nullptr, &listenCallback.get());
 
     auto testMessage = OTZMQMessage{
-        Factory::ZMQMessage(testMessage_.data(), testMessage_.size())};
+        factory::ZMQMessage(testMessage_.data(), testMessage_.size())};
 
     ASSERT_NE(nullptr, &testMessage.get());
 

@@ -11,17 +11,13 @@
 #include <iosfwd>
 #include <vector>
 
+#include "internal/network/Factory.hpp"
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
 #include "opentxs/network/zeromq/FrameIterator.hpp"
 #include "opentxs/network/zeromq/FrameSection.hpp"
 #include "opentxs/network/zeromq/Message.hpp"
-
-namespace opentxs
-{
-class Factory;
-}  // namespace opentxs
 
 namespace opentxs::network::zeromq::implementation
 {
@@ -68,7 +64,13 @@ protected:
     Message(const Message& rhs);
 
 private:
-    friend opentxs::Factory;
+    friend network::zeromq::Message* opentxs::factory::ZMQMessage(
+        void) noexcept;
+    friend network::zeromq::Message* opentxs::factory::ZMQMessage(
+        const void*,
+        const std::size_t) noexcept;
+    friend network::zeromq::Message* opentxs::factory::ZMQMessage(
+        const ProtobufType&) noexcept;
     friend network::zeromq::Message;
 
     auto clone() const -> Message* override { return new Message(*this); }

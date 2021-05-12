@@ -109,8 +109,6 @@ protected:
     Reply(const Reply&) noexcept;
 
 private:
-    friend opentxs::Factory;
-
     const OTNymID initiator_;
     const OTNymID recipient_;
     const OTServerID server_;

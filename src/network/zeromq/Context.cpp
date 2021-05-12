@@ -16,8 +16,8 @@
 #include <memory>
 #include <thread>
 
-#include "2_Factory.hpp"
 #include "PairEventListener.hpp"
+#include "internal/network/Factory.hpp"
 #include "internal/network/zeromq/socket/Socket.hpp"
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Pimpl.hpp"
@@ -46,15 +46,15 @@ template class opentxs::Pimpl<opentxs::network::zeromq::Context>;
 #define PATH_SEPERATOR "/"
 #define OT_METHOD "opentxs::network::zeromq::Context::"
 
-namespace opentxs
+namespace opentxs::factory
 {
-auto Factory::ZMQContext() -> network::zeromq::Context*
+auto ZMQContext() noexcept -> network::zeromq::Context*
 {
     using ReturnType = network::zeromq::implementation::Context;
 
     return new ReturnType;
 }
-}  // namespace opentxs
+}  // namespace opentxs::factory
 
 namespace opentxs::network::zeromq
 {
@@ -183,23 +183,23 @@ auto Context::DealerSocket(
 auto Context::Frame(const void* input, const std::size_t size) const noexcept
     -> OTZMQFrame
 {
-    return OTZMQFrame{Factory::ZMQFrame(input, size)};
+    return OTZMQFrame{factory::ZMQFrame(input, size)};
 }
 
 auto Context::Message() const noexcept -> OTZMQMessage
 {
-    return OTZMQMessage{Factory::ZMQMessage()};
+    return OTZMQMessage{factory::ZMQMessage()};
 }
 
 auto Context::Message(const ProtobufType& input) const noexcept -> OTZMQMessage
 {
-    return OTZMQMessage{Factory::ZMQMessage(input)};
+    return OTZMQMessage{factory::ZMQMessage(input)};
 }
 
 auto Context::Message(const void* input, const std::size_t size) const noexcept
     -> OTZMQMessage
 {
-    return OTZMQMessage{Factory::ZMQMessage(input, size)};
+    return OTZMQMessage{factory::ZMQMessage(input, size)};
 }
 
 auto Context::PairEventListener(

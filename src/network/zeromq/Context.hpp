@@ -12,6 +12,7 @@
 #include <iosfwd>
 #include <string>
 
+#include "internal/network/Factory.hpp"
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Proto.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
@@ -143,7 +144,7 @@ public:
     ~Context() final;
 
 private:
-    friend opentxs::Factory;
+    friend network::zeromq::Context* opentxs::factory::ZMQContext() noexcept;
 
     void* context_{nullptr};
 

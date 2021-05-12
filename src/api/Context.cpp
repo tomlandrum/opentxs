@@ -32,6 +32,7 @@ extern "C" {
 #include "internal/api/client/Client.hpp"
 #include "internal/api/client/Factory.hpp"
 #include "internal/api/crypto/Factory.hpp"
+#include "internal/network/Factory.hpp"
 #include "internal/rpc/RPC.hpp"
 #include "opentxs/OT.hpp"
 #include "opentxs/Pimpl.hpp"
@@ -89,7 +90,7 @@ Context::Context(
     , task_list_lock_()
     , signal_handler_lock_()
     , config_()
-    , zmq_context_(opentxs::Factory::ZMQContext())
+    , zmq_context_(opentxs::factory::ZMQContext())
     , signal_handler_(nullptr)
     , log_(factory::Log(zmq_context_, get_arg(args, OPENTXS_ARG_LOGENDPOINT)))
     , asio_()

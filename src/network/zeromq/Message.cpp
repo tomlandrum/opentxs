@@ -11,7 +11,7 @@
 #include <memory>
 #include <utility>
 
-#include "2_Factory.hpp"
+#include "internal/network/Factory.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/network/zeromq/Frame.hpp"
@@ -21,16 +21,16 @@
 
 template class opentxs::Pimpl<opentxs::network::zeromq::Message>;
 
-namespace opentxs
+namespace opentxs::factory
 {
-auto Factory::ZMQMessage() -> network::zeromq::Message*
+auto ZMQMessage() noexcept -> network::zeromq::Message*
 {
     using ReturnType = opentxs::network::zeromq::implementation::Message;
 
     return new ReturnType();
 }
 
-auto Factory::ZMQMessage(const void* data, const std::size_t size)
+auto ZMQMessage(const void* data, const std::size_t size) noexcept
     -> network::zeromq::Message*
 {
     using ReturnType = opentxs::network::zeromq::implementation::Message;
@@ -41,7 +41,7 @@ auto Factory::ZMQMessage(const void* data, const std::size_t size)
     return output;
 }
 
-auto Factory::ZMQMessage(const ProtobufType& data) -> network::zeromq::Message*
+auto ZMQMessage(const ProtobufType& data) noexcept -> network::zeromq::Message*
 {
     using ReturnType = opentxs::network::zeromq::implementation::Message;
     auto output = new ReturnType();
@@ -50,7 +50,7 @@ auto Factory::ZMQMessage(const ProtobufType& data) -> network::zeromq::Message*
 
     return output;
 }
-}  // namespace opentxs
+}  // namespace opentxs::factory
 
 namespace opentxs::network::zeromq
 {
@@ -76,21 +76,21 @@ Message::Message(const Message& rhs)
 
 auto Message::AddFrame() -> Frame&
 {
-    messages_.emplace_back(Factory::ZMQFrame());
+    messages_.emplace_back(factory::ZMQFrame());
 
     return messages_.back().get();
 }
 
 auto Message::AddFrame(const void* input, const std::size_t size) -> Frame&
 {
-    messages_.emplace_back(Factory::ZMQFrame(input, size));
+    messages_.emplace_back(factory::ZMQFrame(input, size));
 
     return messages_.back().get();
 }
 
 auto Message::AddFrame(const ProtobufType& input) -> Frame&
 {
-    messages_.emplace_back(Factory::ZMQFrame(input));
+    messages_.emplace_back(factory::ZMQFrame(input));
 
     return messages_.back().get();
 }
@@ -98,7 +98,7 @@ auto Message::AddFrame(const ProtobufType& input) -> Frame&
 auto Message::AppendBytes() noexcept -> AllocateOutput
 {
     return [this](const std::size_t size) -> WritableView {
-        auto& frame = messages_.emplace_back(Factory::ZMQFrame(size));
+        auto& frame = messages_.emplace_back(factory::ZMQFrame(size));
 
         return {const_cast<void*>(frame->data()), frame->size()};
     };
@@ -164,14 +164,14 @@ auto Message::EnsureDelimiter() -> void
 {
     if (1 < messages_.size() && !hasDivider()) {
         auto it = messages_.begin();
-        messages_.emplace(++it, Factory::ZMQFrame());
+        messages_.emplace(++it, factory::ZMQFrame());
     }
     // These cases should never happen.  When this function is called, there
     // should always be at least two frames.
     else if (0 < messages_.size() && !hasDivider()) {
-        messages_.emplace(messages_.begin(), Factory::ZMQFrame());
+        messages_.emplace(messages_.begin(), factory::ZMQFrame());
     } else if (!hasDivider()) {
-        messages_.emplace_back(Factory::ZMQFrame());
+        messages_.emplace_back(factory::ZMQFrame());
     }
 }
 
@@ -226,7 +226,7 @@ auto Message::Header_end() const -> FrameIterator { return Header().end(); }
 
 auto Message::PrependEmptyFrame() -> void
 {
-    OTZMQFrame message{Factory::ZMQFrame()};
+    OTZMQFrame message{factory::ZMQFrame()};
 
     auto it = messages_.emplace(messages_.begin(), message);
 
@@ -256,9 +256,9 @@ auto Message::set_field(const std::size_t position, const zeromq::Frame& input)
 auto Message::StartBody() noexcept -> void
 {
     if (0 == messages_.size()) {
-        messages_.emplace_back(Factory::ZMQFrame());
+        messages_.emplace_back(factory::ZMQFrame());
     } else if (0 < (*messages_.crbegin())->size()) {
-        messages_.emplace_back(Factory::ZMQFrame());
+        messages_.emplace_back(factory::ZMQFrame());
     }
 }
 

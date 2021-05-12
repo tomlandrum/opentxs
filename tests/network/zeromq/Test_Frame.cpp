@@ -8,8 +8,8 @@
 #include <iosfwd>
 #include <string>
 
-#include "2_Factory.hpp"
 #include "OTTestEnvironment.hpp"  // IWYU pragma: keep
+#include "internal/network/Factory.hpp"
 #include "opentxs/Pimpl.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/core/Data.hpp"
@@ -19,7 +19,7 @@ using namespace opentxs;
 
 TEST(Frame, Factory1)
 {
-    OTZMQFrame message{Factory::ZMQFrame()};
+    OTZMQFrame message{factory::ZMQFrame()};
 
     ASSERT_NE(nullptr, &message.get());
 }
@@ -28,7 +28,7 @@ TEST(Frame, Factory2)
 {
     auto data = Data::Factory("0", 1);
 
-    OTZMQFrame message{Factory::ZMQFrame(data->data(), data->size())};
+    OTZMQFrame message{factory::ZMQFrame(data->data(), data->size())};
 
     ASSERT_NE(nullptr, &message.get());
     ASSERT_EQ(message->size(), data->size());
@@ -38,7 +38,7 @@ TEST(Frame, operator_string)
 {
     const auto test = Data::Factory("testString", 10);
 
-    OTZMQFrame message{Factory::ZMQFrame(test->data(), test->size())};
+    OTZMQFrame message{factory::ZMQFrame(test->data(), test->size())};
 
     ASSERT_NE(nullptr, &message.get());
     std::string messageString = message.get();
@@ -47,7 +47,7 @@ TEST(Frame, operator_string)
 
 TEST(Frame, data)
 {
-    OTZMQFrame message{Factory::ZMQFrame()};
+    OTZMQFrame message{factory::ZMQFrame()};
 
     const void* data = message->data();
     ASSERT_NE(nullptr, data);
@@ -58,7 +58,7 @@ TEST(Frame, data)
 
 TEST(Frame, size)
 {
-    OTZMQFrame message{Factory::ZMQFrame()};
+    OTZMQFrame message{factory::ZMQFrame()};
 
     std::size_t size = message->size();
     ASSERT_EQ(size, 0);
@@ -67,7 +67,7 @@ TEST(Frame, size)
     ASSERT_EQ(zmq_msg_size(zmq_msg), 0);
 
     const auto test = Data::Factory("testString", 10);
-    message = OTZMQFrame{Factory::ZMQFrame(test->data(), test->size())};
+    message = OTZMQFrame{factory::ZMQFrame(test->data(), test->size())};
     size = message->size();
     ASSERT_EQ(10, size);
 
@@ -77,7 +77,7 @@ TEST(Frame, size)
 
 TEST(Frame, zmq_msg_t)
 {
-    OTZMQFrame message{Factory::ZMQFrame()};
+    OTZMQFrame message{factory::ZMQFrame()};
 
     zmq_msg_t* zmq_msg = message.get();
     ASSERT_NE(nullptr, zmq_msg);
