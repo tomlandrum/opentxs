@@ -180,7 +180,11 @@ Contact::Contact(
           identity::CredentialRole::Contact,
           crypto::key::asymmetric::Mode::Null,
           get_master_id(master))
-    , data_(params.ContactData() ? *params.ContactData() : proto::ContactData{})
+    , data_([&](const NymParameters& params) -> const proto::ContactData {
+        auto proto = proto::ContactData{};
+        params.Serialize(proto);
+        return proto;
+    }(params))
 {
     {
         Lock lock(lock_);

@@ -15,7 +15,6 @@
 
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Pimpl.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/crypto/Types.hpp"
 

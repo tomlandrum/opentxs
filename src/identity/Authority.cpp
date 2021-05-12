@@ -446,7 +446,8 @@ auto Authority::create_contact_credental(
 {
     auto output = ContactCredentialMap{};
 
-    if (parameters.ContactData()) {
+    auto serialized = proto::ContactData{};
+    if (parameters.Serialize(serialized)) {
         auto pCredential = std::unique_ptr<credential::internal::Contact>{
             opentxs::Factory::Credential<credential::internal::Contact>(
                 api,

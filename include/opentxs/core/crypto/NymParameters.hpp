@@ -19,7 +19,6 @@
 #include <string>
 
 #include "opentxs/Bytes.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/core/Secret.hpp"
@@ -49,8 +48,6 @@ class OPENTXS_EXPORT NymParameters
 public:
     crypto::key::asymmetric::Algorithm Algorithm() const noexcept;
     NymParameters ChangeType(const NymParameterType type) const noexcept;
-    OPENTXS_NO_EXPORT std::shared_ptr<proto::ContactData> ContactData()
-        const noexcept;
     identity::CredentialType credentialType() const noexcept;
 #if OT_CRYPTO_WITH_BIP32
     Bip32Index CredIndex() const noexcept;
@@ -78,13 +75,15 @@ public:
     crypto::SeedStrength SeedStrength() const noexcept;
     crypto::SeedStyle SeedStyle() const noexcept;
 #endif  // OT_CRYPTO_WITH_BIP32
+    OPENTXS_NO_EXPORT bool Serialize(
+        proto::ContactData& serialized) const noexcept;
+    OPENTXS_NO_EXPORT bool Serialize(
+        proto::VerificationSet& serialized) const noexcept;
     identity::SourceProofType SourceProofType() const noexcept;
     identity::SourceType SourceType() const noexcept;
 #if OT_CRYPTO_WITH_BIP32
     bool UseAutoIndex() const noexcept;
 #endif  // OT_CRYPTO_WITH_BIP32
-    OPENTXS_NO_EXPORT std::shared_ptr<proto::VerificationSet> VerificationSet()
-        const noexcept;
 
     OTKeypair& Keypair() noexcept;
     OPENTXS_NO_EXPORT void SetContactData(

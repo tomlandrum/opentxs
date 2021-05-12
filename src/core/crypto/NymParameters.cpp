@@ -212,12 +212,6 @@ auto NymParameters::ChangeType(const NymParameterType type) const noexcept
     return output;
 }
 
-auto NymParameters::ContactData() const noexcept
-    -> std::shared_ptr<proto::ContactData>
-{
-    return imp_->contact_data_;
-}
-
 auto NymParameters::credentialType() const noexcept -> identity::CredentialType
 {
     return imp_->credentialType_;
@@ -286,6 +280,26 @@ auto NymParameters::SeedStyle() const noexcept -> crypto::SeedStyle
     return imp_->seed_style_;
 }
 #endif  // OT_CRYPTO_WITH_BIP32
+auto NymParameters::Serialize(proto::ContactData& serialized) const noexcept
+    -> bool
+{
+    if (false == bool{imp_->contact_data_}) { return false; }
+
+    serialized = *imp_->contact_data_;
+
+    return true;
+}
+
+auto NymParameters::Serialize(proto::VerificationSet& serialized) const noexcept
+    -> bool
+{
+    if (false == bool{imp_->verification_set_}) { return false; }
+
+    serialized = *imp_->verification_set_;
+
+    return true;
+}
+
 auto NymParameters::SourceProofType() const noexcept
     -> identity::SourceProofType
 {
@@ -301,12 +315,6 @@ auto NymParameters::UseAutoIndex() const noexcept -> bool
     return imp_->use_auto_index_;
 }
 #endif  // OT_CRYPTO_WITH_BIP32
-auto NymParameters::VerificationSet() const noexcept
-    -> std::shared_ptr<proto::VerificationSet>
-{
-    return imp_->verification_set_;
-}
-
 auto NymParameters::Keypair() noexcept -> OTKeypair&
 {
     return imp_->source_keypair_;
