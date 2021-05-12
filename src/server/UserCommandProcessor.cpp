@@ -941,7 +941,13 @@ auto UserCommandProcessor::cmd_get_instrument_definition(
 
         try {
             const auto server = server_.API().Wallet().Server(serverID);
-            serialized = manager_.Factory().Data(server->PublicContract());
+            auto proto = proto::ServerContract{};
+            if (false == server->Serialize(proto, true)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(
+                    ": Failed to serialize server contract.")
+                    .Flush();
+            }
+            serialized = manager_.Factory().Data(proto);
             reply.SetPayload(serialized);
             reply.SetBool(true);
 
@@ -959,7 +965,13 @@ auto UserCommandProcessor::cmd_get_instrument_definition(
     } else if (ContractType::server == static_cast<ContractType>(msgIn.enum_)) {
         try {
             const auto contract = server_.API().Wallet().Server(serverID);
-            serialized = manager_.Factory().Data(contract->PublicContract());
+            auto proto = proto::ServerContract{};
+            if (false == contract->Serialize(proto, true)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(
+                    ": Failed to serialize server contract.")
+                    .Flush();
+            }
+            serialized = manager_.Factory().Data(proto);
             reply.SetPayload(serialized);
             reply.SetBool(true);
 

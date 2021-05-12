@@ -230,10 +230,15 @@ struct Server final : virtual public opentxs::contract::Server,
     {
         return {};
     }
-    auto Contract() const -> proto::ServerContract final { return {}; }
     auto EffectiveName() const -> std::string final { return {}; }
-    auto PublicContract() const -> proto::ServerContract final { return {}; }
-    auto PublicContract(AllocateOutput) const -> bool final { return false; }
+    using Signable::Serialize;
+    auto Serialize(AllocateOutput destination, bool includeNym = false) const
+        -> bool final
+    {
+        return write(proto::ServerContract{}, destination);
+    }
+    auto Serialize(proto::ServerContract& output, bool includeNym = false) const
+        -> bool final;
     auto Statistics(String&) const -> bool final { return {}; }
     auto TransportKey() const -> const Data& final { return id_; }
     auto TransportKey(Data&, const PasswordPrompt&) const -> OTSecret final
@@ -271,7 +276,7 @@ struct Reply : virtual public opentxs::contract::peer::Reply,
     auto asOutbailment() const noexcept -> const reply::Outbailment& final;
 
     using Signable::Serialize;
-    auto Serialize(SerializedType&) const -> bool final { return false; }
+    auto Serialize(SerializedType& output) const -> bool final;
     auto Server() const -> const identifier::Server& final { return server_; }
     auto Type() const -> PeerRequestType final
     {
@@ -313,7 +318,7 @@ struct Request : virtual public opentxs::contract::peer::Request,
     auto Initiator() const -> const identifier::Nym& final { return nym_; }
     auto Recipient() const -> const identifier::Nym& final { return nym_; }
     using Signable::Serialize;
-    auto Serialize(SerializedType&) const -> bool final { return false; }
+    auto Serialize(SerializedType& output) const -> bool final;
     auto Server() const -> const identifier::Server& final { return server_; }
     auto Type() const -> PeerRequestType final
     {

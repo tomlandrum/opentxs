@@ -2168,8 +2168,13 @@ auto OTX::set_introduction_server(
     OT_ASSERT(CheckLock(lock, introduction_server_lock_));
 
     try {
-        const auto instantiated =
-            client_.Wallet().Server(contract.PublicContract());
+        auto serialized = proto::ServerContract{};
+        if (false == contract.Serialize(serialized, true)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Failed to serialize server contract.")
+                .Flush();
+        }
+        const auto instantiated = client_.Wallet().Server(serialized);
         const auto id = identifier::Server::Factory(
             instantiated->ID()->str());  // TODO conversion
         introduction_server_id_.reset(new OTServerID(id));

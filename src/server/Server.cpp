@@ -439,8 +439,15 @@ void Server::CreateMainFile(bool& mainFileExists)
 
     OT_ASSERT(m_nymServer)
 
-    const auto signedContract =
-        manager_.Factory().Data(contract->PublicContract());
+    auto proto = proto::ServerContract{};
+    if (false == contract->Serialize(proto, true)) {
+        LogNormal(OT_METHOD)(__FUNCTION__)(__FUNCTION__)(
+            ": Failed to serialize server contract.")
+            .Flush();
+
+        OT_FAIL;
+    }
+    const auto signedContract = manager_.Factory().Data(proto);
     auto ascContract = manager_.Factory().Armored(signedContract);
     auto strBookended = String::Factory();
     ascContract->WriteArmoredString(strBookended, "SERVER CONTRACT");

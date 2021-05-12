@@ -179,7 +179,7 @@ struct User {
         const Server& server)
     {
         auto bytes = ot::Space{};
-        server.Contract()->PublicContract(ot::writer(bytes));
+        server.Contract()->Serialize(ot::writer(bytes), true);
         auto clientVersion = api.Wallet().Server(ot::reader(bytes));
         api.OTX().SetIntroductionServer(clientVersion);
     }

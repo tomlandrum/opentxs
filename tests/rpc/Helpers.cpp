@@ -202,7 +202,7 @@ auto RPC_fixture::ImportServerContract(
     if (0u == server->Version()) { return false; }
 
     auto bytes = ot::Space{};
-    if (false == server->PublicContract(ot::writer(bytes))) { return false; }
+    if (false == server->Serialize(ot::writer(bytes), true)) { return false; }
     const auto client = to.Wallet().Server(ot::reader(bytes));
 
     if (0u == client->Version()) { return false; }

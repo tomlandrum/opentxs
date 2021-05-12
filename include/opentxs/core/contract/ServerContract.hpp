@@ -13,7 +13,6 @@
 #include <string>
 #include <tuple>
 
-#include "opentxs/Proto.hpp"
 #include "opentxs/SharedPimpl.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/Types.hpp"
@@ -58,10 +57,13 @@ public:
         std::uint32_t& nPort,
         core::AddressType& actual,
         const core::AddressType& preferred) const = 0;
-    OPENTXS_NO_EXPORT virtual proto::ServerContract Contract() const = 0;
     virtual std::string EffectiveName() const = 0;
-    OPENTXS_NO_EXPORT virtual proto::ServerContract PublicContract() const = 0;
-    virtual bool PublicContract(AllocateOutput destination) const = 0;
+    using Signable::Serialize;
+    virtual bool Serialize(AllocateOutput destination, bool includeNym = false)
+        const = 0;
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        proto::ServerContract&,
+        bool includeNym = false) const = 0;
     virtual bool Statistics(String& strContents) const = 0;
     virtual const Data& TransportKey() const = 0;
     virtual OTSecret TransportKey(Data& pubkey, const PasswordPrompt& reason)

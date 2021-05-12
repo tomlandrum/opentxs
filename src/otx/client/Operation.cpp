@@ -894,8 +894,15 @@ auto Operation::construct_publish_server() -> std::shared_ptr<Message>
         CREATE_MESSAGE(registerContract, -1, true, true);
 
         message.enum_ = static_cast<std::uint8_t>(ContractType::server);
-        message.m_ascPayload =
-            api_.Factory().Armored(contract->PublicContract());
+        auto serialized = proto::ServerContract{};
+        if (false == contract->Serialize(serialized, true)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(
+                ": Failed to serialize server contract: ")(target_server_id_)
+                .Flush();
+
+            return {};
+        }
+        message.m_ascPayload = api_.Factory().Armored(serialized);
 
         FINISH_MESSAGE(__FUNCTION__, registerContract);
     } catch (...) {

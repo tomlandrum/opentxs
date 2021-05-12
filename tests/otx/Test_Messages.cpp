@@ -75,7 +75,7 @@ public:
         const ot::api::client::Manager& client)
     {
         auto bytes = ot::Space{};
-        server_contract_->PublicContract(ot::writer(bytes));
+        server_contract_->Serialize(ot::writer(bytes), true);
         auto clientVersion = client.Wallet().Server(ot::reader(bytes));
         client.OTX().SetIntroductionServer(clientVersion);
     }

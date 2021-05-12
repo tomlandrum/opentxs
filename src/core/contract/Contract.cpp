@@ -38,6 +38,12 @@ auto Reply::asOutbailment() const noexcept -> const peer::reply::Outbailment&
     return blank;
 }
 
+auto Reply::Serialize(SerializedType& output) const -> bool
+{
+    output = {};
+    return true;
+}
+
 auto Request::asBailment() const noexcept -> const peer::request::Bailment&
 {
     static auto const blank = peer::request::blank::Bailment{api_};
@@ -70,7 +76,23 @@ auto Request::asStoreSecret() const noexcept
     static auto const blank = peer::request::blank::StoreSecret{api_};
     return blank;
 }
+
+auto Request::Serialize(SerializedType& output) const -> bool
+{
+    output = {};
+    return true;
+}
 }  // namespace opentxs::contract::peer::blank
+
+namespace opentxs::contract::blank
+{
+auto Server::Serialize(proto::ServerContract& output, bool includeNym) const
+    -> bool
+{
+    output = {};
+    return true;
+}
+}  // namespace opentxs::contract::blank
 
 namespace opentxs::contract::internal
 {

@@ -58,13 +58,14 @@ public:
         std::uint32_t& nPort,
         core::AddressType& actual,
         const core::AddressType& preferred) const -> bool final;
-    auto Contract() const -> proto::ServerContract final;
     auto EffectiveName() const -> std::string final;
     auto Name() const -> std::string final { return name_; }
-    auto PublicContract() const -> proto::ServerContract final;
-    auto PublicContract(AllocateOutput destination) const -> bool final;
-    auto Statistics(String& strContents) const -> bool final;
     auto Serialize() const -> OTData final;
+    auto Serialize(proto::ServerContract& output, bool includeNym = false) const
+        -> bool final;
+    auto Serialize(AllocateOutput destination, bool includeNym = false) const
+        -> bool final;
+    auto Statistics(String& strContents) const -> bool final;
     auto TransportKey() const -> const Data& final;
     auto TransportKey(Data& pubkey, const PasswordPrompt& reason) const
         -> OTSecret final;

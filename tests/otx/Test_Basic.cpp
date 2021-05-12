@@ -263,7 +263,7 @@ public:
         const ot::api::client::Manager& client)
     {
         auto bytes = ot::Space{};
-        EXPECT_TRUE(server_contract_->PublicContract(ot::writer(bytes)));
+        EXPECT_TRUE(server_contract_->Serialize(ot::writer(bytes), true));
 
         auto clientVersion = client.Wallet().Server(ot::reader(bytes));
         client.OTX().SetIntroductionServer(clientVersion);
@@ -1592,7 +1592,7 @@ TEST_F(Test_Basic, publishServer)
     auto& stateMachine = *alice_state_machine_;
     auto server = server_2_.Wallet().Server(server_2_id_);
     auto bytes = ot::Space{};
-    EXPECT_TRUE(server->PublicContract(ot::writer(bytes)));
+    EXPECT_TRUE(server->Serialize(ot::writer(bytes), true));
     client_1_.Wallet().Server(ot::reader(bytes));
     auto started = stateMachine.PublishContract(server_2_id_);
 

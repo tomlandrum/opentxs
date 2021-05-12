@@ -1115,8 +1115,13 @@ auto RPC::get_server_contracts(const proto::RPCCommand& command) const
         try {
             const auto contract =
                 session.Wallet().Server(identifier::Server::Factory(id));
-            *output.add_notary() = contract->PublicContract();
-            add_output_status(output, proto::RPCRESPONSE_SUCCESS);
+            auto serialized = proto::ServerContract{};
+            if (false == contract->Serialize(serialized, true)) {
+                add_output_status(output, proto::RPCRESPONSE_NONE);
+            } else {
+                *output.add_notary() = serialized;
+                add_output_status(output, proto::RPCRESPONSE_SUCCESS);
+            }
         } catch (...) {
             add_output_status(output, proto::RPCRESPONSE_NONE);
         }

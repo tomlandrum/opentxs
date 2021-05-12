@@ -2297,7 +2297,12 @@ auto Wallet::server(std::unique_ptr<contract::Server> contract) const
         contract->SetAlias(serverNymName);
     }
 
-    if (api_.Storage().Store(contract->Contract(), contract->Alias())) {
+    auto serialized = proto::ServerContract{};
+    if (false == contract->Serialize(serialized)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize contract.")
+            .Flush();
+    }
+    if (api_.Storage().Store(serialized, contract->Alias())) {
         {
             Lock mapLock(server_map_lock_);
             server_map_[server].reset(contract.release());
@@ -2344,8 +2349,14 @@ auto Wallet::Server(const proto::ServerContract& contract) const
                     serverID->Assign(candidate->ID());
                 }
 
+                auto serialized = proto::ServerContract{};
+                if (false == candidate->Serialize(serialized)) {
+                    LogOutput(OT_METHOD)(__FUNCTION__)(
+                        ": Failed to serialize server contract.")
+                        .Flush();
+                }
                 const auto stored = api_.Storage().Store(
-                    candidate->Contract(), candidate->EffectiveName());
+                    serialized, candidate->EffectiveName());
 
                 if (stored) {
                     {
@@ -2450,7 +2461,13 @@ auto Wallet::server_to_nym(Identifier& input) const -> OTNymID
         try {
             const auto contract = Server(
                 identifier::Server::Factory(input.str()));  // TODO conversion
-            output->SetString(contract->Contract().nymid());
+            auto serialized = proto::ServerContract{};
+            if (false == contract->Serialize(serialized)) {
+                LogDetail(OT_METHOD)(__FUNCTION__)(
+                    ": Failed to serialize server contract: ")(input)
+                    .Flush();
+            }
+            output->SetString(serialized.nymid());
         } catch (...) {
             LogDetail(OT_METHOD)(__FUNCTION__)(": Non-existent server: ")(input)
                 .Flush();
