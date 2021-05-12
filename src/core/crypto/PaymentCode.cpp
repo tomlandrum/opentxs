@@ -165,7 +165,9 @@ PaymentCode::operator const crypto::key::Asymmetric&() const noexcept
 auto PaymentCode::operator==(const proto::PaymentCode& rhs) const noexcept
     -> bool
 {
-    const auto LHData = api_.Factory().Data(Serialize());
+    auto lhs = proto::PaymentCode{};
+    if (false == Serialize(lhs)) { return false; }
+    const auto LHData = api_.Factory().Data(lhs);
     const auto RHData = api_.Factory().Data(rhs);
 
     return (LHData == RHData);
@@ -938,23 +940,23 @@ auto PaymentCode::postprocess(const Secret& in) const noexcept(false)
 
 auto PaymentCode::Serialize(AllocateOutput destination) const noexcept -> bool
 {
-    write(Serialize(), destination);
+    auto serialized = proto::PaymentCode{};
+    if (false == Serialize(serialized)) { return false; }
 
-    return true;
+    return write(serialized, destination);
 }
 
-auto PaymentCode::Serialize() const noexcept -> Serialized
+auto PaymentCode::Serialize(Serialized& output) const noexcept -> bool
 {
     const auto key = pubkey_->Bytes();
     const auto code = chain_code_->Bytes();
-    auto output = Serialized{};
     output.set_version(version_);
     output.set_key(key.data(), key.size());
     output.set_chaincode(code.data(), code.size());
     output.set_bitmessageversion(bitmessage_version_);
     output.set_bitmessagestream(bitmessage_stream_);
 
-    return output;
+    return true;
 }
 
 auto PaymentCode::shared_secret_mask_v1(
@@ -1268,7 +1270,9 @@ auto PaymentCode::Valid() const noexcept -> bool
 
     if (chain_code_size_ != chain_code_->size()) { return false; }
 
-    return proto::Validate<proto::PaymentCode>(Serialize(), SILENT);
+    auto serialized = proto::PaymentCode{};
+    if (false == Serialize(serialized)) { return false; }
+    return proto::Validate<proto::PaymentCode>(serialized, SILENT);
 }
 
 auto PaymentCode::Verify(

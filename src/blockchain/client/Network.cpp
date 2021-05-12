@@ -757,11 +757,18 @@ auto Network::SendToPaymentCode(
             if (account.IsNotified()) {
                 // TODO preemptive notifications go here
             } else {
+                auto func =
+                    std::function<proto::PaymentCode(const PaymentCode&)>(
+                        [&](const PaymentCode& pc) -> proto::PaymentCode {
+                            auto proto = proto::PaymentCode{};
+                            pc.Serialize(proto);
+                            return proto;
+                        });
                 auto& notif = *out.add_notification();
                 notif.set_version(notification_version_);
-                *notif.mutable_sender() = sender->Serialize();
+                *notif.mutable_sender() = func(sender.get());
                 *notif.mutable_path() = path;
-                *notif.mutable_recipient() = recipient.Serialize();
+                *notif.mutable_recipient() = func(recipient);
             }
 
             return out;

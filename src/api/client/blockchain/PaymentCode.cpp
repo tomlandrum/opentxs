@@ -344,8 +344,24 @@ auto PaymentCode::save(const rLock& lock) const noexcept -> bool
     auto serialized = SerializedType{};
     serialized.set_version(version_);
     serialize_deterministic(lock, *serialized.mutable_deterministic());
-    *serialized.mutable_local() = local_.get().Serialize();
-    *serialized.mutable_remote() = remote_.get().Serialize();
+    auto local = proto::PaymentCode{};
+    if (false == local_.get().Serialize(local)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Failed to serialize local paymentcode")
+            .Flush();
+
+        return false;
+    }
+    *serialized.mutable_local() = local;
+    auto remote = proto::PaymentCode{};
+    if (false == remote_.get().Serialize(remote)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(
+            ": Failed to serialize remote paymentcode")
+            .Flush();
+
+        return false;
+    }
+    *serialized.mutable_remote() = remote;
 
     {
         auto& dir = *serialized.mutable_incoming();

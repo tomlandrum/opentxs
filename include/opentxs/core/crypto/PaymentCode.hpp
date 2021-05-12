@@ -112,7 +112,8 @@ public:
         const PasswordPrompt& reason,
         const std::uint8_t version = 0) const noexcept = 0;
     virtual bool Serialize(AllocateOutput destination) const noexcept = 0;
-    OPENTXS_NO_EXPORT virtual Serialized Serialize() const noexcept = 0;
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        Serialized& serialized) const noexcept = 0;
     OPENTXS_NO_EXPORT virtual bool Sign(
         const identity::credential::Base& credential,
         proto::Signature& sig,

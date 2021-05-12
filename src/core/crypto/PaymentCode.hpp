@@ -302,7 +302,7 @@ public:
         const PasswordPrompt& reason,
         const std::uint8_t version) const noexcept -> ECKey final;
     auto Serialize(AllocateOutput destination) const noexcept -> bool final;
-    auto Serialize() const noexcept -> Serialized final;
+    auto Serialize(Serialized& serialized) const noexcept -> bool final;
     auto Sign(
         const identity::credential::Base& credential,
         proto::Signature& sig,

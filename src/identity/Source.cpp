@@ -279,7 +279,9 @@ auto Source::Serialize() const noexcept -> std::shared_ptr<proto::NymIDSource>
 
         } break;
         case identity::SourceType::Bip47: {
-            *(source->mutable_paymentcode()) = payment_code_->Serialize();
+            auto serialized = proto::PaymentCode{};
+            payment_code_->Serialize(serialized);
+            *(source->mutable_paymentcode()) = serialized;
 
         } break;
         default: {
