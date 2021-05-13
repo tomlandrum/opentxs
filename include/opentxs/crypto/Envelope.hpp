@@ -12,7 +12,6 @@
 
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Pimpl.hpp"
-#include "opentxs/Proto.hpp"
 
 namespace opentxs
 {
@@ -47,7 +46,8 @@ public:
         const AllocateOutput plaintext,
         const PasswordPrompt& reason) const noexcept = 0;
     virtual bool Serialize(AllocateOutput destination) const noexcept = 0;
-    OPENTXS_NO_EXPORT virtual SerializedType Serialize() const noexcept = 0;
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        SerializedType& serialized) const noexcept = 0;
 
     virtual bool Seal(
         const Recipients& recipients,

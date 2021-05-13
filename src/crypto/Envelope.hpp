@@ -60,7 +60,7 @@ public:
         const AllocateOutput plaintext,
         const PasswordPrompt& reason) const noexcept -> bool final;
     auto Serialize(AllocateOutput destination) const noexcept -> bool final;
-    auto Serialize() const noexcept -> SerializedType final;
+    auto Serialize(SerializedType& serialized) const noexcept -> bool final;
 
     auto Seal(
         const Recipients& recipients,

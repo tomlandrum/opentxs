@@ -394,7 +394,7 @@ auto Purse::AddNym(const identity::Nym& nym, const PasswordPrompt& reason)
     auto envelope = api_.Factory().Envelope();
 
     if (envelope->Seal(nym, primary_key_password_->Bytes(), reason)) {
-        sessionKey = envelope->Serialize();
+        if (false == envelope->Serialize(sessionKey)) { return false; }
     } else {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to add nym").Flush();
         primary_passwords_.pop_back();
@@ -745,8 +745,11 @@ auto Purse::Serialize(proto::Purse& output) const noexcept -> bool
                     throw std::runtime_error("missing secondary password");
                 }
 
-                *output.mutable_secondarypassword() =
-                    secondary_password_->get().Serialize();
+                if (false == secondary_password_->get().Serialize(
+                                 *output.mutable_secondarypassword())) {
+                    throw std::runtime_error(
+                        "faile to serialize secondary password");
+                }
             } break;
             case blind::PurseType::Normal: {
             } break;

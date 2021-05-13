@@ -140,7 +140,10 @@ Envelope::Envelope(const Envelope& rhs) noexcept
 
 auto Envelope::Armored(opentxs::Armored& ciphertext) const noexcept -> bool
 {
-    return ciphertext.SetData(api_.Factory().Data(Serialize()));
+    auto serialized = proto::Envelope{};
+    if (false == Serialize(serialized)) { return false; }
+
+    return ciphertext.SetData(api_.Factory().Data(serialized));
 }
 
 auto Envelope::attach_session_keys(
@@ -523,20 +526,22 @@ auto Envelope::set_default_password(
 
 auto Envelope::Serialize(AllocateOutput destination) const noexcept -> bool
 {
-    write(Serialize(), destination);
+    auto serialized = proto::Envelope{};
+    if (false == Serialize(serialized)) { return false; }
 
-    return true;
+    return write(serialized, destination);
 }
 
-auto Envelope::Serialize() const noexcept -> SerializedType
+auto Envelope::Serialize(SerializedType& output) const noexcept -> bool
 {
-    auto output = SerializedType{};
     output.set_version(version_);
 
     for (const auto& [type, set] : dh_keys_) {
         for (const auto& key : set) {
             auto serialized = proto::AsymmetricKey{};
-            key->asPublic()->Serialize(serialized);
+            if (false == key->asPublic()->Serialize(serialized)) {
+                return false;
+            }
             *output.add_dhkey() = serialized;
         }
     }
@@ -546,12 +551,12 @@ auto Envelope::Serialize() const noexcept -> SerializedType
         tagged.set_version(tagged_key_version_);
         tagged.set_tag(tag);
         tagged.set_type(opentxs::crypto::key::internal::translate(type));
-        key->Serialize(*tagged.mutable_key());
+        if (false == key->Serialize(*tagged.mutable_key())) { return false; }
     }
 
     if (ciphertext_) { *output.mutable_ciphertext() = *ciphertext_; }
 
-    return output;
+    return true;
 }
 
 auto Envelope::test_solution(
