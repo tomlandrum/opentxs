@@ -273,9 +273,10 @@ auto Source::Serialize() const noexcept -> std::shared_ptr<proto::NymIDSource>
         case identity::SourceType::PubKey: {
             OT_ASSERT(pubkey_.get())
 
-            auto key = pubkey_->Serialize();
-            key->set_role(proto::KEYROLE_SIGN);
-            *(source->mutable_key()) = *key;
+            auto key = proto::AsymmetricKey{};
+            pubkey_->Serialize(key);
+            key.set_role(proto::KEYROLE_SIGN);
+            *(source->mutable_key()) = key;
 
         } break;
         case identity::SourceType::Bip47: {
@@ -335,7 +336,6 @@ auto Source::Verify(
 {
     bool isSelfSigned, sameSource;
     std::unique_ptr<proto::AsymmetricKey> signingKey;
-    std::shared_ptr<proto::AsymmetricKey> sourceKey;
 
     switch (type_) {
         case identity::SourceType::PubKey: {
@@ -361,8 +361,14 @@ auto Source::Verify(
                 return false;
             }
 
-            sourceKey = pubkey_->Serialize();
-            sameSource = (sourceKey->key() == signingKey->key());
+            auto sourceKey = proto::AsymmetricKey{};
+            if (false == pubkey_->Serialize(sourceKey)) {
+                LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize key")
+                    .Flush();
+
+                return false;
+            }
+            sameSource = (sourceKey.key() == signingKey->key());
 
             if (!sameSource) {
                 LogOutput(OT_METHOD)(__FUNCTION__)(": Master credential was not"

@@ -57,8 +57,7 @@ class RSA final : public key::RSA, public Asymmetric
 public:
     auto asPublic() const noexcept -> std::unique_ptr<key::Asymmetric> final;
     auto Params() const noexcept -> ReadView final { return params_->Bytes(); }
-    auto Serialize() const noexcept
-        -> std::shared_ptr<proto::AsymmetricKey> final;
+    auto Serialize(Serialized& serialized) const noexcept -> bool final;
     auto SigHashType() const noexcept -> crypto::HashType final
     {
         return crypto::HashType::Sha256;

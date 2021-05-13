@@ -13,7 +13,6 @@
 
 #include "opentxs/Bytes.hpp"
 #include "opentxs/Pimpl.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/core/Identifier.hpp"
 #include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 

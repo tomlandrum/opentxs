@@ -2748,25 +2748,22 @@ auto Server::PingNotary(const PasswordPrompt& reason) -> NetworkReplyMessage
         return {};
     }
 
-    auto pAuth = nym_->GetPublicAuthKey().Serialize();
-    auto pEncr = nym_->GetPublicEncrKey().Serialize();
-
-    if (false == bool(pAuth)) {
+    auto serializedAuthKey = proto::AsymmetricKey{};
+    if (false == nym_->GetPublicAuthKey().Serialize(serializedAuthKey)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize auth key")
             .Flush();
 
         return {};
     }
 
-    if (false == bool(pEncr)) {
+    auto serializedEncryptKey = proto::AsymmetricKey{};
+    if (false == nym_->GetPublicEncrKey().Serialize(serializedEncryptKey)) {
         LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize encrypt key")
             .Flush();
 
         return {};
     }
 
-    const auto& serializedAuthKey = *pAuth;
-    const auto& serializedEncryptKey = *pEncr;
     request->m_strRequestNum =
         String::Factory(std::to_string(FIRST_REQUEST_NUMBER).c_str());
     request->m_strNymPublicKey =

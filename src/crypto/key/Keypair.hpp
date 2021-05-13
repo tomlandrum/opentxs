@@ -52,8 +52,8 @@ public:
         Keys& listOutput,
         const Signature& theSignature,
         bool bInclusive = false) const noexcept -> std::int32_t final;
-    auto GetSerialized(bool privateKey = false) const noexcept
-        -> std::shared_ptr<proto::AsymmetricKey> final;
+    auto Serialize(proto::AsymmetricKey& serialized, bool privateKey = false)
+        const noexcept -> bool final;
     auto GetTransportKey(
         Data& publicKey,
         Secret& privateKey,

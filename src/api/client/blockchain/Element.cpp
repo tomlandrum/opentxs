@@ -325,16 +325,14 @@ auto Element::Serialize() const noexcept -> Element::SerializedType
 
     if (false == cached_.has_value()) {
         const auto key = [&] {
+            auto serialized = proto::AsymmetricKey{};
             if (pkey_->HasPrivate()) {
-
-                return pkey_->asPublicEC()->Serialize();
+                pkey_->asPublicEC()->Serialize(serialized);
             } else {
-
-                return pkey_->Serialize();
+                pkey_->Serialize(serialized);
             }
+            return serialized;
         }();
-
-        OT_ASSERT(key);
 
         auto& output = cached_.emplace();
         output.set_version(
@@ -342,7 +340,7 @@ auto Element::Serialize() const noexcept -> Element::SerializedType
         output.set_index(index_);
         output.set_label(label_);
         output.set_contact(contact_->str());
-        *output.mutable_key() = *key;
+        *output.mutable_key() = key;
         output.set_modified(Clock::to_time_t(timestamp_));
 
         for (const auto& txid : unconfirmed_) {

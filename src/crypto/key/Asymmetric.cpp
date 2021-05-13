@@ -214,8 +214,10 @@ Asymmetric::operator bool() const noexcept
 auto Asymmetric::operator==(const proto::AsymmetricKey& rhs) const noexcept
     -> bool
 {
-    std::shared_ptr<proto::AsymmetricKey> tempKey = Serialize();
-    auto LHData = SerializeKeyToData(*tempKey);
+    auto lhs = proto::AsymmetricKey{};
+    if (false == Serialize(lhs)) { return false; }
+
+    auto LHData = SerializeKeyToData(lhs);
     auto RHData = SerializeKeyToData(rhs);
 
     return (LHData == RHData);
@@ -581,15 +583,8 @@ auto Asymmetric::PrivateKey(const PasswordPrompt& reason) const noexcept
     }
 }
 
-auto Asymmetric::Serialize() const noexcept
-    -> std::shared_ptr<proto::AsymmetricKey>
+auto Asymmetric::Serialize(Serialized& output) const noexcept -> bool
 {
-    auto pOutput = std::make_shared<proto::AsymmetricKey>();
-
-    OT_ASSERT(pOutput);
-
-    auto& output = *pOutput;
-
     output.set_version(version_);
     output.set_role(opentxs::crypto::key::internal::translate(role_));
     output.set_type(static_cast<proto::AsymmetricKeyType>(type_));
@@ -605,7 +600,7 @@ auto Asymmetric::Serialize() const noexcept
         output.set_mode(proto::KEYMODE_PUBLIC);
     }
 
-    return pOutput;
+    return true;
 }
 
 auto Asymmetric::SerializeKeyToData(

@@ -14,7 +14,6 @@
 #include <string>
 
 #include "opentxs/Bytes.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Log.hpp"
 #include "opentxs/core/String.hpp"
@@ -95,8 +94,8 @@ public:
         const PasswordPrompt& reason) const noexcept = 0;
     virtual ReadView PublicKey() const noexcept = 0;
     virtual opentxs::crypto::key::asymmetric::Role Role() const noexcept = 0;
-    OPENTXS_NO_EXPORT virtual std::shared_ptr<Serialized> Serialize()
-        const noexcept = 0;
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        Serialized& serialized) const noexcept = 0;
     virtual crypto::HashType SigHashType() const noexcept = 0;
     OPENTXS_NO_EXPORT virtual bool Sign(
         const GetPreimage input,

@@ -14,6 +14,7 @@
 #include "opentxs/crypto/key/Secp256k1.hpp"
 #endif  // OT_CRYPTO_SUPPORTED_KEY_SECP256K1
 #include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
+#include "opentxs/protobuf/AsymmetricKey.pb.h"
 
 namespace opentxs::crypto::key::implementation
 {
@@ -39,9 +40,10 @@ public:
     {
         return {};
     }
-    auto GetSerialized(bool) const noexcept
-        -> std::shared_ptr<proto::AsymmetricKey> final
+    auto Serialize(proto::AsymmetricKey& serialized, bool) const noexcept
+        -> bool final
     {
+        serialized = {};
         return {};
     }
     auto GetTransportKey(Data&, Secret&, const PasswordPrompt&) const noexcept
@@ -123,10 +125,11 @@ public:
     {
         return {};
     }
-    auto Serialize() const noexcept
-        -> std::shared_ptr<proto::AsymmetricKey> final
+    auto Serialize(Serialized& serialized) const noexcept -> bool final
     {
-        return nullptr;
+        serialized = Serialized{};
+
+        return true;
     }
     auto SigHashType() const noexcept -> crypto::HashType final
     {

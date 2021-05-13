@@ -66,8 +66,7 @@ public:
     auto Parent() const noexcept -> Bip32Fingerprint final { return parent_; }
     auto Path() const noexcept -> const std::string final;
     auto Path(proto::HDPath& output) const noexcept -> bool final;
-    auto Serialize() const noexcept
-        -> std::shared_ptr<proto::AsymmetricKey> final;
+    auto Serialize(Serialized& serialized) const noexcept -> bool final;
     auto Xprv(const PasswordPrompt& reason) const noexcept -> std::string final;
     auto Xpub(const PasswordPrompt& reason) const noexcept -> std::string final;
 

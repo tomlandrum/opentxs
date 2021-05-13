@@ -150,16 +150,14 @@ auto RSA::deserialize_key(
     return output;
 }
 
-auto RSA::Serialize() const noexcept -> std::shared_ptr<proto::AsymmetricKey>
+auto RSA::Serialize(Serialized& output) const noexcept -> bool
 {
-    auto output = Asymmetric::Serialize();
-
-    OT_ASSERT(output)
+    if (false == Asymmetric::Serialize(output)) { return false; }
 
     if (crypto::key::asymmetric::Role::Encrypt == role_) {
-        output->set_params(params_->data(), params_->size());
+        output.set_params(params_->data(), params_->size());
     }
 
-    return output;
+    return true;
 }
 }  // namespace opentxs::crypto::key::implementation

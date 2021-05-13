@@ -460,21 +460,19 @@ auto HD::Path(proto::HDPath& output) const noexcept -> bool
     return false;
 }
 
-auto HD::Serialize() const noexcept -> std::shared_ptr<proto::AsymmetricKey>
+auto HD::Serialize(Serialized& output) const noexcept -> bool
 {
-    auto output = EllipticCurve::Serialize();
-
-    OT_ASSERT(output)
+    if (false == EllipticCurve::Serialize(output)) { return false; }
 
     if (HasPrivate()) {
-        if (path_) { *(output->mutable_path()) = *path_; }
+        if (path_) { *(output.mutable_path()) = *path_; }
 
-        if (chain_code_) { *output->mutable_chaincode() = *chain_code_; }
+        if (chain_code_) { *output.mutable_chaincode() = *chain_code_; }
     }
 
-    if (1 < version_) { output->set_bip32_parent(parent_); }
+    if (1 < version_) { output.set_bip32_parent(parent_); }
 
-    return output;
+    return true;
 }
 
 auto HD::Xprv(const PasswordPrompt& reason) const noexcept -> std::string

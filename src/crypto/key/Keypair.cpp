@@ -148,18 +148,19 @@ auto Keypair::GetPublicKeyBySignature(
     return 0;
 }
 
-auto Keypair::GetSerialized(bool privateKey) const noexcept
-    -> std::shared_ptr<proto::AsymmetricKey>
+auto Keypair::Serialize(proto::AsymmetricKey& serialized, bool privateKey)
+    const noexcept -> bool
 {
     OT_ASSERT(m_pkeyPublic.get());
 
     if (privateKey) {
         OT_ASSERT(m_pkeyPrivate.get());
 
-        return m_pkeyPrivate->Serialize();
+        if (false == m_pkeyPrivate->Serialize(serialized)) { return false; }
     } else {
-        return m_pkeyPublic->Serialize();
+        if (false == m_pkeyPublic->Serialize(serialized)) { return false; }
     }
+    return true;
 }
 
 auto Keypair::GetTransportKey(

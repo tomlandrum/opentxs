@@ -161,7 +161,6 @@ auto Key::addKeytoSerializedKeyCredential(
     const bool getPrivate,
     const proto::KeyRole role) const -> bool
 {
-    std::shared_ptr<proto::AsymmetricKey> key{nullptr};
     const crypto::key::Keypair* pKey{nullptr};
 
     switch (role) {
@@ -181,14 +180,13 @@ auto Key::addKeytoSerializedKeyCredential(
 
     if (nullptr == pKey) { return false; }
 
-    key = pKey->GetSerialized(getPrivate);
+    auto key = proto::AsymmetricKey{};
+    if (false == pKey->Serialize(key, getPrivate)) { return false; }
 
-    if (!key) { return false; }
-
-    key->set_role(role);
+    key.set_role(role);
 
     auto newKey = credential.add_key();
-    *newKey = *key;
+    *newKey = key;
 
     return true;
 }

@@ -118,8 +118,7 @@ public:
     {
         return role_;
     }
-    auto Serialize() const noexcept
-        -> std::shared_ptr<proto::AsymmetricKey> override;
+    auto Serialize(Serialized& serialized) const noexcept -> bool override;
     auto SigHashType() const noexcept -> crypto::HashType override
     {
         return crypto::HashType::Blake2b256;

@@ -535,7 +535,9 @@ auto Envelope::Serialize() const noexcept -> SerializedType
 
     for (const auto& [type, set] : dh_keys_) {
         for (const auto& key : set) {
-            *output.add_dhkey() = *key->asPublic()->Serialize();
+            auto serialized = proto::AsymmetricKey{};
+            key->asPublic()->Serialize(serialized);
+            *output.add_dhkey() = serialized;
         }
     }
 

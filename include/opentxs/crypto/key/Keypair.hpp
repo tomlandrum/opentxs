@@ -13,7 +13,6 @@
 #include <memory>
 
 #include "opentxs/Pimpl.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 
 namespace opentxs
@@ -64,8 +63,9 @@ public:
         Keys& listOutput,
         const Signature& theSignature,
         bool bInclusive = false) const noexcept = 0;
-    OPENTXS_NO_EXPORT virtual std::shared_ptr<proto::AsymmetricKey>
-    GetSerialized(bool privateKey) const noexcept = 0;
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        proto::AsymmetricKey& serialized,
+        bool privateKey) const noexcept = 0;
     virtual bool GetTransportKey(
         Data& publicKey,
         Secret& privateKey,

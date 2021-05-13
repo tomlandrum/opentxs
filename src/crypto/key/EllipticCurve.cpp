@@ -257,7 +257,9 @@ auto EllipticCurve::serialize_public(EllipticCurve* in)
 
     copy->erase_private_data();
 
-    return copy->Serialize();
+    auto serialized = proto::AsymmetricKey{};
+    if (false == copy->Serialize(serialized)) { return nullptr; }
+    return std::make_shared<proto::AsymmetricKey>(serialized);
 }
 
 auto EllipticCurve::SignDER(
