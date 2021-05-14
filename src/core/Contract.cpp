@@ -2015,7 +2015,8 @@ void Contract::CreateInnerContents(Tag& parent)
                 auto strNymID = String::Factory();
                 pNym->GetIdentifier(strNymID);
 
-                auto publicNym = pNym->asPublicNym();
+                auto publicNym = proto::Nym{};
+                OT_ASSERT(pNym->Serialize(publicNym));
 
                 TagPtr pTag(new Tag(str_name));  // "signer"
                 pTag->add_attribute("nymID", strNymID->Get());

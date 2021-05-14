@@ -12,7 +12,6 @@
 #include <memory>
 #include <string>
 
-#include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/crypto/key/asymmetric/Role.hpp"
@@ -44,10 +43,9 @@ public:
 
     virtual std::string asString(const bool asPrivate = false) const = 0;
     virtual const Identifier& CredentialID() const = 0;
-    virtual bool GetContactData(
-        std::unique_ptr<proto::ContactData>& contactData) const = 0;
+    virtual bool GetContactData(proto::ContactData& contactData) const = 0;
     virtual bool GetVerificationSet(
-        std::unique_ptr<proto::VerificationSet>& verificationSet) const = 0;
+        proto::VerificationSet& verificationSet) const = 0;
     virtual bool hasCapability(const NymCapability& capability) const = 0;
     virtual Signature MasterSignature() const = 0;
     virtual crypto::key::asymmetric::Mode Mode() const = 0;
@@ -56,7 +54,9 @@ public:
     virtual bool Save() const = 0;
     virtual Signature SelfSignature(
         CredentialModeFlag version = PUBLIC_VERSION) const = 0;
-    OPENTXS_NO_EXPORT virtual std::shared_ptr<SerializedType> Serialized(
+    using Signable::Serialize;
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        SerializedType& serialized,
         const SerializationModeFlag asPrivate,
         const SerializationSignatureFlag asSigned) const = 0;
     virtual Signature SourceSignature() const = 0;

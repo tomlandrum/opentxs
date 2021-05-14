@@ -182,7 +182,7 @@ Contact::Contact(
           get_master_id(master))
     , data_([&](const NymParameters& params) -> const proto::ContactData {
         auto proto = proto::ContactData{};
-        params.Serialize(proto);
+        params.GetContactData(proto);
         return proto;
     }(params))
 {
@@ -212,12 +212,11 @@ Contact::Contact(
     init_serialized(lock);
 }
 
-auto Contact::GetContactData(
-    std::unique_ptr<proto::ContactData>& contactData) const -> bool
+auto Contact::GetContactData(proto::ContactData& contactData) const -> bool
 {
-    contactData.reset(new proto::ContactData(data_));
+    contactData = proto::ContactData(data_);
 
-    return bool(contactData);
+    return true;
 }
 
 auto Contact::serialize(

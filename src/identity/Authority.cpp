@@ -447,7 +447,7 @@ auto Authority::create_contact_credental(
     auto output = ContactCredentialMap{};
 
     auto serialized = proto::ContactData{};
-    if (parameters.Serialize(serialized)) {
+    if (parameters.GetContactData(serialized)) {
         auto pCredential = std::unique_ptr<credential::internal::Contact>{
             opentxs::Factory::Credential<credential::internal::Contact>(
                 api,
@@ -637,8 +637,7 @@ auto Authority::get_secondary_credential(
     return it->second.get();
 }
 
-auto Authority::GetContactData(
-    std::unique_ptr<proto::ContactData>& contactData) const -> bool
+auto Authority::GetContactData(proto::ContactData& contactData) const -> bool
 {
     if (contact_credentials_.empty()) { return false; }
 
@@ -754,8 +753,7 @@ auto Authority::GetTagCredential(crypto::key::asymmetric::Algorithm type) const
     throw std::out_of_range("No matching credential");
 }
 
-auto Authority::GetVerificationSet(
-    std::unique_ptr<proto::VerificationSet>& output) const -> bool
+auto Authority::GetVerificationSet(proto::VerificationSet& output) const -> bool
 {
     if (verification_credentials_.empty()) { return false; }
 
@@ -1019,40 +1017,40 @@ void Authority::RevokeVerificationCredentials(std::list<std::string>& output)
     verification_credentials_.clear();
 }
 
-auto Authority::Serialize(const CredentialIndexModeFlag mode) const
-    -> std::shared_ptr<Authority::Serialized>
+auto Authority::Serialize(
+    Authority::Serialized& credSet,
+    const CredentialIndexModeFlag mode) const -> bool
 {
-    auto credSet = std::make_shared<Serialized>();
-    credSet->set_version(version_);
-    credSet->set_nymid(parent_.ID().str());
-    credSet->set_masterid(GetMasterCredID()->str());
+    credSet.set_version(version_);
+    credSet.set_nymid(parent_.ID().str());
+    credSet.set_masterid(GetMasterCredID()->str());
     const auto add_active_id = [&](const auto& item) -> void {
-        credSet->add_activechildids(item.first->str());
+        credSet.add_activechildids(item.first->str());
     };
     const auto add_revoked_id = [&](const auto& item) -> void {
-        credSet->add_revokedchildids(item.first);
+        credSet.add_revokedchildids(item.first);
     };
     const auto add_active_child = [&](const auto& item) -> void {
-        *(credSet->add_activechildren()) =
-            *item.second->Serialized(AS_PUBLIC, WITH_SIGNATURES);
+        item.second->Serialize(
+            *(credSet.add_activechildren()), AS_PUBLIC, WITH_SIGNATURES);
     };
     const auto add_revoked_child = [&](const auto& item) -> void {
-        *(credSet->add_revokedchildren()) =
-            *item.second->Serialized(AS_PUBLIC, WITH_SIGNATURES);
+        item.second->Serialize(
+            *(credSet.add_revokedchildren()), AS_PUBLIC, WITH_SIGNATURES);
     };
 
     if (CREDENTIAL_INDEX_MODE_ONLY_IDS == mode) {
-        if (proto::KEYMODE_PRIVATE == mode_) { credSet->set_index(index_); }
+        if (proto::KEYMODE_PRIVATE == mode_) { credSet.set_index(index_); }
 
-        credSet->set_mode(proto::AUTHORITYMODE_INDEX);
+        credSet.set_mode(proto::AUTHORITYMODE_INDEX);
         for_each(key_credentials_, add_active_id);
         for_each(contact_credentials_, add_active_id);
         for_each(verification_credentials_, add_active_id);
         for_each(m_mapRevokedCredentials, add_revoked_id);
     } else {
-        credSet->set_mode(proto::AUTHORITYMODE_FULL);
-        *(credSet->mutable_mastercredential()) =
-            *(master_->Serialized(AS_PUBLIC, WITH_SIGNATURES));
+        credSet.set_mode(proto::AUTHORITYMODE_FULL);
+        master_->Serialize(
+            *(credSet.mutable_mastercredential()), AS_PUBLIC, WITH_SIGNATURES);
 
         for_each(key_credentials_, add_active_child);
         for_each(contact_credentials_, add_active_child);
@@ -1060,7 +1058,7 @@ auto Authority::Serialize(const CredentialIndexModeFlag mode) const
         for_each(m_mapRevokedCredentials, add_revoked_child);
     }
 
-    return credSet;
+    return true;
 }
 
 auto Authority::Sign(

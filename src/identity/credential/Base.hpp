@@ -64,13 +64,12 @@ public:
 
     auto asString(const bool asPrivate = false) const -> std::string final;
     auto CredentialID() const -> const Identifier& final { return id_.get(); }
-    auto GetContactData(std::unique_ptr<proto::ContactData>& output) const
-        -> bool override
+    auto GetContactData(proto::ContactData& output) const -> bool override
     {
         return false;
     }
-    auto GetVerificationSet(
-        std::unique_ptr<proto::VerificationSet>& output) const -> bool override
+    auto GetVerificationSet(proto::VerificationSet& output) const
+        -> bool override
     {
         return false;
     }
@@ -88,11 +87,12 @@ public:
     auto Save() const -> bool final;
     auto SelfSignature(CredentialModeFlag version = PUBLIC_VERSION) const
         -> Signature final;
+    using Signable::Serialize;
     auto Serialize() const -> OTData final;
-    auto Serialized(
+    auto Serialize(
+        SerializedType& serialized,
         const SerializationModeFlag asPrivate,
-        const SerializationSignatureFlag asSigned) const
-        -> std::shared_ptr<SerializedType> final;
+        const SerializationSignatureFlag asSigned) const -> bool final;
     auto SourceSignature() const -> Signature final;
     auto TransportKey(
         Data& publicKey,

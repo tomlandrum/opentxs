@@ -92,8 +92,7 @@ public:
         return authority_to_contact_.at(version_);
     }
     auto EncryptionTargets() const noexcept -> AuthorityKeys final;
-    auto GetContactData(std::unique_ptr<proto::ContactData>& contactData) const
-        -> bool final;
+    auto GetContactData(proto::ContactData& contactData) const -> bool final;
     auto GetMasterCredential() const -> const credential::Primary& final
     {
         return *master_;
@@ -141,15 +140,14 @@ public:
         -> const crypto::key::Keypair& final;
     auto GetTagCredential(crypto::key::asymmetric::Algorithm keytype) const
         noexcept(false) -> const credential::Key& final;
-    auto GetVerificationSet(
-        std::unique_ptr<proto::VerificationSet>& verificationSet) const
+    auto GetVerificationSet(proto::VerificationSet& verificationSet) const
         -> bool final;
     auto hasCapability(const NymCapability& capability) const -> bool final;
     auto Params(const crypto::key::asymmetric::Algorithm type) const noexcept
         -> ReadView final;
     auto Path(proto::HDPath& output) const -> bool final;
-    auto Serialize(const CredentialIndexModeFlag mode) const
-        -> std::shared_ptr<Serialized> final;
+    auto Serialize(Serialized& serialized, const CredentialIndexModeFlag mode)
+        const -> bool final;
     auto Sign(
         const GetPreimage input,
         const crypto::SignatureRole role,

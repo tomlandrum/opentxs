@@ -81,8 +81,6 @@ class Nym final : virtual public identity::internal::Nym, Lockable
 {
 public:
     auto Alias() const -> std::string final;
-    auto asPublicNym(AllocateOutput destination) const -> bool final;
-    auto asPublicNym() const -> const Serialized final;
     auto at(const key_type& id) const noexcept(false) -> const value_type& final
     {
         return *active_.at(id);
@@ -158,9 +156,12 @@ public:
     auto PaymentCodePath(AllocateOutput destination) const -> bool final;
     auto PhoneNumbers(bool active) const -> std::string final;
     auto Revision() const -> std::uint64_t final;
+    auto Serialize(AllocateOutput destination) const -> bool final;
+    auto Serialize(Serialized& serialized) const -> bool final;
     auto SerializeCredentialIndex(AllocateOutput, const Mode mode) const
         -> bool final;
-    auto SerializeCredentialIndex(const Mode mode) const -> Serialized final;
+    auto SerializeCredentialIndex(Serialized& serialized, const Mode mode) const
+        -> bool final;
     void SerializeNymIDSource(Tag& parent) const final;
     auto size() const noexcept -> std::size_t final { return active_.size(); }
     auto SocialMediaProfiles(const contact::ContactItemType type, bool active)

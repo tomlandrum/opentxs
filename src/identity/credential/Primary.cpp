@@ -185,7 +185,9 @@ auto Primary::serialize(
         identity::CredentialRole::MasterKey));
     auto& masterData = *serialized.mutable_masterdata();
     masterData.set_version(credential_to_master_params_.at(version_));
-    *masterData.mutable_source() = *(source_.Serialize());
+    if (false == source_.Serialize(*masterData.mutable_source())) {
+        throw std::runtime_error("Failed to serialize source.");
+    }
     *masterData.mutable_sourceproof() = source_proof_;
 
     return output;

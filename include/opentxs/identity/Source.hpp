@@ -10,7 +10,6 @@
 
 #include <memory>
 
-#include "opentxs/Proto.hpp"
 #include "opentxs/identity/Types.hpp"
 
 namespace opentxs
@@ -40,8 +39,8 @@ public:
     virtual OTString Description() const noexcept = 0;
     virtual identity::SourceType Type() const noexcept = 0;
     virtual OTNymID NymID() const noexcept = 0;
-    OPENTXS_NO_EXPORT virtual std::shared_ptr<proto::NymIDSource> Serialize()
-        const noexcept = 0;
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        proto::NymIDSource& serialized) const noexcept = 0;
     OPENTXS_NO_EXPORT virtual bool Verify(
         const proto::Credential& master,
         const proto::Signature& sourceSignature) const noexcept = 0;

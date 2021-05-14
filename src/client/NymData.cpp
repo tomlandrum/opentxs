@@ -159,7 +159,9 @@ auto NymData::AddSocialMediaProfile(
 
 auto NymData::asPublicNym() const -> identity::Nym::Serialized
 {
-    return nym().asPublicNym();
+    auto serialized = proto::Nym{};
+    if (false == nym().Serialize(serialized)) {}
+    return serialized;
 }
 
 auto NymData::BestEmail() const -> std::string { return nym().BestEmail(); }

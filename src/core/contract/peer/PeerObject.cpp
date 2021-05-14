@@ -402,6 +402,15 @@ auto Object::Serialize(proto::PeerObject& output) const -> bool
 {
     output.set_type(contract::peer::internal::translate(type_));
 
+    auto publicNym = [&](Nym_p nym) -> proto::Nym {
+        auto publicNym = proto::Nym{};
+        if (false == nym->Serialize(publicNym)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize nym.")
+                .Flush();
+        }
+        return publicNym;
+    };
+
     switch (type_) {
         case (contract::peer::PeerObjectType::Message): {
             if (PEER_MESSAGE_VERSION > version_) {
@@ -411,7 +420,7 @@ auto Object::Serialize(proto::PeerObject& output) const -> bool
             }
 
             if (message_) {
-                if (nym_) { *output.mutable_nym() = nym_->asPublicNym(); }
+                if (nym_) { *output.mutable_nym() = publicNym(nym_); }
                 output.set_otmessage(String::Factory(*message_)->Get());
             }
         } break;
@@ -423,7 +432,7 @@ auto Object::Serialize(proto::PeerObject& output) const -> bool
             }
 
             if (payment_) {
-                if (nym_) { *output.mutable_nym() = nym_->asPublicNym(); }
+                if (nym_) { *output.mutable_nym() = publicNym(nym_); }
                 output.set_otpayment(String::Factory(*payment_)->Get());
             }
         } break;
@@ -437,7 +446,7 @@ auto Object::Serialize(proto::PeerObject& output) const -> bool
                 }
                 auto nym = api_.Wallet().Nym(request_->Initiator());
 
-                if (nym) { *output.mutable_nym() = nym->asPublicNym(); }
+                if (nym) { *output.mutable_nym() = publicNym(nym); }
             }
         } break;
         case (contract::peer::PeerObjectType::Response): {
@@ -464,7 +473,7 @@ auto Object::Serialize(proto::PeerObject& output) const -> bool
             }
 
             if (purse_) {
-                if (nym_) { *output.mutable_nym() = nym_->asPublicNym(); }
+                if (nym_) { *output.mutable_nym() = publicNym(nym_); }
 
                 purse_->Serialize(*output.mutable_purse());
             }

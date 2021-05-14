@@ -958,9 +958,13 @@ auto RPC::get_nyms(const proto::RPCCommand& command) const -> proto::RPCResponse
         auto pNym = session.Wallet().Nym(identifier::Nym::Factory(id));
 
         if (pNym) {
-            const auto& nym = *pNym;
-            *output.add_nym() = nym.asPublicNym();
-            add_output_status(output, proto::RPCRESPONSE_SUCCESS);
+            auto publicNym = proto::Nym{};
+            if (false == pNym->Serialize(publicNym)) {
+                add_output_status(output, proto::RPCRESPONSE_NYM_NOT_FOUND);
+            } else {
+                *output.add_nym() = publicNym;
+                add_output_status(output, proto::RPCRESPONSE_SUCCESS);
+            }
         } else {
             add_output_status(output, proto::RPCRESPONSE_NYM_NOT_FOUND);
         }

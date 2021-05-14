@@ -43,7 +43,6 @@ struct Base : virtual public identity::credential::Base {
 };
 struct Contact : virtual public Base,
                  virtual public identity::credential::Contact {
-
 #ifdef _MSC_VER
     Contact() {}
 #endif  // _MSC_VER
@@ -62,7 +61,6 @@ struct Key : virtual public Base, virtual public identity::credential::Key {
 };
 struct Primary : virtual public Key,
                  virtual public identity::credential::Primary {
-
 #ifdef _MSC_VER
     Primary() {}
 #endif  // _MSC_VER
@@ -70,7 +68,6 @@ struct Primary : virtual public Key,
 };
 struct Secondary : virtual public Key,
                    virtual public identity::credential::Secondary {
-
 #ifdef _MSC_VER
     Secondary() {}
 #endif  // _MSC_VER

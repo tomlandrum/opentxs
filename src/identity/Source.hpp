@@ -57,8 +57,7 @@ public:
     auto Description() const noexcept -> OTString final;
     auto Type() const noexcept -> identity::SourceType final { return type_; }
     auto NymID() const noexcept -> OTNymID final;
-    auto Serialize() const noexcept
-        -> std::shared_ptr<proto::NymIDSource> final;
+    auto Serialize(proto::NymIDSource& serialized) const noexcept -> bool final;
     auto Verify(
         const proto::Credential& master,
         const proto::Signature& sourceSignature) const noexcept -> bool final;

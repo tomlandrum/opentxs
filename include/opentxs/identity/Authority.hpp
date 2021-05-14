@@ -12,7 +12,6 @@
 #include <memory>
 
 #include "opentxs/Bytes.hpp"
-#include "opentxs/Proto.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/Keypair.hpp"
@@ -54,8 +53,7 @@ public:
 
     virtual VersionNumber ContactCredentialVersion() const = 0;
     virtual AuthorityKeys EncryptionTargets() const noexcept = 0;
-    virtual bool GetContactData(
-        std::unique_ptr<proto::ContactData>& contactData) const = 0;
+    virtual bool GetContactData(proto::ContactData& contactData) const = 0;
     virtual OTIdentifier GetMasterCredID() const = 0;
     virtual const crypto::key::Asymmetric& GetPublicAuthKey(
         crypto::key::asymmetric::Algorithm keytype,
@@ -91,12 +89,13 @@ public:
     virtual const credential::Key& GetTagCredential(
         crypto::key::asymmetric::Algorithm keytype) const noexcept(false) = 0;
     virtual bool GetVerificationSet(
-        std::unique_ptr<proto::VerificationSet>& verificationSet) const = 0;
+        proto::VerificationSet& verificationSet) const = 0;
     virtual bool hasCapability(const NymCapability& capability) const = 0;
     virtual ReadView Params(
         const crypto::key::asymmetric::Algorithm type) const noexcept = 0;
     virtual bool Path(proto::HDPath& output) const = 0;
-    OPENTXS_NO_EXPORT virtual std::shared_ptr<Serialized> Serialize(
+    OPENTXS_NO_EXPORT virtual bool Serialize(
+        Serialized& serialized,
         const CredentialIndexModeFlag mode) const = 0;
     virtual bool Sign(
         const GetPreimage input,

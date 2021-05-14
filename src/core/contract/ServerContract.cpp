@@ -366,7 +366,8 @@ auto Server::Serialize(proto::ServerContract& serialized, bool includeNym) const
     serialized = contract(lock);
 
     if (includeNym && nym_) {
-        auto publicNym = nym_->asPublicNym();
+        auto publicNym = proto::Nym{};
+        if (false == nym_->Serialize(publicNym)) { return false; }
         *(serialized.mutable_publicnym()) = publicNym;
     }
 

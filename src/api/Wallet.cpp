@@ -2176,9 +2176,12 @@ void Wallet::save(
 
 auto Wallet::SaveCredentialIDs(const identity::Nym& nym) const -> bool
 {
-    const auto index = dynamic_cast<const identity::internal::Nym&>(nym)
-                           .SerializeCredentialIndex(
-                               identity::internal::Nym::Mode::Abbreviated);
+    auto index = proto::Nym{};
+    if (false == dynamic_cast<const identity::internal::Nym&>(nym)
+                     .SerializeCredentialIndex(
+                         index, identity::internal::Nym::Mode::Abbreviated)) {
+        return false;
+    }
     const bool valid = proto::Validate(index, VERBOSE);
 
     if (!valid) { return false; }

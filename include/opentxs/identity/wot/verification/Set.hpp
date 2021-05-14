@@ -8,7 +8,6 @@
 
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
-#include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 
 namespace opentxs

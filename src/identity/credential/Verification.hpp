@@ -49,8 +49,7 @@ class Verification final : virtual public credential::internal::Verification,
                            public credential::implementation::Base
 {
 public:
-    auto GetVerificationSet(
-        std::unique_ptr<proto::VerificationSet>& verificationSet) const
+    auto GetVerificationSet(proto::VerificationSet& verificationSet) const
         -> bool final;
 
     ~Verification() final = default;

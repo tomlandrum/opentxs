@@ -55,6 +55,14 @@
 #include "opentxs/crypto/key/symmetric/Algorithm.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 
+namespace google
+{
+namespace protobuf
+{
+class MessageLite;
+}  // namespace protobuf
+}  // namespace google
+
 namespace opentxs
 {
 namespace blind
@@ -136,9 +144,10 @@ public:
     virtual OTArmored Armored(const opentxs::Data& input) const = 0;
     virtual OTArmored Armored(const opentxs::String& input) const = 0;
     virtual OTArmored Armored(const opentxs::crypto::Envelope& input) const = 0;
-    virtual OTArmored Armored(const ProtobufType& input) const = 0;
+    virtual OTArmored Armored(
+        const google::protobuf::MessageLite& input) const = 0;
     virtual OTString Armored(
-        const ProtobufType& input,
+        const google::protobuf::MessageLite& input,
         const std::string& header) const = 0;
     virtual OTAsymmetricKey AsymmetricKey(
         const NymParameters& params,
@@ -338,7 +347,7 @@ public:
         const proto::UnitDefinition serialized) const noexcept(false) = 0;
     virtual OTData Data() const = 0;
     virtual OTData Data(const opentxs::Armored& input) const = 0;
-    virtual OTData Data(const ProtobufType& input) const = 0;
+    virtual OTData Data(const google::protobuf::MessageLite& input) const = 0;
     virtual OTData Data(const opentxs::network::zeromq::Frame& input) const = 0;
     virtual OTData Data(const std::uint8_t input) const = 0;
     virtual OTData Data(const std::uint32_t input) const = 0;
@@ -363,7 +372,8 @@ public:
         const opentxs::Contract& contract) const = 0;
     virtual OTIdentifier Identifier(const opentxs::Item& item) const = 0;
     virtual OTIdentifier Identifier(const ReadView bytes) const = 0;
-    virtual OTIdentifier Identifier(const ProtobufType& proto) const = 0;
+    virtual OTIdentifier Identifier(
+        const google::protobuf::MessageLite& proto) const = 0;
     virtual std::unique_ptr<opentxs::Item> Item(
         const String& serialized) const = 0;
     virtual std::unique_ptr<opentxs::Item> Item(

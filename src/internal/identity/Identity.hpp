@@ -39,8 +39,9 @@ struct Nym : virtual public identity::Nym {
     virtual auto SerializeCredentialIndex(
         AllocateOutput destination,
         const Mode mode) const -> bool = 0;
-    virtual auto SerializeCredentialIndex(const Mode mode) const
-        -> Serialized = 0;
+    virtual auto SerializeCredentialIndex(
+        Serialized& serialized,
+        const Mode mode) const -> bool = 0;
     virtual auto WriteCredentials() const -> bool = 0;
 
     virtual void SetAlias(const std::string& alias) = 0;

@@ -180,15 +180,20 @@ Source::Source(const api::Factory& factory, const PaymentCode& source) noexcept
 }
 
 Source::Source(const Source& rhs) noexcept
-    : Source(rhs.factory_, *rhs.Serialize())
+    : Source(rhs.factory_, [&](const Source& rhs) -> proto::NymIDSource {
+        auto serialized = proto::NymIDSource{};
+        rhs.Serialize(serialized);
+        return serialized;
+    }(rhs))
 {
 }
 
 auto Source::asData() const -> OTData
 {
-    std::shared_ptr<proto::NymIDSource> serialized = Serialize();
+    auto serialized = proto::NymIDSource{};
+    if (false == Serialize(serialized)) { return OTData{nullptr}; }
 
-    return factory_.Data(*serialized);
+    return factory_.Data(serialized);
 }
 
 auto Source::deserialize_paymentcode(
@@ -263,33 +268,33 @@ auto Source::NymID() const noexcept -> OTNymID
     return nymID;
 }
 
-auto Source::Serialize() const noexcept -> std::shared_ptr<proto::NymIDSource>
+auto Source::Serialize(proto::NymIDSource& source) const noexcept -> bool
 {
-    auto source = std::make_shared<proto::NymIDSource>();
-    source->set_version(version_);
-    source->set_type(translate(type_));
+    source.set_version(version_);
+    source.set_type(translate(type_));
 
     switch (type_) {
         case identity::SourceType::PubKey: {
             OT_ASSERT(pubkey_.get())
 
             auto key = proto::AsymmetricKey{};
-            pubkey_->Serialize(key);
+            if (false == pubkey_->Serialize(key)) { return false; }
             key.set_role(proto::KEYROLE_SIGN);
-            *(source->mutable_key()) = key;
+            *(source.mutable_key()) = key;
 
         } break;
         case identity::SourceType::Bip47: {
-            auto serialized = proto::PaymentCode{};
-            payment_code_->Serialize(serialized);
-            *(source->mutable_paymentcode()) = serialized;
+            if (false ==
+                payment_code_->Serialize(*(source.mutable_paymentcode()))) {
+                return false;
+            }
 
         } break;
         default: {
         }
     }
 
-    return source;
+    return true;
 }
 
 auto Source::sourcetype_map() noexcept -> const SourceTypeMap&

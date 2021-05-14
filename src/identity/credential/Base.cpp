@@ -117,11 +117,13 @@ void Base::add_master_signature(
 
 auto Base::asString(const bool asPrivate) const -> std::string
 {
-    std::shared_ptr<SerializedType> credenial;
+    auto credential = SerializedType{};
     auto dataCredential = Data::Factory();
     auto stringCredential = String::Factory();
-    credenial = Serialized(asPrivate, WITH_SIGNATURES);
-    dataCredential = api_.Factory().Data(*credenial);
+    if (false == Serialize(credential, asPrivate, WITH_SIGNATURES)) {
+        return {};
+    }
+    dataCredential = api_.Factory().Data(credential);
     auto armoredCredential = api_.Factory().Armored(dataCredential);
     armoredCredential->WriteArmoredString(stringCredential, "Credential");
 
@@ -350,20 +352,25 @@ auto Base::serialize(
 
 auto Base::Serialize() const -> OTData
 {
-    auto serialized =
-        Serialized(Private() ? AS_PRIVATE : AS_PUBLIC, WITH_SIGNATURES);
+    auto serialized = proto::Credential{};
+    Serialize(serialized, Private() ? AS_PRIVATE : AS_PUBLIC, WITH_SIGNATURES);
 
-    return api_.Factory().Data(*serialized);
+    return api_.Factory().Data(serialized);
 }
 
-auto Base::Serialized(
+auto Base::Serialize(
+    SerializedType& output,
     const SerializationModeFlag asPrivate,
-    const SerializationSignatureFlag asSigned) const
-    -> std::shared_ptr<Base::SerializedType>
+    const SerializationSignatureFlag asSigned) const -> bool
 {
     Lock lock(lock_);
 
-    return serialize(lock, asPrivate, asSigned);
+    auto serialized = serialize(lock, asPrivate, asSigned);
+
+    if (!serialized) { return false; }
+    output = *serialized;
+
+    return true;
 }
 
 void Base::sign(

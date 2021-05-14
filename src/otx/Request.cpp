@@ -170,7 +170,9 @@ auto Request::full_version(const Lock& lock) const -> proto::ServerRequest
     }
 
     if (include_nym_.get() && bool(nym_)) {
-        *contract.mutable_credentials() = nym_->asPublicNym();
+        auto publicNym = proto::Nym{};
+        if (false == nym_->Serialize(publicNym)) {}
+        *contract.mutable_credentials() = publicNym;
     }
 
     return contract;

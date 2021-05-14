@@ -124,7 +124,7 @@ Verification::Verification(
           get_master_id(master))
     , data_([&](const NymParameters& params) -> const proto::VerificationSet {
         auto proto = proto::VerificationSet{};
-        params.Serialize(proto);
+        params.GetVerificationSet(proto);
         return proto;
     }(params))
 {
@@ -155,11 +155,11 @@ Verification::Verification(
 }
 
 auto Verification::GetVerificationSet(
-    std::unique_ptr<proto::VerificationSet>& verificationSet) const -> bool
+    proto::VerificationSet& verificationSet) const -> bool
 {
-    verificationSet.reset(new proto::VerificationSet(data_));
+    verificationSet = proto::VerificationSet(data_);
 
-    return bool(verificationSet);
+    return true;
 }
 
 auto Verification::serialize(

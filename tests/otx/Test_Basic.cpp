@@ -1443,7 +1443,7 @@ TEST_F(Test_Basic, publishNym)
     ASSERT_TRUE(nym);
 
     auto bytes = ot::Space{};
-    EXPECT_TRUE(nym->asPublicNym(ot::writer(bytes)));
+    EXPECT_TRUE(nym->Serialize(ot::writer(bytes)));
     client_1_.Wallet().Nym(ot::reader(bytes));
     auto started = stateMachine.PublishContract(bob_nym_id_);
 

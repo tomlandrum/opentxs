@@ -14,7 +14,6 @@
 #include <string>
 #include <tuple>
 
-#include "opentxs/Proto.hpp"
 #include "opentxs/Types.hpp"
 #include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Identifier.hpp"
@@ -24,6 +23,14 @@
 #include "opentxs/crypto/key/Keypair.hpp"
 #include "opentxs/crypto/key/asymmetric/Algorithm.hpp"
 #include "opentxs/iterator/Bidirectional.hpp"
+
+namespace google
+{
+namespace protobuf
+{
+class MessageLite;
+}  // namespace protobuf
+}  // namespace google
 
 namespace opentxs
 {
@@ -82,8 +89,6 @@ public:
     static const VersionNumber MaxVersion;
 
     virtual std::string Alias() const = 0;
-    virtual bool asPublicNym(AllocateOutput destination) const = 0;
-    OPENTXS_NO_EXPORT virtual const Serialized asPublicNym() const = 0;
     virtual const value_type& at(const key_type& id) const noexcept(false) = 0;
     virtual const value_type& at(const std::size_t& index) const
         noexcept(false) = 0;
@@ -151,9 +156,11 @@ public:
     virtual std::string PhoneNumbers(bool active = true) const = 0;
     virtual std::uint64_t Revision() const = 0;
 
+    virtual bool Serialize(AllocateOutput destination) const = 0;
+    OPENTXS_NO_EXPORT virtual bool Serialize(Serialized& serialized) const = 0;
     virtual void SerializeNymIDSource(Tag& parent) const = 0;
     virtual bool Sign(
-        const ProtobufType& input,
+        const google::protobuf::MessageLite& input,
         const crypto::SignatureRole role,
         proto::Signature& signature,
         const PasswordPrompt& reason,
@@ -174,8 +181,9 @@ public:
         const crypto::key::asymmetric::Algorithm type,
         const crypto::key::Symmetric& key,
         PasswordPrompt& reason) const noexcept = 0;
-    virtual bool Verify(const ProtobufType& input, proto::Signature& signature)
-        const = 0;
+    virtual bool Verify(
+        const google::protobuf::MessageLite& input,
+        proto::Signature& signature) const = 0;
     virtual bool VerifyPseudonym() const = 0;
 
     virtual std::string AddChildKeyCredential(

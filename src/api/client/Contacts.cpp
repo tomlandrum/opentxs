@@ -754,7 +754,13 @@ auto Contacts::Update(const identity::Nym& nym) const
 
     {
         auto contact = mutable_contact(lock, contactID);
-        contact->get().Update(nym.asPublicNym());
+        auto serialized = proto::Nym{};
+        if (false == nym.Serialize(serialized)) {
+            LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize nym.")
+                .Flush();
+            return {};
+        }
+        contact->get().Update(serialized);
         contact.reset();
     }
 

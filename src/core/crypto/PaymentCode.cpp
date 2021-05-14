@@ -1017,10 +1017,14 @@ auto PaymentCode::Sign(
     const PasswordPrompt& reason) const noexcept -> bool
 {
 #if OT_CRYPTO_SUPPORTED_KEY_SECP256K1
-    auto serialized = credential.Serialized(AS_PUBLIC, WITHOUT_SIGNATURES);
-    auto& signature = *serialized->add_signature();
+    auto serialized = proto::Credential{};
+    if (false ==
+        credential.Serialize(serialized, AS_PUBLIC, WITHOUT_SIGNATURES)) {
+        return false;
+    }
+    auto& signature = *serialized.add_signature();
     const bool output = key_->Sign(
-        [&]() -> std::string { return proto::ToString(*serialized); },
+        [&]() -> std::string { return proto::ToString(serialized); },
         crypto::SignatureRole::NymIDSource,
         signature,
         ID(),

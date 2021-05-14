@@ -60,6 +60,10 @@ public:
 #if OT_CRYPTO_WITH_BIP32
     const Secret& Entropy() const noexcept;
 #endif  // OT_CRYPTO_WITH_BIP32
+    OPENTXS_NO_EXPORT bool GetContactData(
+        proto::ContactData& serialized) const noexcept;
+    OPENTXS_NO_EXPORT bool GetVerificationSet(
+        proto::VerificationSet& serialized) const noexcept;
     const crypto::key::Keypair& Keypair() const noexcept;
 #if OT_CRYPTO_SUPPORTED_KEY_RSA
     std::int32_t keySize() const noexcept;
@@ -75,10 +79,6 @@ public:
     crypto::SeedStrength SeedStrength() const noexcept;
     crypto::SeedStyle SeedStyle() const noexcept;
 #endif  // OT_CRYPTO_WITH_BIP32
-    OPENTXS_NO_EXPORT bool Serialize(
-        proto::ContactData& serialized) const noexcept;
-    OPENTXS_NO_EXPORT bool Serialize(
-        proto::VerificationSet& serialized) const noexcept;
     identity::SourceProofType SourceProofType() const noexcept;
     identity::SourceType SourceType() const noexcept;
 #if OT_CRYPTO_WITH_BIP32

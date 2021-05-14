@@ -49,8 +49,7 @@ class Contact final : virtual public credential::internal::Contact,
                       public credential::implementation::Base
 {
 public:
-    auto GetContactData(std::unique_ptr<proto::ContactData>& contactData) const
-        -> bool final;
+    auto GetContactData(proto::ContactData& contactData) const -> bool final;
 
     ~Contact() final = default;
 

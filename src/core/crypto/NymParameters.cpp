@@ -240,6 +240,26 @@ auto NymParameters::Entropy() const noexcept -> const Secret&
     return imp_->entropy_;
 }
 #endif  // OT_CRYPTO_WITH_BIP32
+auto NymParameters::GetContactData(
+    proto::ContactData& serialized) const noexcept -> bool
+{
+    if (false == bool{imp_->contact_data_}) { return false; }
+
+    serialized = *imp_->contact_data_;
+
+    return true;
+}
+
+auto NymParameters::GetVerificationSet(
+    proto::VerificationSet& serialized) const noexcept -> bool
+{
+    if (false == bool{imp_->verification_set_}) { return false; }
+
+    serialized = *imp_->verification_set_;
+
+    return true;
+}
+
 auto NymParameters::Keypair() const noexcept -> const crypto::key::Keypair&
 {
     return imp_->source_keypair_;
@@ -280,26 +300,6 @@ auto NymParameters::SeedStyle() const noexcept -> crypto::SeedStyle
     return imp_->seed_style_;
 }
 #endif  // OT_CRYPTO_WITH_BIP32
-auto NymParameters::Serialize(proto::ContactData& serialized) const noexcept
-    -> bool
-{
-    if (false == bool{imp_->contact_data_}) { return false; }
-
-    serialized = *imp_->contact_data_;
-
-    return true;
-}
-
-auto NymParameters::Serialize(proto::VerificationSet& serialized) const noexcept
-    -> bool
-{
-    if (false == bool{imp_->verification_set_}) { return false; }
-
-    serialized = *imp_->verification_set_;
-
-    return true;
-}
-
 auto NymParameters::SourceProofType() const noexcept
     -> identity::SourceProofType
 {

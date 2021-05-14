@@ -95,7 +95,7 @@ public:
                 OT_ASSERT(rNym);
 
                 auto bytes = ot::Space{};
-                OT_ASSERT(rNym->asPublicNym(ot::writer(bytes)));
+                OT_ASSERT(rNym->Serialize(ot::writer(bytes)));
                 nyms_.emplace_back(sender_.Wallet().Nym(ot::reader(bytes)));
 
                 OT_ASSERT(bool(*nyms_.crbegin()));
@@ -116,7 +116,7 @@ public:
                 OT_ASSERT(rNym);
 
                 auto bytes = ot::Space{};
-                OT_ASSERT(rNym->asPublicNym(ot::writer(bytes)));
+                OT_ASSERT(rNym->Serialize(ot::writer(bytes)));
                 nyms_.emplace_back(sender_.Wallet().Nym(ot::reader(bytes)));
 
                 OT_ASSERT(bool(*nyms_.crbegin()));
@@ -137,7 +137,7 @@ public:
                 OT_ASSERT(rNym);
 
                 auto bytes = ot::Space{};
-                OT_ASSERT(rNym->asPublicNym(ot::writer(bytes)));
+                OT_ASSERT(rNym->Serialize(ot::writer(bytes)));
                 nyms_.emplace_back(sender_.Wallet().Nym(ot::reader(bytes)));
 
                 OT_ASSERT(bool(*nyms_.crbegin()));

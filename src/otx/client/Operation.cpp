@@ -887,7 +887,14 @@ auto Operation::construct_publish_nym() -> std::shared_ptr<Message>
     CREATE_MESSAGE(registerContract, -1, true, true);
 
     message.enum_ = static_cast<std::uint8_t>(ContractType::nym);
-    message.m_ascPayload = api_.Factory().Armored(contract->asPublicNym());
+    auto publicNym = proto::Nym{};
+    if (false == contract->Serialize(publicNym)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize nym: ")(
+            target_nym_id_)
+            .Flush();
+        return {};
+    }
+    message.m_ascPayload = api_.Factory().Armored(publicNym);
 
     FINISH_MESSAGE(__FUNCTION__, registerContract);
 }
@@ -986,7 +993,12 @@ auto Operation::construct_register_nym() -> std::shared_ptr<Message>
     PREPARE_CONTEXT();
     CREATE_MESSAGE(registerNym, -1, true, true);
 
-    message.m_ascPayload = api_.Factory().Armored(nym.asPublicNym());
+    auto publicNym = proto::Nym{};
+    if (false == nym.Serialize(publicNym)) {
+        LogOutput(OT_METHOD)(__FUNCTION__)(": Failed to serialize nym.");
+        return {};
+    }
+    message.m_ascPayload = api_.Factory().Armored(publicNym);
 
     FINISH_MESSAGE(__FUNCTION__, registerNym);
 }
