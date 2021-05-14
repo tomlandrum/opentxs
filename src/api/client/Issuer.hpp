@@ -124,6 +124,14 @@ private:
     std::map<contact::ContactItemType, std::set<UnitAccountPair>> account_map_;
     WorkflowMap peer_requests_;
 
+    auto bailment_instructions(
+        const Lock& lock,
+        const identifier::UnitDefinition& unitID,
+        const bool onlyUnused = true) const -> std::vector<BailmentDetails>;
+    auto connection_info(
+        const Lock& lock,
+        const contract::peer::ConnectionInfoType type) const
+        -> std::vector<Issuer::ConnectionDetails>;
     auto find_request(
         const Lock& lock,
         const contract::peer::PeerRequestType type,

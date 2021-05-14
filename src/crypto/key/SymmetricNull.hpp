@@ -23,10 +23,8 @@ public:
     {
         return false;
     }
-    auto DecryptFromBytes(
-        const ReadView&,
-        const PasswordPrompt&,
-        const AllocateOutput) const -> bool final
+    auto Decrypt(const ReadView&, const PasswordPrompt&, const AllocateOutput)
+        const -> bool final
     {
         return false;
     }

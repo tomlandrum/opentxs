@@ -413,7 +413,7 @@ auto Symmetric::Decrypt(
     return decrypt(lock, ciphertext, reason, output.as<std::uint8_t>());
 }
 
-auto Symmetric::DecryptFromBytes(
+auto Symmetric::Decrypt(
     const ReadView& ciphertext,
     const opentxs::PasswordPrompt& reason,
     const AllocateOutput plaintext) const -> bool

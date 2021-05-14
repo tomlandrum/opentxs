@@ -1114,10 +1114,8 @@ auto Nym::normalize(
     return output;
 }
 
-auto Nym::Path(proto::HDPath& output) const -> bool
+auto Nym::path(const sLock& lock, proto::HDPath& output) const -> bool
 {
-    sLock lock(shared_lock_);
-
     for (const auto& it : active_) {
         OT_ASSERT(nullptr != it.second);
         const auto& authority = *it.second;
@@ -1135,25 +1133,38 @@ auto Nym::Path(proto::HDPath& output) const -> bool
     return false;
 }
 
+auto Nym::Path(proto::HDPath& output) const -> bool
+{
+    sLock lock(shared_lock_);
+
+    return path(lock, output);
+}
+
 auto Nym::PathRoot() const -> const std::string
 {
-    auto path = proto::HDPath{};
-    if (false == Path(path)) return "";
-    return path.root();
+    sLock lock(shared_lock_);
+
+    auto proto = proto::HDPath{};
+    if (false == path(lock, proto)) return "";
+    return proto.root();
 }
 
 auto Nym::PathChildSize() const -> int
 {
-    auto path = proto::HDPath{};
-    if (false == Path(path)) return 0;
-    return path.child_size();
+    sLock lock(shared_lock_);
+
+    auto proto = proto::HDPath{};
+    if (false == path(lock, proto)) return 0;
+    return proto.child_size();
 }
 
 auto Nym::PathChild(int index) const -> std::uint32_t
 {
-    auto path = proto::HDPath{};
-    if (false == Path(path)) return 0;
-    return path.child(index);
+    sLock lock(shared_lock_);
+
+    auto proto = proto::HDPath{};
+    if (false == path(lock, proto)) return 0;
+    return proto.child(index);
 }
 
 auto Nym::PaymentCode() const -> std::string

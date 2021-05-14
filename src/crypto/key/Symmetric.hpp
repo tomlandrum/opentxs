@@ -51,7 +51,7 @@ public:
         const proto::Ciphertext& ciphertext,
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const -> bool final;
-    auto DecryptFromBytes(
+    auto Decrypt(
         const ReadView& ciphertext,
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const -> bool final;

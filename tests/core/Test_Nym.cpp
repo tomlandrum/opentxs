@@ -120,7 +120,7 @@ TEST_F(Test_Symmetric, key_functionality)
     ASSERT_TRUE(recoveredKey.get());
 
     std::string plaintext{};
-    auto decrypted = recoveredKey->DecryptFromBytes(
+    auto decrypted = recoveredKey->Decrypt(
         ot::reader(ciphertext_), password, [&](const auto size) {
             plaintext.resize(size);
 
@@ -138,7 +138,7 @@ TEST_F(Test_Symmetric, key_functionality)
 
     ASSERT_TRUE(recoveredKey.get());
 
-    decrypted = recoveredKey->DecryptFromBytes(
+    decrypted = recoveredKey->Decrypt(
         ot::reader(ciphertext_), password, [&](const auto size) {
             plaintext.resize(size);
 

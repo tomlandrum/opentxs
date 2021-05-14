@@ -144,9 +144,9 @@ public:
     virtual OTArmored Armored(const opentxs::Data& input) const = 0;
     virtual OTArmored Armored(const opentxs::String& input) const = 0;
     virtual OTArmored Armored(const opentxs::crypto::Envelope& input) const = 0;
-    virtual OTArmored Armored(
+    OPENTXS_NO_EXPORT virtual OTArmored Armored(
         const google::protobuf::MessageLite& input) const = 0;
-    virtual OTString Armored(
+    OPENTXS_NO_EXPORT virtual OTString Armored(
         const google::protobuf::MessageLite& input,
         const std::string& header) const = 0;
     virtual OTAsymmetricKey AsymmetricKey(
@@ -347,7 +347,8 @@ public:
         const proto::UnitDefinition serialized) const noexcept(false) = 0;
     virtual OTData Data() const = 0;
     virtual OTData Data(const opentxs::Armored& input) const = 0;
-    virtual OTData Data(const google::protobuf::MessageLite& input) const = 0;
+    OPENTXS_NO_EXPORT virtual OTData Data(
+        const google::protobuf::MessageLite& input) const = 0;
     virtual OTData Data(const opentxs::network::zeromq::Frame& input) const = 0;
     virtual OTData Data(const std::uint8_t input) const = 0;
     virtual OTData Data(const std::uint32_t input) const = 0;
@@ -372,7 +373,7 @@ public:
         const opentxs::Contract& contract) const = 0;
     virtual OTIdentifier Identifier(const opentxs::Item& item) const = 0;
     virtual OTIdentifier Identifier(const ReadView bytes) const = 0;
-    virtual OTIdentifier Identifier(
+    OPENTXS_NO_EXPORT virtual OTIdentifier Identifier(
         const google::protobuf::MessageLite& proto) const = 0;
     virtual std::unique_ptr<opentxs::Item> Item(
         const String& serialized) const = 0;

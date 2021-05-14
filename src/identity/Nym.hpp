@@ -330,6 +330,7 @@ private:
         const eLock& lock,
         const std::int32_t version,
         const PasswordPrompt& reason) -> bool;
+    auto path(const sLock& lock, proto::HDPath& output) const -> bool;
 
     Nym(const api::internal::Core& api,
         NymParameters& nymParameters,

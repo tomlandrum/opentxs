@@ -159,7 +159,7 @@ public:
     virtual bool Serialize(AllocateOutput destination) const = 0;
     OPENTXS_NO_EXPORT virtual bool Serialize(Serialized& serialized) const = 0;
     virtual void SerializeNymIDSource(Tag& parent) const = 0;
-    virtual bool Sign(
+    OPENTXS_NO_EXPORT virtual bool Sign(
         const google::protobuf::MessageLite& input,
         const crypto::SignatureRole role,
         proto::Signature& signature,
@@ -181,7 +181,7 @@ public:
         const crypto::key::asymmetric::Algorithm type,
         const crypto::key::Symmetric& key,
         PasswordPrompt& reason) const noexcept = 0;
-    virtual bool Verify(
+    OPENTXS_NO_EXPORT virtual bool Verify(
         const google::protobuf::MessageLite& input,
         proto::Signature& signature) const = 0;
     virtual bool VerifyPseudonym() const = 0;

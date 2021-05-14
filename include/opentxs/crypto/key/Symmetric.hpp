@@ -68,7 +68,7 @@ public:
         const proto::Ciphertext& ciphertext,
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const = 0;
-    virtual bool DecryptFromBytes(
+    virtual bool Decrypt(
         const ReadView& ciphertext,
         const PasswordPrompt& reason,
         const AllocateOutput plaintext) const = 0;
